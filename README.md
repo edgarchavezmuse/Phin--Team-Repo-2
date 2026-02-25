@@ -1,4 +1,3 @@
 # Phin--Team-Repo-2
-
-Edgar Chavez
+Sam Saldivar
 Maria Ortiz
