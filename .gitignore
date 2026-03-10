@@ -13,3 +13,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+*.log
+*.aab
+*.apk
+output-metadata.json
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+*.jks
+*.keystore
+google-services.json
+*.hprof
