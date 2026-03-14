@@ -7,4 +7,6 @@ object Routes {
     const val PROFILE = "profile"
     const val EVENTS = "events"
     const val CALENDAR = "calendar"
+
+    const val MAP = "map"
 }
