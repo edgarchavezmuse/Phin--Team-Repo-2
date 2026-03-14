@@ -35,7 +35,9 @@ fun PhinNavHost(
         }
 
         composable(Routes.EVENTS) {
-            EventsScreen()
+            EventsScreen(onEventClick = { event ->
+                // Show 'add to calendar' message
+            })
         }
 
         composable(Routes.CALENDAR) {

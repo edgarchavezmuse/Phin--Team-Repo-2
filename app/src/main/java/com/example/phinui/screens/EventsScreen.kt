@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.events.EventData
-import com.example.phinui.ui.screens.formatEventDateTime
+import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.SelectedPill
@@ -58,66 +58,13 @@ fun EventsScreen(onEventClick: (CalendarEvent) -> Unit) {
             items(EventData.eventList) { event ->
                 EventCard(
                     title = event.title,
-                    dateTime = "Date: \${event.start}\nTime: \${if (event.start.contains('T')) event.start.substring(11,16) else \"TBD\"}",
+                    dateTime = formatEventDateTime(event),
                     location = event.location ?: "Location: TBD",
                     onClick = { onEventClick(event) }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
             }
-            /* Old code
-            item {
-                EventCard(
-                    title = "Health Science Advising Sessions",
-                    dateTime = "Date: March 9\nTime: 9:00am",
-                    location = "Location: del Norte Hall 1500"
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            item {
-                EventCard(
-                    title = "Student Success Workshop",
-                    dateTime = "Date: March 10\nTime: 9:00am",
-                    location = "Location: Bell Tower Courtyard"
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            item {
-                EventCard(
-                    title = "Events 3 Name",
-                    dateTime = "Date: TBD\nTime: TBD",
-                    location = "Location: TBD"
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            item {
-                EventCard(
-                    title = "Events 4 Name",
-                    dateTime = "Date: TBD\nTime: TBD",
-                    location = "Location: TBD"
-                )
-            }
-
-            item {
-                EventCard(
-                    title = "Events 5 Name",
-                    dateTime = "Date: TBD\nTime: TBD",
-                    location = "Location: TBD"
-                )
-            }
-             */
         }
     }
 }
