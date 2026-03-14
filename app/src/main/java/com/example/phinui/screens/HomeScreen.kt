@@ -35,8 +35,12 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 HomeDashboard(
+                    // Where the user goes after clicking the icon
                     onOpenEvents = {
                         navController.navigate(Routes.EVENTS)
+                    },
+                    onOpenCalendar = {
+                        navController.navigate(Routes.CALENDAR)
                     }
                 )
             }

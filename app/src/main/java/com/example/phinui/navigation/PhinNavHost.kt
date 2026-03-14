@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.FavoritesScreen
 import com.example.phinui.ui.screens.HomeScreen
@@ -20,6 +21,7 @@ fun PhinNavHost(
         startDestination = Routes.HOME,
         modifier = modifier
     ) {
+        // navigate to x screen
         composable(Routes.HOME) {
             HomeScreen(navController = navController)
         }
@@ -34,6 +36,10 @@ fun PhinNavHost(
 
         composable(Routes.EVENTS) {
             EventsScreen()
+        }
+
+        composable(Routes.CALENDAR) {
+            CalendarScreen()
         }
     }
 }
