@@ -1,9 +1,11 @@
 package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,12 +20,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.data.events.EventData
+import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.SelectedPill
 
 @Composable
-fun EventsScreen() {
+fun EventsScreen(onEventClick: (CalendarEvent) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -49,56 +54,16 @@ fun EventsScreen() {
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            item {
+            // Fetches the list of events from EventData.kt, with info
+            items(EventData.eventList) { event ->
                 EventCard(
-                    title = "Health Science Advising Sessions",
-                    dateTime = "Date: March 9\nTime: 9:00am",
-                    location = "Location: del Norte Hall 1500"
+                    title = event.title,
+                    dateTime = formatEventDateTime(event),
+                    location = event.location ?: "Location: TBD",
+                    onClick = { onEventClick(event) }
                 )
-            }
 
-            item {
                 Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            item {
-                EventCard(
-                    title = "Student Success Workshop",
-                    dateTime = "Date: March 10\nTime: 9:00am",
-                    location = "Location: Bell Tower Courtyard"
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            item {
-                EventCard(
-                    title = "Events 3 Name",
-                    dateTime = "Date: TBD\nTime: TBD",
-                    location = "Location: TBD"
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            item {
-                EventCard(
-                    title = "Events 4 Name",
-                    dateTime = "Date: TBD\nTime: TBD",
-                    location = "Location: TBD"
-                )
-            }
-
-            item {
-                EventCard(
-                    title = "Events 5 Name",
-                    dateTime = "Date: TBD\nTime: TBD",
-                    location = "Location: TBD"
-                )
             }
         }
     }
@@ -108,7 +73,8 @@ fun EventsScreen() {
 fun EventCard(
     title: String,
     dateTime: String,
-    location: String
+    location: String,
+    onClick:() -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -116,6 +82,7 @@ fun EventCard(
             .clip(RoundedCornerShape(16.dp))
             .background(SelectedPill)
             .padding(20.dp)
+            .clickable { onClick() }
     ) {
         Text(
             text = title,
