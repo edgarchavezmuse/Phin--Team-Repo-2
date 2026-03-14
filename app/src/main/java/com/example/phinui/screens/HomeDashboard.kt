@@ -15,7 +15,10 @@ import com.example.phinui.ui.components.HomeActionItem
 
 @Composable
 fun HomeDashboard(
-    onOpenEvents: () -> Unit
+
+    // makes the xx icons clickable
+    onOpenEvents: () -> Unit,
+    onOpenCalendar: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(40.dp),
@@ -33,7 +36,7 @@ fun HomeDashboard(
             HomeActionItem(
                 icon = Icons.Default.DateRange,
                 label = "Calendar",
-                onClick = { }
+                onClick = onOpenCalendar
             )
         }
 
