@@ -27,14 +27,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
-import com.example.phinui.data.events.EventData
 import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.SelectedPill
 
 @Composable
-fun EventsScreen(onEventClick: (CalendarEvent) -> Unit) {
+fun EventsScreen(events: List<CalendarEvent>, onEventClick: (CalendarEvent) -> Unit) {
 
     // variables for showing 'add to calendar' message
     var showDialog by remember {mutableStateOf(false) }
@@ -66,7 +65,7 @@ fun EventsScreen(onEventClick: (CalendarEvent) -> Unit) {
             }
 
             // Fetches the list of events from EventData.kt, with info
-            items(EventData.eventList) { event ->
+            items(events) { event ->
                 EventCard(
                     title = event.title,
                     dateTime = formatEventDateTime(event),
