@@ -1,10 +1,14 @@
 package com.example.phinui.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.FavoritesScreen
@@ -35,7 +39,16 @@ fun PhinNavHost(
         }
 
         composable(Routes.EVENTS) {
+            // to hold the event selected to add to the calendar
+            val savedEvents = remember {mutableStateListOf<CalendarEvent>()}
+
+            // for storing the event in calendar - persistence
+            val currentContext = LocalContext.current
             EventsScreen(onEventClick = { event ->
+                // test dialog box functionality
+                if (savedEvents.none { it.id == event.id}) {
+                    savedEvents.add(event)
+                }
                 // Show 'add to calendar' message
             })
         }
