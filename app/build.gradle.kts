@@ -64,4 +64,6 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation("androidx.work:work-runtime-ktx:2.11.1")
     implementation("androidx.datastore:datastore-preferences:1.1.0")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
 }

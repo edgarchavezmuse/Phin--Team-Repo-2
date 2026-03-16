@@ -10,19 +10,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.viewmodel.CalendarViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 
 // Data formatters
@@ -39,6 +43,8 @@ fun CalendarScreen(
 ) {
     val context = LocalContext.current
     val activity = context as Activity
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken
@@ -150,7 +156,18 @@ fun CalendarScreen(
 
                 OutlinedButton(
                     onClick = {
-                        calendarViewModel.signOut()
+                        val credentialManager = CredentialManager.create(activity)
+
+                        coroutineScope.launch {
+                            try {
+                                credentialManager.clearCredentialState(
+                                    ClearCredentialStateRequest()
+                                )
+                            } catch (_: Exception) {
+                            }
+
+                            calendarViewModel.signOut()
+                        }
                     }
                 ) { Text("Sign Out") }
 
