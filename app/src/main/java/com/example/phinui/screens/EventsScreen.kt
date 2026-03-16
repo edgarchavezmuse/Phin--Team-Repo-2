@@ -13,7 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,14 +27,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
-import com.example.phinui.data.events.EventData
 import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.SelectedPill
 
 @Composable
-fun EventsScreen(onEventClick: (CalendarEvent) -> Unit) {
+fun EventsScreen(events: List<CalendarEvent>, onEventClick: (CalendarEvent) -> Unit) {
+
+    // variables for showing 'add to calendar' message
+    var showDialog by remember {mutableStateOf(false) }
+    var selectedEvent by remember {mutableStateOf<CalendarEvent?>(null) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -55,17 +65,46 @@ fun EventsScreen(onEventClick: (CalendarEvent) -> Unit) {
             }
 
             // Fetches the list of events from EventData.kt, with info
-            items(EventData.eventList) { event ->
+            items(events) { event ->
                 EventCard(
                     title = event.title,
                     dateTime = formatEventDateTime(event),
                     location = event.location ?: "Location: TBD",
-                    onClick = { onEventClick(event) }
+
+                    // calls the 'add to calendar' message
+                    onClick = {
+                        selectedEvent = event
+                        showDialog = true
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
+    }
+
+    // 'add to calendar' message box
+    if(showDialog && selectedEvent != null) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Add to calendar?") },
+            text = { Text("Do you want to add \"${selectedEvent!!.title}\" to your calendar?") },
+            confirmButton = {
+                Button (onClick = {
+                    onEventClick(selectedEvent!!)
+                    showDialog = false
+                } ) {
+                    Text ("Yes")
+                }
+            },
+            dismissButton = {
+                Button (onClick = {
+                    showDialog = false
+                }) {
+                    Text ("No")
+                }
+            }
+        )
     }
 }
 
@@ -82,6 +121,7 @@ fun EventCard(
             .clip(RoundedCornerShape(16.dp))
             .background(SelectedPill)
             .padding(20.dp)
+            // makes the events clickable
             .clickable { onClick() }
     ) {
         Text(

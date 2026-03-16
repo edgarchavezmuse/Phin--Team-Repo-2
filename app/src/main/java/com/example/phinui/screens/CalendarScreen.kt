@@ -33,10 +33,11 @@ private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(modifier: Modifier = Modifier) {
+fun CalendarScreen(savedEvents: List<CalendarEvent>, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val activity = context as Activity
     val coroutineScope = rememberCoroutineScope()
+    val localEvents by rememberUpdatedState(newValue = savedEvents)
 
     //  Authorization + calendar data state
     var googleAccessToken by remember { mutableStateOf<String?>(null) }
@@ -90,8 +91,22 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
             coroutineScope = coroutineScope,
             updateLoadingState = { isLoadingEvents = it },
             updateErrorState = { errorMessage = it },
-            updateEventsGroupedByDate = { eventsGroupedByDate = it }
+
+            // combine google events with local app events
+            updateEventsGroupedByDate = { googleEvents ->
+                val mergedEvents = (googleEvents.values.flatten() + localEvents).distinctBy { it.id }
+                eventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
+            }
         )
+    }
+
+    // ensures google events are combined with local app events whenever something is updated within the app
+    LaunchedEffect(savedEvents, googleAccessToken, currentWeekStartDate) {
+        val googleList = eventsGroupedByDate.values.flatten()
+        val mergedEvents = (googleList + savedEvents)
+            .distinctBy { it.id }
+        eventsGroupedByDate =
+            groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
     }
 
     // Main Calendar UI Layout
@@ -271,7 +286,7 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
 
         // Decide what to show based on auth/loading/data state
         when {
-            googleAccessToken == null -> {
+            googleAccessToken == null && eventsForSelectedDate.isEmpty() -> {
                 Text(
                     text = "Connect your calendar to see events.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -312,6 +327,16 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
                                 Text(
                                     text = timeLine,
                                     style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            // Display location of event
+                            event.location?.let {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
