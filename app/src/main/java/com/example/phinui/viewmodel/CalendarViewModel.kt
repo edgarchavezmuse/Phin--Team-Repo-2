@@ -121,6 +121,16 @@ class CalendarViewModel(
         errorMessage = message
     }
 
+    // Sign out of Google Calendar for this session
+    fun signOut() {
+        googleAccessToken = null
+        errorMessage = null
+        isLoadingEvents = false
+        eventsGroupedByDate = emptyMap()
+
+        // Clear persisted state used by this ViewModel
+        savedStateHandle["googleAccessToken"] = null
+    }
 
     /*
     * Data loader helper

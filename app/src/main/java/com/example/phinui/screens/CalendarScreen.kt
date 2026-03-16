@@ -148,6 +148,12 @@ fun CalendarScreen(
                     }
                 ) { Text("Refresh") }
 
+                OutlinedButton(
+                    onClick = {
+                        calendarViewModel.signOut()
+                    }
+                ) { Text("Sign Out") }
+
                 Text(
                     text = "Connected",
                     style = MaterialTheme.typography.bodyMedium,
