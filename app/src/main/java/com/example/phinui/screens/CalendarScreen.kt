@@ -9,23 +9,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.data.calendar.CalendarEvent
-import com.example.phinui.data.calendar.GoogleCalendarRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.viewmodel.CalendarViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 
 // Data formatters
@@ -36,6 +33,7 @@ private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
+    savedEvents: List<CalendarEvent>,
     modifier: Modifier = Modifier,
     calendarViewModel: CalendarViewModel = viewModel()
 ) {
@@ -54,6 +52,17 @@ fun CalendarScreen(
     // Builds the 7 day week
     val datesInCurrentWeek = calendarViewModel.datesInCurrentWeek
     val selectedDateInWeek = calendarViewModel.selectedDateInWeek
+
+    // Merge Google events + local saved events for display only
+    val displayedEventsGroupedByDate = remember(
+        eventsGroupedByDate,
+        savedEvents,
+        currentWeekStartDate
+    ) {
+        val googleEvents = eventsGroupedByDate.values.flatten()
+        val mergedEvents = (googleEvents + savedEvents).distinctBy { it.id }
+        groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
+    }
 
     //  Authorization launcher (opens Google consent UI)
     val authorizationLauncher = rememberLauncherForActivityResult(
@@ -221,11 +230,11 @@ fun CalendarScreen(
         Spacer(Modifier.height(8.dp))
 
         // Pull the events for the selected day out of the grouped map
-        val eventsForSelectedDate = eventsGroupedByDate[selectedDateInWeek].orEmpty()
+        val eventsForSelectedDate = displayedEventsGroupedByDate[selectedDateInWeek].orEmpty()
 
         // Decide what to show based on auth/loading/data state
         when {
-            googleAccessToken == null -> {
+            googleAccessToken == null && eventsForSelectedDate.isEmpty() -> {
                 Text(
                     text = "Connect your calendar to see events.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -269,11 +278,49 @@ fun CalendarScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+
+                            // Display location of event
+                            event.location?.let {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+private fun groupEventsByDateForWeek(
+    events: List<CalendarEvent>,
+    weekStartDate: LocalDate
+): Map<LocalDate, List<CalendarEvent>> {
+    val weekDates = (0L..6L).map { weekStartDate.plusDays(it) }
+
+    return weekDates.associateWith { date ->
+        events.filter { event ->
+            eventDate(event) == date
+        }
+    }
+}
+
+private fun eventDate(event: CalendarEvent): LocalDate? {
+    val start = event.start
+    if (start.isBlank()) return null
+
+    return try {
+        if (start.contains("T")) {
+            LocalDate.parse(start.substring(0, 10))
+        } else {
+            LocalDate.parse(start)
+        }
+    } catch (_: Exception) {
+        null
     }
 }
 
