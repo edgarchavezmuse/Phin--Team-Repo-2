@@ -24,6 +24,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.viewmodel.CalendarViewModel
 
 
 // Data formatters
@@ -33,30 +35,25 @@ private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(modifier: Modifier = Modifier) {
+fun CalendarScreen(
+    modifier: Modifier = Modifier,
+    calendarViewModel: CalendarViewModel = viewModel()
+) {
     val context = LocalContext.current
     val activity = context as Activity
-    val coroutineScope = rememberCoroutineScope()
 
     //  Authorization + calendar data state
-    var googleAccessToken by remember { mutableStateOf<String?>(null) }
-    var isLoadingEvents by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var eventsGroupedByDate by remember { mutableStateOf<Map<LocalDate, List<CalendarEvent>>>(emptyMap()) }
+    val googleAccessToken = calendarViewModel.googleAccessToken
+    val isLoadingEvents = calendarViewModel.isLoadingEvents
+    val errorMessage = calendarViewModel.errorMessage
+    val eventsGroupedByDate = calendarViewModel.eventsGroupedByDate
 
     //  Week navigation state
-    var currentReferenceDate by remember { mutableStateOf(LocalDate.now()) }
-    val currentWeekStartDate = remember(currentReferenceDate) {
-        getStartOfWeek(currentReferenceDate, weekStartsOn = DayOfWeek.MONDAY)
-    }
+    val currentWeekStartDate = calendarViewModel.currentWeekStartDate
 
     // Builds the 7 day week
-    val datesInCurrentWeek = remember(currentWeekStartDate) {
-        (0..6).map { offset -> currentWeekStartDate.plusDays(offset.toLong()) }
-    }
-    var selectedDateInWeek by remember(currentWeekStartDate) {
-        mutableStateOf(currentWeekStartDate)
-    }
+    val datesInCurrentWeek = calendarViewModel.datesInCurrentWeek
+    val selectedDateInWeek = calendarViewModel.selectedDateInWeek
 
     //  Authorization launcher (opens Google consent UI)
     val authorizationLauncher = rememberLauncherForActivityResult(
@@ -64,34 +61,12 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
     ) { result ->
         val tokenFromResult = GoogleAuthManager.handleAuthorizationResult(activity, result)
         if (tokenFromResult.isNullOrBlank()) {
-            errorMessage = "Authorization canceled or failed."
+            calendarViewModel.setError("Authorization canceled or failed.")
             return@rememberLauncherForActivityResult
         }
 
         // Save token & load this weeks events
-        googleAccessToken = tokenFromResult
-
-        loadEventsForWeek(
-            accessToken = tokenFromResult,
-            weekStartDate = currentWeekStartDate,
-            coroutineScope = coroutineScope,
-            updateLoadingState = { isLoadingEvents = it },
-            updateErrorState = { errorMessage = it },
-            updateEventsGroupedByDate = { eventsGroupedByDate = it }
-        )
-    }
-
-    // If the week changes and we already have a token, so reload automatically.
-    LaunchedEffect(currentWeekStartDate, googleAccessToken) {
-        val token = googleAccessToken ?: return@LaunchedEffect
-        loadEventsForWeek(
-            accessToken = token,
-            weekStartDate = currentWeekStartDate,
-            coroutineScope = coroutineScope,
-            updateLoadingState = { isLoadingEvents = it },
-            updateErrorState = { errorMessage = it },
-            updateEventsGroupedByDate = { eventsGroupedByDate = it }
-        )
+        calendarViewModel.onAuthorizationSuccess(tokenFromResult)
     }
 
     // Main Calendar UI Layout
@@ -118,18 +93,12 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
 
             // Move displayed week backward by 7 days
             TextButton(
-                onClick = {
-                    currentReferenceDate = currentReferenceDate.minusDays(7)
-                    selectedDateInWeek = selectedDateInWeek.minusDays(7)
-                }
+                onClick = { calendarViewModel.goToPreviousWeek() }
             ) { Text("Prev") }
 
             // Move displayed week forward by 7 days
             TextButton(
-                onClick = {
-                    currentReferenceDate = currentReferenceDate.plusDays(7)
-                    selectedDateInWeek = selectedDateInWeek.plusDays(7)
-                }
+                onClick = { calendarViewModel.goToNextWeek() }
             ) { Text("Next") }
         }
 
@@ -146,25 +115,18 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
             if (googleAccessToken == null) {
                 Button(
                     onClick = {
-                        errorMessage = null
+                        calendarViewModel.setError(null)
 
                         GoogleAuthManager.startAuthorization(
                             activity = activity,
                             launcher = authorizationLauncher,
                             onAccessToken = { immediateToken ->
-                                googleAccessToken = immediateToken
-
-                                loadEventsForWeek(
-                                    accessToken = immediateToken,
-                                    weekStartDate = currentWeekStartDate,
-                                    coroutineScope = coroutineScope,
-                                    updateLoadingState = { isLoadingEvents = it },
-                                    updateErrorState = { errorMessage = it },
-                                    updateEventsGroupedByDate = { eventsGroupedByDate = it }
-                                )
+                                calendarViewModel.onAuthorizationSuccess(immediateToken)
                             },
                             onError = { exception ->
-                                errorMessage = exception.message ?: "Authorization error."
+                                calendarViewModel.setError(
+                                    exception.message ?: "Authorization error."
+                                )
                             }
                         )
                     }
@@ -173,15 +135,7 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
                 // Manual Reload events
                 OutlinedButton(
                     onClick = {
-                        val token = googleAccessToken ?: return@OutlinedButton
-                        loadEventsForWeek(
-                            accessToken = token,
-                            weekStartDate = currentWeekStartDate,
-                            coroutineScope = coroutineScope,
-                            updateLoadingState = { isLoadingEvents = it },
-                            updateErrorState = { errorMessage = it },
-                            updateEventsGroupedByDate = { eventsGroupedByDate = it }
-                        )
+                        calendarViewModel.refreshEvents()
                     }
                 ) { Text("Refresh") }
 
@@ -224,7 +178,7 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
                 val isSelected = date == selectedDateInWeek
 
                 Surface(
-                    onClick = { selectedDateInWeek = date },
+                    onClick = { calendarViewModel.selectDate(date) },
                     shape = RoundedCornerShape(14.dp),
                     color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                     else MaterialTheme.colorScheme.surface,
@@ -320,100 +274,6 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
                 }
             }
         }
-    }
-}
-
-/*
- * Data loader helper
- * Fetches events for a specific week and stores them grouped by LocalDate
- */
-private fun loadEventsForWeek(
-    accessToken: String,
-    weekStartDate: LocalDate,
-    coroutineScope: CoroutineScope,
-    updateLoadingState: (Boolean) -> Unit,
-    updateErrorState: (String?) -> Unit,
-    updateEventsGroupedByDate: (Map<LocalDate, List<CalendarEvent>>) -> Unit
-) {
-    updateLoadingState(true)
-    updateErrorState(null)
-
-    coroutineScope.launch {
-        try {
-            // Call repository to fetch events from Google Calendar API for the given week
-            val events = GoogleCalendarRepository.fetchWeekEvents(
-                accessToken = accessToken,
-                weekStart = weekStartDate,
-                zone = ZoneId.systemDefault()
-            )
-
-            val groupedEvents = groupEventsByDateForWeek(
-                events = events,
-                weekStartDate = weekStartDate
-            )
-
-            updateEventsGroupedByDate(groupedEvents)
-        } catch (e: Exception) {
-            updateErrorState(e.message ?: "Failed to load events.")
-            updateEventsGroupedByDate(emptyMap())
-        } finally {
-            updateLoadingState(false)
-        }
-    }
-}
-
-// Returns the Monday for the week .
-private fun getStartOfWeek(
-    date: LocalDate,
-    weekStartsOn: DayOfWeek = DayOfWeek.MONDAY
-): LocalDate {
-    var currentDate = date
-    while (currentDate.dayOfWeek != weekStartsOn) {
-        currentDate = currentDate.minusDays(1)
-    }
-    return currentDate
-}
-
-// Groups events into the 7 days
-private fun groupEventsByDateForWeek(
-    events: List<CalendarEvent>,
-    weekStartDate: LocalDate
-): Map<LocalDate, List<CalendarEvent>> {
-
-    // Prepare 7 keys (one per day in the week), each with a mutable list
-    val weekDates = (0..6).map { offset -> weekStartDate.plusDays(offset.toLong()) }
-    val grouped = weekDates.associateWith { mutableListOf<CalendarEvent>() }.toMutableMap()
-
-    // Put each event into the correct day bucket (if it falls within this week)
-    for (event in events) {
-        val eventStartDate = extractEventStartDate(event) ?: continue
-        if (eventStartDate in grouped.keys) {
-            grouped[eventStartDate]?.add(event)
-        }
-    }
-
-    // Sort each day’s events by start time
-    grouped.values.forEach { dayEvents ->
-        dayEvents.sortBy { it.start }
-    }
-
-    return grouped.mapValues { it.value.toList() }
-}
-
-//  Extract just the LocalDate from event.start.
-private fun extractEventStartDate(event: CalendarEvent): LocalDate? {
-    val startString = event.start
-    if (startString.isBlank()) return null
-
-    return try {
-        if (!startString.contains('T')) {
-            LocalDate.parse(startString) // all-day event
-        } else {
-            // event format: YYYY-MM-DD
-            LocalDate.parse(startString.substring(0, 10))
-        }
-    } catch (_: Exception) {
-        null
     }
 }
 
