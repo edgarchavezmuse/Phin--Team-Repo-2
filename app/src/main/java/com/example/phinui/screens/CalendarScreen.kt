@@ -35,7 +35,7 @@ private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM 
 fun CalendarScreen(
     savedEvents: List<CalendarEvent>,
     modifier: Modifier = Modifier,
-    calendarViewModel: CalendarViewModel = viewModel()
+    calendarViewModel: CalendarViewModel
 ) {
     val context = LocalContext.current
     val activity = context as Activity
