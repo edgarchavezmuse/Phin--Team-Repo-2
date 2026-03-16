@@ -21,6 +21,8 @@ import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.viewmodel.CalendarViewModel
 
 @Composable
 fun PhinNavHost(
@@ -32,6 +34,7 @@ fun PhinNavHost(
     val storeEvent = remember { CalendarStorage(context) }
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
+    val calendarViewModel: CalendarViewModel = viewModel()
 
     //
     LaunchedEffect(Unit) {
@@ -95,7 +98,10 @@ fun PhinNavHost(
         }
 
         composable(Routes.CALENDAR) {
-            CalendarScreen(savedEvents = savedEvents)
+            CalendarScreen(
+                savedEvents = savedEvents,
+                calendarViewModel = calendarViewModel
+            )
         }
     }
 }
