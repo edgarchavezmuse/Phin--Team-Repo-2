@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.navigation.compose.rememberNavController
+import com.example.phinui.notifications.NotificationPermissionRequest
 import com.example.phinui.ui.components.CustomBottomBar
 import com.example.phinui.ui.navigation.PhinNavHost
 import com.example.phinui.ui.theme.Background
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PhinUIApp() {
     val navController = rememberNavController()
+    NotificationPermissionRequest()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),

@@ -69,10 +69,15 @@ fun CustomBottomBar(
                 icon = item.icon,
                 selected = currentRoute == item.route,
                 onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo(Routes.HOME) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+                    if (item.route == Routes.HOME) {
+                        navController.popBackStack(Routes.HOME, false)
+                    }
+                    else {
+                        navController.navigate(item.route) {
+                            popUpTo(Routes.HOME) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 }
             )
