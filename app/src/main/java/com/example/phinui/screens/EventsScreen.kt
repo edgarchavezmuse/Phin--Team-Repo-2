@@ -44,6 +44,7 @@ fun EventsScreen(
     onEventClick: (CalendarEvent) -> Unit,
     onAddEventClick: () -> Unit
 ) {
+    // variables for showing 'add to calendar' message
     var showDialog by remember { mutableStateOf(false) }
     var selectedEvent by remember { mutableStateOf<CalendarEvent?>(null) }
 
@@ -53,6 +54,7 @@ fun EventsScreen(
             .background(Background)
             .padding(top = 24.dp)
     ) {
+        // Elements must be wrapped in "item{}" to make scrollable work
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,11 +73,14 @@ fun EventsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
+            // Fetches the list of events from EventData.kt, with info
             items(events) { event ->
                 EventCard(
                     title = event.title,
                     dateTime = formatEventDateTime(event),
                     location = event.location ?: "Location: TBD",
+
+                    // calls the 'add to calendar' message
                     onClick = {
                         selectedEvent = event
                         showDialog = true
@@ -101,6 +106,7 @@ fun EventsScreen(
         }
     }
 
+    // 'add to calendar' message box
     if (showDialog && selectedEvent != null) {
         AlertDialog(
             onDismissRequest = { showDialog = false },

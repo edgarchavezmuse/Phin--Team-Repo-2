@@ -30,6 +30,7 @@ fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    // variables for ensuring events get passed to calendar
     val context = LocalContext.current
     val storeEvent = remember { CalendarStorage(context) }
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
@@ -37,6 +38,7 @@ fun PhinNavHost(
     val coroutineScope = rememberCoroutineScope()
     val calendarViewModel: CalendarViewModel = viewModel()
 
+    //
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
 
@@ -58,6 +60,7 @@ fun PhinNavHost(
         startDestination = Routes.HOME,
         modifier = modifier
     ) {
+        // navigate to x screen
         composable(Routes.HOME) {
             HomeScreen(navController = navController)
         }
@@ -76,17 +79,19 @@ fun PhinNavHost(
                 onEventClick = { event ->
                     if (savedEvents.none { it.id == event.id }) {
                         savedEvents.add(event)
-
+                        // Save to persistent storage
                         coroutineScope.launch(Dispatchers.IO) {
                             storeEvent.saveEvent(event)
                         }
 
+                        // notification for adding event
                         Toast.makeText(
                             context,
                             "${event.title} added to your calendar.",
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
+                        // notification for event existing in calendar
                         Toast.makeText(
                             context,
                             "${event.title} already in your calendar.",
