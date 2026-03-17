@@ -37,10 +37,10 @@ fun HomeScreen(
                 HomeDashboard(
                     // Where the user goes after clicking the icon
                     onOpenEvents = {
-                        navController.navigate(Routes.EVENTS)
+                        navController.navigate(Routes.EVENTS) { launchSingleTop = true }
                     },
                     onOpenCalendar = {
-                        navController.navigate(Routes.CALENDAR)
+                        navController.navigate(Routes.CALENDAR) { launchSingleTop = true }
                     },
                             onOpenMap = {
                         navController.navigate(Routes.MAP)
