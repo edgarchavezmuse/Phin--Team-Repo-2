@@ -41,8 +41,8 @@ fun HomeScreen(
                     },
                     onOpenCalendar = {
                         navController.navigate(Routes.CALENDAR)
-                    },
-                    onOpenMap = {
+                    }
+                            onOpenMap = {
                         navController.navigate(Routes.MAP)
                     }
                 )

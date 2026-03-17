@@ -4,5 +4,7 @@ data class CalendarEvent(
     val id: String,
     val title: String,
     val start: String,
-    val end: String
+    val end: String,
+    // to ensure EventData.kt can hold event location info
+    val location: String? = null
 )
