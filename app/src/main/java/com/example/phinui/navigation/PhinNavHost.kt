@@ -15,6 +15,7 @@ import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.data.events.EventData
 import com.example.phinui.screens.CalendarScreen
+import com.example.phinui.screens.MapScreen
 import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.FavoritesScreen
 import com.example.phinui.ui.screens.HomeScreen
@@ -102,6 +103,9 @@ fun PhinNavHost(
                 savedEvents = savedEvents,
                 calendarViewModel = calendarViewModel
             )
+        }
+        composable(Routes.MAP) {
+            MapScreen(navController = navController)
         }
     }
 }

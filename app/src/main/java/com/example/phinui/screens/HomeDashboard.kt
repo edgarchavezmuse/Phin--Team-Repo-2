@@ -18,7 +18,8 @@ fun HomeDashboard(
 
     // makes the xx icons clickable
     onOpenEvents: () -> Unit,
-    onOpenCalendar: () -> Unit
+    onOpenCalendar: () -> Unit,
+    onOpenMap: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(40.dp),
@@ -30,7 +31,7 @@ fun HomeDashboard(
             HomeActionItem(
                 icon = Icons.Default.LocationOn,
                 label = "Map",
-                onClick = { }
+                onClick = onOpenMap
             )
 
             HomeActionItem(
