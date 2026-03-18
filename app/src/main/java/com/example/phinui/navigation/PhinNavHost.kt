@@ -99,9 +99,16 @@ fun PhinNavHost(
         }
 
         composable(Routes.CALENDAR) {
+            // to pass to onClick for removing events
+            val selectedEvent = remember { mutableStateOf<CalendarEvent?>(null) }
+            val showRemoveDialog = remember { mutableStateOf(false) }
             CalendarScreen(
                 savedEvents = savedEvents,
-                calendarViewModel = calendarViewModel
+                calendarViewModel = calendarViewModel,
+                onClick = { event ->
+                    selectedEvent.value = event
+                    showRemoveDialog.value = true
+                }
             )
         }
         composable(Routes.MAP) {

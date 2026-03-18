@@ -1,8 +1,11 @@
 package com.example.phinui.screens
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,7 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -20,7 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.viewmodel.CalendarViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -35,10 +47,18 @@ private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM 
 fun CalendarScreen(
     savedEvents: List<CalendarEvent>,
     modifier: Modifier = Modifier,
-    calendarViewModel: CalendarViewModel
+    calendarViewModel: CalendarViewModel,
+    onClick: (CalendarEvent) -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as Activity
+
+    // Variables for removing events from local calendar
+    val showRemoveDialog = remember { mutableStateOf(false) }
+    val selectedEvent = remember { mutableStateOf<CalendarEvent?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val displayedEvents = remember { mutableStateListOf<CalendarEvent?>() }
+    val storage = CalendarStorage(context)
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken
@@ -263,6 +283,7 @@ fun CalendarScreen(
                     ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { onClick(event) }
                             .padding(vertical = 6.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
@@ -295,6 +316,54 @@ fun CalendarScreen(
                                 )
                             }
                         }
+                    }
+
+                    // Removing local events from calendar
+                    if (showRemoveDialog.value && selectedEvent.value != null) {
+
+                        // Show dialog box for confirming the removal of the event
+                        AlertDialog(
+                            onDismissRequest = { showRemoveDialog.value = false},
+                            title = { Text("Remove Event") },
+                            text = { Text("Would you like to remove \"${selectedEvent.value!!.title}\" from the calendar?") },
+
+                            // If user taps 'yes' for removal of event
+                            confirmButton = {
+                                Button(onClick = {
+                                    // Ensure the selected event is not null
+                                    selectedEvent.value?.let { event ->
+                                        // Remove from CalendarStorage
+                                        coroutineScope.launch(Dispatchers.IO) {
+                                            storage.removeEvent(event)
+
+                                            // Update calendar screen
+                                            val updatedEvents = storage.loadEvents()
+                                            withContext(Dispatchers.Main) {
+                                                displayedEvents.clear()
+                                                displayedEvents.addAll(updatedEvents)
+
+                                                // Display confirmation message
+                                                Toast.makeText(
+                                                    context, "${event.title} removed from calendar", Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    }
+
+                                    // Close dialog box
+                                    showRemoveDialog.value = false
+                                } ) {
+                                    // Confirm button for removing event
+                                    Text("Yes")
+                                }
+                            },
+                            // Canceling the removal of event request
+                            dismissButton = {
+                                Button(onClick = { showRemoveDialog.value = false }) {
+                                    Text("No")
+                                }
+                            }
+                        )
                     }
                 }
             }
