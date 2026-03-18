@@ -1,6 +1,7 @@
 package com.example.phinui.ui.navigation
 
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -23,7 +24,9 @@ import com.example.phinui.ui.screens.ProfileScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
+import com.example.phinui.viewmodel.CalendarViewModelFactory
 
 @Composable
 fun PhinNavHost(
@@ -35,7 +38,6 @@ fun PhinNavHost(
     val storeEvent = remember { CalendarStorage(context) }
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
-    val calendarViewModel: CalendarViewModel = viewModel()
 
     //
     LaunchedEffect(Unit) {
@@ -99,11 +101,30 @@ fun PhinNavHost(
         }
 
         composable(Routes.CALENDAR) {
+
+            // setup for ViewModelFactory
+            val context = LocalContext.current
+            val activity = context as ComponentActivity
+
+            val reminderScheduler = remember {
+                ReminderScheduler(context.applicationContext)
+            }
+
+            val factory = remember {
+                CalendarViewModelFactory(reminderScheduler)
+            }
+
+            val calendarViewModel: CalendarViewModel = viewModel(
+                viewModelStoreOwner = activity, // object that owns the ViewModel
+                factory = factory
+            )
+
             CalendarScreen(
                 savedEvents = savedEvents,
                 calendarViewModel = calendarViewModel
             )
         }
+
         composable(Routes.MAP) {
             MapScreen(navController = navController)
         }

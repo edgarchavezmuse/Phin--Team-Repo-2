@@ -10,16 +10,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.notifications.ExactAlarmPermissionRequest
 import com.example.phinui.viewmodel.CalendarViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -39,6 +38,9 @@ fun CalendarScreen(
 ) {
     val context = LocalContext.current
     val activity = context as Activity
+
+    // to trigger permission request if alarm permission is granted
+    ExactAlarmPermissionRequest()
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken

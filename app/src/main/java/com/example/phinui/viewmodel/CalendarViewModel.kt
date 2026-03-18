@@ -8,13 +8,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.GoogleCalendarRepository
+import com.example.phinui.notifications.ReminderScheduler
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 
 class CalendarViewModel(
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
     //  Authorization + calendar data state
@@ -154,10 +156,26 @@ class CalendarViewModel(
                     zone = ZoneId.systemDefault()
                 )
 
+                // store previous events to track removed ones
+                val oldEventIds = eventsGroupedByDate.values.flatten().map { it.id }.toSet()
+
                 eventsGroupedByDate = groupEventsByDateForWeek(
                     events = events,
                     weekStartDate = currentWeekStartDate
                 )
+
+                // schedule reminders for each event
+                val newEvents = eventsGroupedByDate.values.flatten()
+                val newEventIds = newEvents.map { it.id }.toSet()
+
+                newEvents.forEach { event ->
+                    reminderScheduler.scheduleReminder(event)
+                }
+
+                // cancel reminders for removed events
+                (oldEventIds - newEventIds).forEach { removedId ->
+                    reminderScheduler.cancelReminder(removedId)
+                }
 
             } catch (e: Exception) {
 
