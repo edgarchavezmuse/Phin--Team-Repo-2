@@ -23,7 +23,7 @@ object NotificationHelper {
         eventId: String,
     ) {
 
-        val channelId = "reminders"
+        val channelId = "reminders_v2"
 
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -85,8 +85,7 @@ object NotificationHelper {
 
                 manager.createNotificationChannel(channel)
             }
-        }
-        else {
+        } else {
             Log.d("NotifDebug", "Unable to create notification channels.")
         }
     }
@@ -124,7 +123,7 @@ object NotificationHelper {
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
-            ) {
+        ) {
             Log.d("NotifDebug", "Permission not granted to send notifications")
             return
         }
