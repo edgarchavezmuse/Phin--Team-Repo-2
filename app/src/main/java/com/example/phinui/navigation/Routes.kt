@@ -7,6 +7,6 @@ object Routes {
     const val PROFILE = "profile"
     const val EVENTS = "events"
     const val CALENDAR = "calendar"
-    cont val ADD_EVENT = "add_event"
+    const val ADD_EVENT = "add_event"
     const val MAP = "map"
 }
