@@ -108,7 +108,9 @@ fun PhinNavHost(
                 onClick = { event ->
                     selectedEvent.value = event
                     showRemoveDialog.value = true
-                }
+                },
+                selectedEvent = selectedEvent,
+                showRemoveDialog = showRemoveDialog
             )
         }
         composable(Routes.MAP) {
