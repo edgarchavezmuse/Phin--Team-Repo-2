@@ -5,9 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,15 +16,15 @@ import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.data.events.EventData
 import com.example.phinui.screens.CalendarScreen
-import com.example.phinui.screens.MapScreen
+import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.FavoritesScreen
 import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
+import com.example.phinui.viewmodel.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.phinui.viewmodel.CalendarViewModel
+import com.example.phinui.screens.MapScreen
 
 @Composable
 fun PhinNavHost(
@@ -34,13 +35,25 @@ fun PhinNavHost(
     val context = LocalContext.current
     val storeEvent = remember { CalendarStorage(context) }
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
+    val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
     val calendarViewModel: CalendarViewModel = viewModel()
 
     //
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
+
+        savedEvents.clear()
         savedEvents.addAll(loaded)
+
+        allEvents.clear()
+        allEvents.addAll(EventData.eventList)
+
+        loaded.forEach { savedEvent ->
+            if (allEvents.none { it.id == savedEvent.id }) {
+                allEvents.add(savedEvent)
+            }
+        }
     }
 
     NavHost(
@@ -62,19 +75,13 @@ fun PhinNavHost(
         }
 
         composable(Routes.EVENTS) {
-            val allEvents = remember {
-                mutableStateListOf<CalendarEvent>().apply {
-                    addAll(EventData.eventList)
-                }
-            }
-
             EventsScreen(
                 events = allEvents,
                 onEventClick = { event ->
                     if (savedEvents.none { it.id == event.id }) {
                         savedEvents.add(event)
                         // Save to persistent storage
-                        coroutineScope.launch(Dispatchers.IO){
+                        coroutineScope.launch(Dispatchers.IO) {
                             storeEvent.saveEvent(event)
                         }
 
@@ -84,7 +91,6 @@ fun PhinNavHost(
                             "${event.title} added to your calendar.",
                             Toast.LENGTH_SHORT
                         ).show()
-
                     } else {
                         // notification for event existing in calendar
                         Toast.makeText(
@@ -92,7 +98,11 @@ fun PhinNavHost(
                             "${event.title} already in your calendar.",
                             Toast.LENGTH_SHORT
                         ).show()
-
+                    }
+                },
+                onAddEventClick = {
+                    navController.navigate(Routes.ADD_EVENT) {
+                        launchSingleTop = true
                     }
                 }
             )
@@ -102,6 +112,27 @@ fun PhinNavHost(
             CalendarScreen(
                 savedEvents = savedEvents,
                 calendarViewModel = calendarViewModel
+            )
+        }
+
+        composable(Routes.ADD_EVENT) {
+            AddEventScreen(
+                onSaveEvent = { newEvent ->
+                    if (allEvents.none { it.id == newEvent.id }) {
+                        allEvents.add(newEvent)
+                    }
+
+                    if (savedEvents.none { it.id == newEvent.id }) {
+                        savedEvents.add(newEvent)
+                    }
+
+                    coroutineScope.launch(Dispatchers.IO) {
+                        storeEvent.saveEvent(newEvent)
+                    }
+                },
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
         composable(Routes.MAP) {
