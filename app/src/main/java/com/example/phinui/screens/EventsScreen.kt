@@ -12,9 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,29 +33,34 @@ import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.theme.Background
+import com.example.phinui.ui.theme.HeaderRed
+import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.SelectedPill
 
 @Composable
-fun EventsScreen(events: List<CalendarEvent>, onEventClick: (CalendarEvent) -> Unit) {
-
+fun EventsScreen(
+    events: List<CalendarEvent>,
+    onEventClick: (CalendarEvent) -> Unit,
+    onAddEventClick: () -> Unit
+) {
     // variables for showing 'add to calendar' message
-    var showDialog by remember {mutableStateOf(false) }
-    var selectedEvent by remember {mutableStateOf<CalendarEvent?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedEvent by remember { mutableStateOf<CalendarEvent?>(null) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
-            .padding(top = 24.dp),
-        contentAlignment = Alignment.TopCenter
+            .padding(top = 24.dp)
     ) {
-        // LazyColumn allows scroll effect
+        // Elements must be wrapped in "item{}" to make scrollable work
         LazyColumn(
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Elements must be wrapped in "item{}" to make scrollable work
             item {
                 Text(
                     text = "Events",
@@ -81,27 +90,45 @@ fun EventsScreen(events: List<CalendarEvent>, onEventClick: (CalendarEvent) -> U
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
+
+        FloatingActionButton(
+            onClick = onAddEventClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 20.dp),
+            containerColor = HeaderRed,
+            contentColor = HeaderText
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add Event"
+            )
+        }
     }
 
     // 'add to calendar' message box
-    if(showDialog && selectedEvent != null) {
+    if (showDialog && selectedEvent != null) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Add to calendar?") },
             text = { Text("Do you want to add \"${selectedEvent!!.title}\" to your calendar?") },
             confirmButton = {
-                Button (onClick = {
-                    onEventClick(selectedEvent!!)
-                    showDialog = false
-                } ) {
-                    Text ("Yes")
+                Button(
+                    onClick = {
+                        onEventClick(selectedEvent!!)
+                        showDialog = false
+                    }
+                ) {
+                    Text("Yes")
                 }
             },
             dismissButton = {
-                Button (onClick = {
-                    showDialog = false
-                }) {
-                    Text ("No")
+                Button(
+                    onClick = {
+                        showDialog = false
+                    }
+                ) {
+                    Text("No")
                 }
             }
         )
@@ -113,7 +140,7 @@ fun EventCard(
     title: String,
     dateTime: String,
     location: String,
-    onClick:() -> Unit
+    onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -121,7 +148,6 @@ fun EventCard(
             .clip(RoundedCornerShape(16.dp))
             .background(SelectedPill)
             .padding(20.dp)
-            // makes the events clickable
             .clickable { onClick() }
     ) {
         Text(
