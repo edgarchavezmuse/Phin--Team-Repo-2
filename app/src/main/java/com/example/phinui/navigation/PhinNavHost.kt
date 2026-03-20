@@ -134,5 +134,8 @@ fun PhinNavHost(
                 }
             )
         }
+        composable(Routes.MAP) {
+            MapScreen(navController = navController)
+        }
     }
 }
