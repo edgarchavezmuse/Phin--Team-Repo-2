@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -109,9 +110,18 @@ fun PhinNavHost(
         }
 
         composable(Routes.CALENDAR) {
+            // to pass to onClick for removing events
+            val selectedEvent = remember { mutableStateOf<CalendarEvent?>(null) }
+            val showRemoveDialog = remember { mutableStateOf(false) }
             CalendarScreen(
                 savedEvents = savedEvents,
-                calendarViewModel = calendarViewModel
+                calendarViewModel = calendarViewModel,
+                onClick = { event ->
+                    selectedEvent.value = event
+                    showRemoveDialog.value = true
+                },
+                selectedEvent = selectedEvent,
+                showRemoveDialog = showRemoveDialog
             )
         }
 
