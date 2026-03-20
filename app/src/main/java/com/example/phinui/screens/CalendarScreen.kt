@@ -1,7 +1,6 @@
 package com.example.phinui.screens
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,12 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,16 +25,16 @@ import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.viewmodel.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 
 // Data formatters
@@ -69,6 +63,7 @@ fun CalendarScreen(
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken
+    val userEmail = calendarViewModel.userEmail
     val isLoadingEvents = calendarViewModel.isLoadingEvents
     val errorMessage = calendarViewModel.errorMessage
     val eventsGroupedByDate = calendarViewModel.eventsGroupedByDate
@@ -97,6 +92,24 @@ fun CalendarScreen(
 
         // Save token & load this weeks events
         calendarViewModel.onAuthorizationSuccess(tokenFromResult)
+    }
+
+    /*
+     * Auto-refresh calendar when screen is reopened
+     * Uses ON_RESUME so it updates when navigating back or returning to the app.
+     */
+    DisposableEffect(lifecycleOwner, googleAccessToken) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && googleAccessToken != null) {
+                calendarViewModel.refreshEvents()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Main Calendar UI Layout
@@ -137,10 +150,9 @@ fun CalendarScreen(
         // Connect / Refresh row
         // - If not connected: show "Connect Google Calendar"
         // - If connected: show "Refresh" + status text
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (googleAccessToken == null) {
                 Button(
@@ -162,32 +174,39 @@ fun CalendarScreen(
                     }
                 ) { Text("Connect Google Calendar") }
             } else {
-                // Manual Reload events
-                OutlinedButton(
-                    onClick = {
-                        calendarViewModel.refreshEvents()
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            calendarViewModel.refreshEvents()
+                        },
+                        enabled = !isLoadingEvents
+                    ) {
+                        Text(if (isLoadingEvents) "Refreshing..." else "Refresh")
                     }
-                ) { Text("Refresh") }
 
-                OutlinedButton(
-                    onClick = {
-                        val credentialManager = CredentialManager.create(activity)
+                    OutlinedButton(
+                        onClick = {
+                            val credentialManager = CredentialManager.create(activity)
 
-                        coroutineScope.launch {
-                            try {
-                                credentialManager.clearCredentialState(
-                                    ClearCredentialStateRequest()
-                                )
-                            } catch (_: Exception) {
+                            coroutineScope.launch {
+                                try {
+                                    credentialManager.clearCredentialState(
+                                        ClearCredentialStateRequest()
+                                    )
+                                } catch (_: Exception) {
+                                }
+
+                                calendarViewModel.signOut()
                             }
-
-                            calendarViewModel.signOut()
                         }
-                    }
-                ) { Text("Sign Out") }
+                    ) { Text("Sign Out") }
+                }
 
                 Text(
-                    text = "Connected",
+                    text = userEmail?.let { "Signed in as $it" } ?: "Signed in",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
