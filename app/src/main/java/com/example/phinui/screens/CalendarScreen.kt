@@ -54,7 +54,6 @@ fun CalendarScreen(
     ExactAlarmPermissionRequest()
     // Variables for removing events from local calendar
     val coroutineScope = rememberCoroutineScope()
-    //val displayedEvents = remember { mutableStateListOf<CalendarEvent?>() }
     val storage = CalendarStorage(context)
 
     //  Authorization + calendar data state
