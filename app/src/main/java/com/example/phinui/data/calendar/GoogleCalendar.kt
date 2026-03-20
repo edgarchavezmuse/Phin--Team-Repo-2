@@ -82,7 +82,23 @@ object GoogleCalendarRepository {
                             ?: endObj?.optString("date")?.ifBlank { null }
                             ?: ""
 
-                        events.add(CalendarEvent(id, title, start, end))
+                        // for reminders
+                        val remindersList = mutableListOf<Int>()
+                        val remindersObj = item.optJSONObject("reminders")
+                        if (remindersObj != null) {
+                            val overrides = remindersObj.optJSONArray("overrides")
+                            if (overrides != null) {
+                                for (j in 0 until overrides.length()) {
+                                    val override = overrides.getJSONObject(j)
+                                    val minutes = override.optInt("minutes", -1)
+                                    if (minutes >= 0) {
+                                        remindersList.add(minutes)
+                                    }
+                                }
+                            }
+                        }
+
+                        events.add(CalendarEvent(id, title, start, end, reminderMinutes = remindersList))
                     }
                 }
 

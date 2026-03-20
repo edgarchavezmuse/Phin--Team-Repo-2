@@ -1,6 +1,7 @@
 package com.example.phinui.ui.navigation
 
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -22,10 +23,13 @@ import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.FavoritesScreen
 import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
-import com.example.phinui.viewmodel.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.example.phinui.notifications.ReminderScheduler
+import com.example.phinui.viewmodel.CalendarViewModel
+import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.screens.MapScreen
+
 
 @Composable
 fun PhinNavHost(
@@ -38,7 +42,6 @@ fun PhinNavHost(
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
     val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
-    val calendarViewModel: CalendarViewModel = viewModel()
 
     //
     LaunchedEffect(Unit) {
@@ -110,6 +113,24 @@ fun PhinNavHost(
         }
 
         composable(Routes.CALENDAR) {
+
+            // setup for ViewModelFactory
+            val context = LocalContext.current
+            val activity = context as ComponentActivity
+
+            val reminderScheduler = remember {
+                ReminderScheduler(context.applicationContext)
+            }
+
+            val factory = remember {
+                CalendarViewModelFactory(reminderScheduler)
+            }
+
+            val calendarViewModel: CalendarViewModel = viewModel(
+                viewModelStoreOwner = activity, // object that owns the ViewModel
+                factory = factory
+            )
+
             // to pass to onClick for removing events
             val selectedEvent = remember { mutableStateOf<CalendarEvent?>(null) }
             val showRemoveDialog = remember { mutableStateOf(false) }
@@ -145,6 +166,7 @@ fun PhinNavHost(
                 }
             )
         }
+
         composable(Routes.MAP) {
             MapScreen(navController = navController)
         }
