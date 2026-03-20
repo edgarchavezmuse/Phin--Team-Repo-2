@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.notifications.ExactAlarmPermissionRequest
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.viewmodel.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
@@ -56,9 +57,10 @@ fun CalendarScreen(
     val activity = context as Activity
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // to trigger permission request if alarm permission is granted
+    ExactAlarmPermissionRequest()
     // Variables for removing events from local calendar
     val coroutineScope = rememberCoroutineScope()
-    //val displayedEvents = remember { mutableStateListOf<CalendarEvent?>() }
     val storage = CalendarStorage(context)
 
     //  Authorization + calendar data state

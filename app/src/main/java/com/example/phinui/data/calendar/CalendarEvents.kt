@@ -6,5 +6,7 @@ data class CalendarEvent(
     val start: String,
     val end: String,
     // to ensure EventData.kt can hold event location info
-    val location: String? = null
+    val location: String? = null,
+    // for reminders set in google calendar
+    val reminderMinutes: List<Int> = emptyList()
 )
