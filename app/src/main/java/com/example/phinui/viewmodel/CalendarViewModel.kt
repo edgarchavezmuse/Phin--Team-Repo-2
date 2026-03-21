@@ -19,6 +19,10 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+sealed class AddEventResult {
+    data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
+    data object ShouldSaveLocally : AddEventResult()
+}
 class CalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val reminderScheduler: ReminderScheduler
@@ -147,6 +151,20 @@ class CalendarViewModel(
         // Clear persisted state used by this ViewModel
         savedStateHandle["googleAccessToken"] = null
         savedStateHandle["userEmail"] = null
+    }
+
+    // Adds event to Google or local calendar depending on sign-in state
+    suspend fun addEventToAppropriateCalendar(event: CalendarEvent): AddEventResult {
+        val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
+
+        val createdEvent = GoogleCalendarRepository.insertEvent(
+            accessToken = token,
+            event = event,
+            zone = ZoneId.systemDefault()
+        )
+
+        loadEventsForCurrentWeek()
+        return AddEventResult.AddedToGoogle(createdEvent)
     }
 
     /*
