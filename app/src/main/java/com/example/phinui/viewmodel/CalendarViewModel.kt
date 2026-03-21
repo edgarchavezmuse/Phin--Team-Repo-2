@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import com.example.phinui.data.calendar.CalendarSource
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
@@ -337,6 +338,26 @@ class CalendarViewModel(
 
         }
 
+    }
+
+    // Deletes google event
+    suspend fun deleteGoogleEvent(event: CalendarEvent) {
+        val token = googleAccessToken ?: throw IllegalStateException("Not signed in to Google Calendar.")
+
+        if (event.source != CalendarSource.GOOGLE) {
+            throw IllegalArgumentException("Only Google events can be deleted here.")
+        }
+
+        if (event.id.isBlank()) {
+            throw IllegalArgumentException("Missing Google event ID.")
+        }
+
+        GoogleCalendarRepository.deleteEvent(
+            accessToken = token,
+            eventId = event.id
+        )
+
+        loadEventsForCurrentWeek()
     }
 
 }

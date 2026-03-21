@@ -1,7 +1,6 @@
 package com.example.phinui.screens
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,8 +85,13 @@ fun CalendarScreen(
 
     // Merge Google events + local saved events for display only
     val googleEvents = eventsGroupedByDate.values.flatten()
-    val mergedEvents = (googleEvents + savedEvents)
+
+    // Enforces rule: if not signed in don't show google calendar events from saved events
+    val visibleSavedEvents = savedEvents.filter { it.source == CalendarSource.LOCAL }
+
+    val mergedEvents = (googleEvents + visibleSavedEvents)
         .distinctBy { "${it.title.trim().lowercase()}-${it.start.take(16)}" }
+
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
 
     //  Authorization launcher (opens Google consent UI)
@@ -394,14 +398,42 @@ fun CalendarScreen(
                     // Check if Google Event
                     val eventToDelete = selectedEvent.value!!
                     val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
-                    if (isGoogleEvent == true) {
+                    if (isGoogleEvent) {
                         AlertDialog(
                             onDismissRequest = { showRemoveDialog.value = false },
-                            title = { Text("Google Calendar Event") },
-                            text = { Text("\"${eventToDelete.title}\" is from your Google Calendar. Please update your Google Calendar if you'd like to remove it.") },
+                            title = { Text("Remove Event") },
+                            text = { Text("Would you like to remove \"${eventToDelete.title}\" from your Google Calendar?") },
                             confirmButton = {
-                                Button(onClick = { showRemoveDialog.value = false} ) {
-                                    Text("Ok")
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            try {
+                                                calendarViewModel.deleteGoogleEvent(eventToDelete)
+                                                Toast.makeText(
+                                                    context,
+                                                    "${eventToDelete.title} removed from Google Calendar",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } catch (e: Exception) {
+                                                Toast.makeText(
+                                                    context,
+                                                    e.message ?: "Failed to remove Google event.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } finally {
+                                                showRemoveDialog.value = false
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Text("Yes")
+                                }
+                            },
+                            dismissButton = {
+                                Button(
+                                    onClick = { showRemoveDialog.value = false }
+                                ) {
+                                    Text("No")
                                 }
                             }
                         )
@@ -411,7 +443,7 @@ fun CalendarScreen(
                         AlertDialog(
                             onDismissRequest = { showRemoveDialog.value = false },
                             title = { Text("Remove Event") },
-                            text = { Text("Would you like to remove \"${eventToDelete.title}\" from the calendar?") },
+                            text = { Text("Would you like to remove \"${eventToDelete.title}\" from your local calendar?") },
 
                             // If user taps 'yes' for removal of event
                             confirmButton = {
