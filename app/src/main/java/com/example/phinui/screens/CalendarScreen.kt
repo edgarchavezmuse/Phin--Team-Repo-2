@@ -30,6 +30,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import com.example.phinui.data.calendar.eventDate
+import com.example.phinui.data.calendar.formatEventTimeLine
+import com.example.phinui.data.calendar.formatReminderText
+import com.example.phinui.data.calendar.CalendarSource
 
 
 // Data formatters
@@ -49,6 +61,7 @@ fun CalendarScreen(
 ) {
     val context = LocalContext.current
     val activity = context as Activity
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // to trigger permission request if alarm permission is granted
     ExactAlarmPermissionRequest()
@@ -58,6 +71,7 @@ fun CalendarScreen(
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken
+    val userEmail = calendarViewModel.userEmail
     val isLoadingEvents = calendarViewModel.isLoadingEvents
     val errorMessage = calendarViewModel.errorMessage
     val eventsGroupedByDate = calendarViewModel.eventsGroupedByDate
@@ -71,7 +85,8 @@ fun CalendarScreen(
 
     // Merge Google events + local saved events for display only
     val googleEvents = eventsGroupedByDate.values.flatten()
-    val mergedEvents = (googleEvents + savedEvents).distinctBy { it.id }
+    val mergedEvents = (googleEvents + savedEvents)
+        .distinctBy { "${it.source}-${it.id}" }
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
 
     //  Authorization launcher (opens Google consent UI)
@@ -86,6 +101,24 @@ fun CalendarScreen(
 
         // Save token & load this weeks events
         calendarViewModel.onAuthorizationSuccess(tokenFromResult)
+    }
+
+    /*
+     * Auto-refresh calendar when screen is reopened
+     * Uses ON_RESUME so it updates when navigating back or returning to the app.
+     */
+    DisposableEffect(lifecycleOwner, googleAccessToken) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && googleAccessToken != null) {
+                calendarViewModel.refreshEvents()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Main Calendar UI Layout
@@ -126,10 +159,9 @@ fun CalendarScreen(
         // Connect / Refresh row
         // - If not connected: show "Connect Google Calendar"
         // - If connected: show "Refresh" + status text
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (googleAccessToken == null) {
                 Button(
@@ -151,21 +183,39 @@ fun CalendarScreen(
                     }
                 ) { Text("Connect Google Calendar") }
             } else {
-                // Manual Reload events
-                OutlinedButton(
-                    onClick = {
-                        calendarViewModel.refreshEvents()
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            calendarViewModel.refreshEvents()
+                        },
+                        enabled = !isLoadingEvents
+                    ) {
+                        Text(if (isLoadingEvents) "Refreshing..." else "Refresh")
                     }
-                ) { Text("Refresh") }
 
-                OutlinedButton(
-                    onClick = {
-                        calendarViewModel.signOut()
-                    }
-                ) { Text("Sign Out") }
+                    OutlinedButton(
+                        onClick = {
+                            val credentialManager = CredentialManager.create(activity)
+
+                            coroutineScope.launch {
+                                try {
+                                    credentialManager.clearCredentialState(
+                                        ClearCredentialStateRequest()
+                                    )
+                                } catch (_: Exception) {
+                                }
+
+                                calendarViewModel.signOut()
+                            }
+                        }
+                    ) { Text("Sign Out") }
+                }
 
                 Text(
-                    text = "Connected",
+                    text = userEmail?.let { "Signed in as $it" } ?: "Signed in",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -278,6 +328,10 @@ fun CalendarScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(Modifier.padding(14.dp)) {
+
+                            val isGoogleEvent = event.source == CalendarSource.GOOGLE
+
+                            // Title
                             Text(
                                 text = event.title.ifBlank { "(No title)" },
                                 style = MaterialTheme.typography.titleMedium,
@@ -285,7 +339,6 @@ fun CalendarScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
 
-                            // Format "HH:MM – HH:MM" or "All day" depending on event type
                             val timeLine = formatEventTimeLine(event)
                             if (timeLine.isNotBlank()) {
                                 Spacer(Modifier.height(6.dp))
@@ -296,14 +349,39 @@ fun CalendarScreen(
                                 )
                             }
 
-                            // Display location of event
-                            event.location?.let {
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            // Reminders
+                            if (isGoogleEvent) {
+                                val reminderText = formatReminderText(event.reminderMinutes)
+                                if (reminderText != null) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = "Reminders: $reminderText",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // Location
+                            event.location?.let { location ->
+                                Spacer(Modifier.height(6.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocationOn,
+                                        contentDescription = "Location",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = location,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
@@ -371,46 +449,5 @@ private fun groupEventsByDateForWeek(
         events.filter { event ->
             eventDate(event) == date
         }
-    }
-}
-
-private fun eventDate(event: CalendarEvent): LocalDate? {
-    val start = event.start
-    if (start.isBlank()) return null
-
-    return try {
-        if (start.contains("T")) {
-            LocalDate.parse(start.substring(0, 10))
-        } else {
-            LocalDate.parse(start)
-        }
-    } catch (_: Exception) {
-        null
-    }
-}
-
-// Event display helper
-private fun formatEventTimeLine(event: CalendarEvent): String {
-    val startString = event.start
-    val endString = event.end
-
-    if (startString.isBlank()) return ""
-
-    // All-day events have only "date" not time (no 'T')
-    if (!startString.contains('T')) return "All day"
-
-    // Pull out HH:MM from HH:MM:SS
-    fun extractHourMinute(isoDateTime: String): String {
-        if (!isoDateTime.contains('T') || isoDateTime.length < 16) return ""
-        return isoDateTime.substring(11, 16) // "HH:MM"
-    }
-
-    val startTime = extractHourMinute(startString)
-    val endTime = if (endString.isNotBlank()) extractHourMinute(endString) else ""
-
-    return when {
-        startTime.isNotBlank() && endTime.isNotBlank() -> "$startTime – $endTime"
-        startTime.isNotBlank() -> startTime
-        else -> ""
     }
 }
