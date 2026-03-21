@@ -1,3 +1,4 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -11,13 +12,21 @@ android {
         }
     }
 
+    val localProperties = Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+
+    val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
     defaultConfig {
         applicationId = "com.example.phinui"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -64,4 +73,13 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation("androidx.work:work-runtime-ktx:2.11.1")
     implementation("androidx.datastore:datastore-preferences:1.1.0")
+
+
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    implementation("com.google.maps.android:maps-compose:6.4.0")
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.2")
+
+
 }

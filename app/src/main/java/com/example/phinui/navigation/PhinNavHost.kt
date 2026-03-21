@@ -25,7 +25,7 @@ import com.example.phinui.ui.screens.ProfileScreen
 import com.example.phinui.viewmodel.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import com.example.phinui.screens.MapScreen
+import com.example.phinui.ui.screens.MapScreen
 
 @Composable
 fun PhinNavHost(
@@ -146,7 +146,7 @@ fun PhinNavHost(
             )
         }
         composable(Routes.MAP) {
-            MapScreen(navController = navController)
+            MapScreen()
         }
     }
 }
