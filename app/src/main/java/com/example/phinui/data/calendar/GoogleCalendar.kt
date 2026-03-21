@@ -98,7 +98,19 @@ object GoogleCalendarRepository {
                             }
                         }
 
-                        events.add(CalendarEvent(id, title, start, end, reminderMinutes = remindersList))
+                        val location = item.optString("location").ifBlank { null }
+
+                        events.add(
+                            CalendarEvent(
+                                id = id,
+                                title = title,
+                                start = start,
+                                end = end,
+                                location = location,
+                                reminderMinutes = remindersList,
+                                source = CalendarSource.GOOGLE
+                            )
+                        )
                     }
                 }
 

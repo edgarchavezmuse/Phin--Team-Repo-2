@@ -36,6 +36,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import com.example.phinui.data.calendar.eventDate
+import com.example.phinui.data.calendar.formatEventTimeLine
+import com.example.phinui.data.calendar.formatReminderText
+import com.example.phinui.data.calendar.CalendarSource
 
 
 // Data formatters
@@ -79,7 +85,8 @@ fun CalendarScreen(
 
     // Merge Google events + local saved events for display only
     val googleEvents = eventsGroupedByDate.values.flatten()
-    val mergedEvents = (googleEvents + savedEvents).distinctBy { it.id }
+    val mergedEvents = (googleEvents + savedEvents)
+        .distinctBy { "${it.source}-${it.id}" }
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
 
     //  Authorization launcher (opens Google consent UI)
@@ -321,6 +328,10 @@ fun CalendarScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(Modifier.padding(14.dp)) {
+
+                            val isGoogleEvent = event.source == CalendarSource.GOOGLE
+
+                            // Title
                             Text(
                                 text = event.title.ifBlank { "(No title)" },
                                 style = MaterialTheme.typography.titleMedium,
@@ -328,7 +339,6 @@ fun CalendarScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
 
-                            // Format "HH:MM – HH:MM" or "All day" depending on event type
                             val timeLine = formatEventTimeLine(event)
                             if (timeLine.isNotBlank()) {
                                 Spacer(Modifier.height(6.dp))
@@ -339,14 +349,47 @@ fun CalendarScreen(
                                 )
                             }
 
-                            // Display location of event
-                            event.location?.let {
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            // Reminders
+                            if (isGoogleEvent) {
+                                val reminderText = formatReminderText(event.reminderMinutes)
+                                if (reminderText != null) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = "Reminders: $reminderText",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // Location
+                            event.location?.let { location ->
+                                Spacer(Modifier.height(6.dp))
+
+                                if (isGoogleEvent) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocationOn,
+                                            contentDescription = "Location",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = location,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = location,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -414,46 +457,5 @@ private fun groupEventsByDateForWeek(
         events.filter { event ->
             eventDate(event) == date
         }
-    }
-}
-
-private fun eventDate(event: CalendarEvent): LocalDate? {
-    val start = event.start
-    if (start.isBlank()) return null
-
-    return try {
-        if (start.contains("T")) {
-            LocalDate.parse(start.substring(0, 10))
-        } else {
-            LocalDate.parse(start)
-        }
-    } catch (_: Exception) {
-        null
-    }
-}
-
-// Event display helper
-private fun formatEventTimeLine(event: CalendarEvent): String {
-    val startString = event.start
-    val endString = event.end
-
-    if (startString.isBlank()) return ""
-
-    // All-day events have only "date" not time (no 'T')
-    if (!startString.contains('T')) return "All day"
-
-    // Pull out HH:MM from HH:MM:SS
-    fun extractHourMinute(isoDateTime: String): String {
-        if (!isoDateTime.contains('T') || isoDateTime.length < 16) return ""
-        return isoDateTime.substring(11, 16) // "HH:MM"
-    }
-
-    val startTime = extractHourMinute(startString)
-    val endTime = if (endString.isNotBlank()) extractHourMinute(endString) else ""
-
-    return when {
-        startTime.isNotBlank() && endTime.isNotBlank() -> "$startTime – $endTime"
-        startTime.isNotBlank() -> startTime
-        else -> ""
     }
 }
