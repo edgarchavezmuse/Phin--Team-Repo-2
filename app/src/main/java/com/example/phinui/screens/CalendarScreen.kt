@@ -1,6 +1,7 @@
 package com.example.phinui.screens
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -390,49 +391,68 @@ fun CalendarScreen(
                 // Removing local events from calendar
                 if (showRemoveDialog.value && selectedEvent.value != null) {
 
-                    // Show dialog box for confirming the removal of the event
-                    AlertDialog(
-                        onDismissRequest = { showRemoveDialog.value = false},
-                        title = { Text("Remove Event") },
-                        text = { Text("Would you like to remove \"${selectedEvent.value!!.title}\" from the calendar?") },
+                    // Check if Google Event
+                    val eventToDelete = selectedEvent.value!!
+                    val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
+                    if (isGoogleEvent == true) {
+                        AlertDialog(
+                            onDismissRequest = { showRemoveDialog.value = false },
+                            title = { Text("Google Calendar Event") },
+                            text = { Text("\"${eventToDelete.title}\" is from your Google Calendar. Please update your Google Calendar if you'd like to remove it.") },
+                            confirmButton = {
+                                Button(onClick = { showRemoveDialog.value = false} ) {
+                                    Text("Ok")
+                                }
+                            }
+                        )
+                    }
+                    else {
+                        // Show dialog box for confirming the removal of the event
+                        AlertDialog(
+                            onDismissRequest = { showRemoveDialog.value = false },
+                            title = { Text("Remove Event") },
+                            text = { Text("Would you like to remove \"${eventToDelete.title}\" from the calendar?") },
 
-                        // If user taps 'yes' for removal of event
-                        confirmButton = {
-                            Button(onClick = {
-                                // Ensure the selected event is not null
-                                selectedEvent.value?.let { event ->
-                                    // Remove from CalendarStorage
-                                    coroutineScope.launch(Dispatchers.IO) {
-                                        storage.removeEvent(event)
+                            // If user taps 'yes' for removal of event
+                            confirmButton = {
+                                Button(onClick = {
+                                    // Ensure the selected event is not null selectedEvent.value
+                                    eventToDelete.let { event ->
+                                        // Remove from CalendarStorage
+                                        coroutineScope.launch(Dispatchers.IO) {
+                                            storage.removeEvent(event)
 
-                                        // Update calendar screen
-                                        val updatedEvents = storage.loadEvents()
-                                        withContext(Dispatchers.Main) {
-                                            savedEvents.clear()
-                                            savedEvents.addAll(updatedEvents)
+                                            // Update calendar screen
+                                            val updatedEvents = storage.loadEvents()
+                                            withContext(Dispatchers.Main) {
+                                                savedEvents.clear()
+                                                savedEvents.addAll(updatedEvents)
 
-                                            // Display confirmation message
-                                            Toast.makeText(
-                                                context, "${event.title} removed from calendar", Toast.LENGTH_SHORT
-                                            ).show()
+                                                // Display confirmation message
+                                                Toast.makeText(
+                                                    context,
+                                                    "${event.title} removed from calendar",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
                                         }
                                     }
-                                }
 
-                                // Close dialog box
-                                showRemoveDialog.value = false
-                            } ) {
-                                // Confirm button for removing event
-                                Text("Yes")
+                                    // Close dialog box
+                                    showRemoveDialog.value = false
+                                }) {
+                                    // Confirm button for removing event
+                                    Text("Yes")
+                                }
+                            },
+                            // Canceling the removal of event request
+                            dismissButton = {
+                                Button(onClick = { showRemoveDialog.value = false }) {
+                                    Text("No")
+                                }
                             }
-                        },
-                        // Canceling the removal of event request
-                        dismissButton = {
-                            Button(onClick = { showRemoveDialog.value = false }) {
-                                Text("No")
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
