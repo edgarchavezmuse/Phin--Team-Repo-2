@@ -8,10 +8,8 @@ import java.time.format.DateTimeFormatter
 // Formatter for date-only strings like "2026-03-20"
 private val localDateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-/*
- * Returns the LocalDate that an event belongs to.
- * Delegates to different parsing logic depending on event source.
- */
+// Returns the LocalDate that an event belongs to.
+
 fun eventDate(event: CalendarEvent): LocalDate? {
     return when (event.source) {
         CalendarSource.GOOGLE -> googleEventDate(event)
@@ -19,12 +17,7 @@ fun eventDate(event: CalendarEvent): LocalDate? {
     }
 }
 
-/*
- * Extracts the date from a Google Calendar event.
- * Handles both:
- * - dateTime values with timezone offset
- * - date-only values for all-day events
- */
+// Extracts the date from a Google Calendar event.
 private fun googleEventDate(event: CalendarEvent): LocalDate? {
     val start = event.start
     if (start.isBlank()) return null
@@ -40,12 +33,7 @@ private fun googleEventDate(event: CalendarEvent): LocalDate? {
     }
 }
 
-/*
- * Extracts the date from a locally stored event.
- * Handles both:
- * - local dateTime values like "2026-03-09T09:00"
- * - date-only values for all-day events
- */
+// Extracts the date from a locally stored event.
 private fun localEventDate(event: CalendarEvent): LocalDate? {
     val start = event.start
     if (start.isBlank()) return null
@@ -61,12 +49,7 @@ private fun localEventDate(event: CalendarEvent): LocalDate? {
     }
 }
 
-/*
- * Returns the formatted time string shown in the UI for an event.
- * Example outputs:
- * - "9:00 AM - 10:00 AM"
- * - "All day"
- */
+// Returns the formatted time string shown in the UI for an event.
 fun formatEventTimeLine(event: CalendarEvent): String {
     return when (event.source) {
         CalendarSource.GOOGLE -> formatGoogleEventTimeLine(event)
@@ -74,11 +57,7 @@ fun formatEventTimeLine(event: CalendarEvent): String {
     }
 }
 
-/*
- * Formats the time range for a Google event.
- * Google timed events include timezone offsets, so they are parsed
- * with OffsetDateTime.
- */
+// Formats the time range for a Google event.
 private fun formatGoogleEventTimeLine(event: CalendarEvent): String {
     val start = event.start
     val end = event.end
@@ -97,11 +76,7 @@ private fun formatGoogleEventTimeLine(event: CalendarEvent): String {
     }
 }
 
-/*
- * Formats the time range for a locally stored event.
- * Local timed events do not include timezone offsets, so they are parsed
- * with LocalDateTime.
- */
+// Formats the time range for a locally stored event.
 private fun formatLocalEventTimeLine(event: CalendarEvent): String {
     val start = event.start
     val end = event.end
