@@ -87,7 +87,7 @@ fun CalendarScreen(
     // Merge Google events + local saved events for display only
     val googleEvents = eventsGroupedByDate.values.flatten()
     val mergedEvents = (googleEvents + savedEvents)
-        .distinctBy { "${it.source}-${it.id}" }
+        .distinctBy { "${it.title.trim().lowercase()}-${it.start.take(16)}" }
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
 
     //  Authorization launcher (opens Google consent UI)

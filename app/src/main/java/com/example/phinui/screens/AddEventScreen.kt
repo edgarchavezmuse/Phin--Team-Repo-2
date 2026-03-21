@@ -101,7 +101,6 @@ fun AddEventScreen(
 
         Button(
             onClick = {
-
                 val newEvent = CalendarEvent(
                     id = System.currentTimeMillis().toString(),
                     title = eventName,
@@ -113,7 +112,6 @@ fun AddEventScreen(
                 )
 
                 onSaveEvent(newEvent)
-                onBackClick()
             }
         ) {
             Text("Save Event")

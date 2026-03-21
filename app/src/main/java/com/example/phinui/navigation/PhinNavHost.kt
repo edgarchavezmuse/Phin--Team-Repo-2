@@ -29,6 +29,8 @@ import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.screens.MapScreen
+import kotlinx.coroutines.withContext
+import com.example.phinui.viewmodel.AddEventResult
 
 
 @Composable
@@ -79,29 +81,133 @@ fun PhinNavHost(
         }
 
         composable(Routes.EVENTS) {
+            val context = LocalContext.current
+            val activity = context as ComponentActivity
+
+            val reminderScheduler = remember {
+                ReminderScheduler(context.applicationContext)
+            }
+
+            val factory = remember {
+                CalendarViewModelFactory(reminderScheduler)
+            }
+
+            val calendarViewModel: CalendarViewModel = viewModel(
+                viewModelStoreOwner = activity,
+                factory = factory
+            )
+
             EventsScreen(
                 events = allEvents,
                 onEventClick = { event ->
-                    if (savedEvents.none { it.id == event.id }) {
-                        savedEvents.add(event)
-                        // Save to persistent storage
-                        coroutineScope.launch(Dispatchers.IO) {
-                            storeEvent.saveEvent(event)
-                        }
+                    val googleEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
+                    val isSignedInToGoogle = calendarViewModel.googleAccessToken != null
 
-                        // notification for adding event
-                        Toast.makeText(
-                            context,
-                            "${event.title} added to your calendar.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    val existsLocally = savedEvents.any { sameCalendarEvent(it, event) }
+                    val existsInGoogle = googleEvents.any { sameCalendarEvent(it, event) }
+
+                    if (isSignedInToGoogle) {
+                        if (existsInGoogle) {
+                            Toast.makeText(
+                                context,
+                                "${event.title} already in your Google Calendar.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            coroutineScope.launch {
+                                try {
+                                    when (val result = calendarViewModel.addEventToAppropriateCalendar(event)) {
+                                        is AddEventResult.ShouldSaveLocally -> {
+                                            if (!existsLocally) {
+                                                savedEvents.add(event)
+
+                                                withContext(Dispatchers.IO) {
+                                                    storeEvent.saveEvent(event)
+                                                }
+                                            }
+
+                                            Toast.makeText(
+                                                context,
+                                                "${event.title} added to your local calendar.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+
+                                        is AddEventResult.AddedToGoogle -> {
+                                            if (savedEvents.none {
+                                                    it.title == result.event.title &&
+                                                            it.start == result.event.start &&
+                                                            it.source == result.event.source
+                                                }) {
+                                                savedEvents.add(result.event)
+                                            }
+
+                                            Toast.makeText(
+                                                context,
+                                                "${event.title} added to your Google Calendar.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        e.message ?: "Failed to add event.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
                     } else {
-                        // notification for event existing in calendar
-                        Toast.makeText(
-                            context,
-                            "${event.title} already in your calendar.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        if (existsLocally) {
+                            Toast.makeText(
+                                context,
+                                "${event.title} already in your local calendar.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            coroutineScope.launch {
+                                try {
+                                    when (val result = calendarViewModel.addEventToAppropriateCalendar(event)) {
+                                        is AddEventResult.ShouldSaveLocally -> {
+                                            savedEvents.add(event)
+
+                                            withContext(Dispatchers.IO) {
+                                                storeEvent.saveEvent(event)
+                                            }
+
+                                            Toast.makeText(
+                                                context,
+                                                "${event.title} added to your local calendar.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+
+                                        is AddEventResult.AddedToGoogle -> {
+                                            if (savedEvents.none {
+                                                    it.title == result.event.title &&
+                                                            it.start == result.event.start &&
+                                                            it.source == result.event.source
+                                                }) {
+                                                savedEvents.add(result.event)
+                                            }
+
+                                            Toast.makeText(
+                                                context,
+                                                "${event.title} added to your Google Calendar.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        e.message ?: "Failed to add event.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
                     }
                 },
                 onAddEventClick = {
@@ -147,18 +253,74 @@ fun PhinNavHost(
         }
 
         composable(Routes.ADD_EVENT) {
+            val context = LocalContext.current
+            val activity = context as ComponentActivity
+
+            val reminderScheduler = remember {
+                ReminderScheduler(context.applicationContext)
+            }
+
+            val factory = remember {
+                CalendarViewModelFactory(reminderScheduler)
+            }
+
+            val calendarViewModel: CalendarViewModel = viewModel(
+                viewModelStoreOwner = activity,
+                factory = factory
+            )
+
             AddEventScreen(
                 onSaveEvent = { newEvent ->
-                    if (allEvents.none { it.id == newEvent.id }) {
-                        allEvents.add(newEvent)
-                    }
+                    coroutineScope.launch {
+                        try {
+                            when (val result = calendarViewModel.addEventToAppropriateCalendar(newEvent)) {
+                                is AddEventResult.ShouldSaveLocally -> {
+                                    if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
+                                        allEvents.add(newEvent)
+                                    }
 
-                    if (savedEvents.none { it.id == newEvent.id }) {
-                        savedEvents.add(newEvent)
-                    }
+                                    if (savedEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
+                                        savedEvents.add(newEvent)
+                                    }
 
-                    coroutineScope.launch(Dispatchers.IO) {
-                        storeEvent.saveEvent(newEvent)
+                                    withContext(Dispatchers.IO) {
+                                        storeEvent.saveEvent(newEvent)
+                                    }
+
+                                    Toast.makeText(
+                                        context,
+                                        "${newEvent.title} added to your local calendar.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    navController.popBackStack()
+                                }
+
+                                is AddEventResult.AddedToGoogle -> {
+                                    if (savedEvents.none { it.title == result.event.title && it.start == result.event.start }) {
+                                        savedEvents.add(result.event)
+                                    }
+
+                                    if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
+                                        allEvents.add(newEvent)
+                                    }
+
+                                    Toast.makeText(
+                                        context,
+                                        "${newEvent.title} added to your Google Calendar.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    navController.popBackStack()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                context,
+                                e.message ?: "Failed to save event.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 },
                 onBackClick = {
@@ -171,4 +333,10 @@ fun PhinNavHost(
             MapScreen(navController = navController)
         }
     }
+}
+
+// Checks if two events are the same (based on title + start time)
+private fun sameCalendarEvent(a: CalendarEvent, b: CalendarEvent): Boolean {
+    return a.title.trim().equals(b.title.trim(), ignoreCase = true) &&
+            a.start.take(16) == b.start.take(16)
 }
