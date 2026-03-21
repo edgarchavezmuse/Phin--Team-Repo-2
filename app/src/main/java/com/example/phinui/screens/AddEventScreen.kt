@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
+import com.example.phinui.data.calendar.CalendarSource
 
 @Composable
 fun AddEventScreen(
@@ -100,17 +101,17 @@ fun AddEventScreen(
 
         Button(
             onClick = {
-
                 val newEvent = CalendarEvent(
                     id = System.currentTimeMillis().toString(),
                     title = eventName,
                     start = "${eventDate}T${eventStartTime}",
                     end = "${eventDate}T${eventEndTime}",
-                    location = eventLocation
+                    location = eventLocation,
+                    reminderMinutes = emptyList(),
+                    source = CalendarSource.LOCAL
                 )
 
                 onSaveEvent(newEvent)
-                onBackClick()
             }
         ) {
             Text("Save Event")

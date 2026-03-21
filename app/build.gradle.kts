@@ -71,12 +71,11 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    implementation("androidx.work:work-runtime-ktx:2.11.1")
     implementation("androidx.datastore:datastore-preferences:1.1.0")
-
-
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
-
     implementation("com.google.maps.android:maps-compose:6.4.0")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.accompanist:accompanist-permissions:0.37.2")

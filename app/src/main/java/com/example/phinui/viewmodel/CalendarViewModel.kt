@@ -8,19 +8,35 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.GoogleCalendarRepository
+import com.example.phinui.notifications.ReminderScheduler
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
+sealed class AddEventResult {
+    data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
+    data object ShouldSaveLocally : AddEventResult()
+}
 class CalendarViewModel(
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
     //  Authorization + calendar data state
     // Restored automatically if process is recreated
     var googleAccessToken by mutableStateOf(
         savedStateHandle.get<String>("googleAccessToken")
+    )
+        private set
+
+    var userEmail by mutableStateOf(
+        savedStateHandle.get<String>("userEmail")
     )
         private set
 
@@ -66,21 +82,24 @@ class CalendarViewModel(
         }
     }
 
-
     // Load current events for the week the authorization is successful
     fun onAuthorizationSuccess(token: String) {
         googleAccessToken = token
-
-        // Persist token so state survives process recreation
         savedStateHandle["googleAccessToken"] = token
 
-        loadEventsForCurrentWeek()
+        viewModelScope.launch {
+            val email = fetchUserEmail(token)
+            userEmail = email
+            savedStateHandle["userEmail"] = email
+
+            loadEventsForCurrentWeek()
+        }
     }
 
 
     // Refresh events when updated
     fun refreshEvents() {
-        if (googleAccessToken == null) return
+        if (googleAccessToken == null || isLoadingEvents) return
         loadEventsForCurrentWeek()
     }
 
@@ -124,12 +143,28 @@ class CalendarViewModel(
     // Sign out of Google Calendar for this session
     fun signOut() {
         googleAccessToken = null
+        userEmail = null
         errorMessage = null
         isLoadingEvents = false
         eventsGroupedByDate = emptyMap()
 
         // Clear persisted state used by this ViewModel
         savedStateHandle["googleAccessToken"] = null
+        savedStateHandle["userEmail"] = null
+    }
+
+    // Adds event to Google or local calendar depending on sign-in state
+    suspend fun addEventToAppropriateCalendar(event: CalendarEvent): AddEventResult {
+        val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
+
+        val createdEvent = GoogleCalendarRepository.insertEvent(
+            accessToken = token,
+            event = event,
+            zone = ZoneId.systemDefault()
+        )
+
+        loadEventsForCurrentWeek()
+        return AddEventResult.AddedToGoogle(createdEvent)
     }
 
     /*
@@ -139,6 +174,7 @@ class CalendarViewModel(
     private fun loadEventsForCurrentWeek() {
 
         val token = googleAccessToken ?: return
+
 
         isLoadingEvents = true
         errorMessage = null
@@ -154,10 +190,26 @@ class CalendarViewModel(
                     zone = ZoneId.systemDefault()
                 )
 
+                // store previous events to track removed ones
+                val oldEventIds = eventsGroupedByDate.values.flatten().map { it.id }.toSet()
+
                 eventsGroupedByDate = groupEventsByDateForWeek(
                     events = events,
                     weekStartDate = currentWeekStartDate
                 )
+
+                // schedule reminders for each event
+                val newEvents = eventsGroupedByDate.values.flatten()
+                val newEventIds = newEvents.map { it.id }.toSet()
+
+                newEvents.forEach { event ->
+                    reminderScheduler.scheduleReminder(event)
+                }
+
+                // cancel reminders for removed events
+                (oldEventIds - newEventIds).forEach { removedId ->
+                    reminderScheduler.cancelReminder(removedId)
+                }
 
             } catch (e: Exception) {
 
@@ -186,6 +238,27 @@ class CalendarViewModel(
 
     }
 
+    // Fetches the users email
+    private suspend fun fetchUserEmail(accessToken: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL("https://www.googleapis.com/oauth2/v2/userinfo")
+                val connection = url.openConnection() as HttpURLConnection
+
+                connection.requestMethod = "GET"
+                connection.setRequestProperty("Authorization", "Bearer $accessToken")
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(response)
+                json.optString("email", null)
+
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
 
     // Returns the Monday for the week
     private fun getStartOfWeek(

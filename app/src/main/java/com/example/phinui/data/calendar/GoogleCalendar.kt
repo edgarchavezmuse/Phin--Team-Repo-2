@@ -1,11 +1,11 @@
 package com.example.phinui.data.calendar
 
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import android.net.Uri
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -15,7 +15,7 @@ import java.time.ZoneId
  */
 object GoogleCalendarRepository {
 
-// Fetches events for the week you choose to look at in the app.
+    // Fetches events for the week you choose to look at in the app.
     suspend fun fetchWeekEvents(
         accessToken: String,
         weekStart: LocalDate,
@@ -27,9 +27,8 @@ object GoogleCalendarRepository {
         // A page token = a pointer to the next “page” of results.
         var pageToken: String? = null
 
-
         val weekStartTimestamp = weekStart.atStartOfDay(zone).toInstant().toString()
-        val weekEndTimestamp  = weekStart.plusDays(7).atStartOfDay(zone).toInstant().toString()
+        val weekEndTimestamp = weekStart.plusDays(7).atStartOfDay(zone).toInstant().toString()
 
         do {
             val url = buildEventsRequestUrl(
@@ -67,22 +66,7 @@ object GoogleCalendarRepository {
                 if (items != null) {
                     for (i in 0 until items.length()) {
                         val item = items.getJSONObject(i)
-
-                        val id = item.optString("id")
-                        val title = item.optString("summary", "(No title)")
-
-                        val startObj = item.optJSONObject("start")
-                        val endObj = item.optJSONObject("end")
-
-                        val start = startObj?.optString("dateTime")?.ifBlank { null }
-                            ?: startObj?.optString("date")?.ifBlank { null }
-                            ?: ""
-
-                        val end = endObj?.optString("dateTime")?.ifBlank { null }
-                            ?: endObj?.optString("date")?.ifBlank { null }
-                            ?: ""
-
-                        events.add(CalendarEvent(id, title, start, end))
+                        events.add(parseGoogleEvent(item))
                     }
                 }
 
@@ -93,6 +77,48 @@ object GoogleCalendarRepository {
         } while (pageToken != null)
 
         events
+    }
+
+    // Inserts a new event into the user's primary Google Calendar
+    suspend fun insertEvent(
+        accessToken: String,
+        event: CalendarEvent,
+        zone: ZoneId = ZoneId.systemDefault()
+    ): CalendarEvent = withContext(Dispatchers.IO) {
+
+        val url = URL("https://www.googleapis.com/calendar/v3/calendars/primary/events")
+        val connection = url.openConnection() as HttpURLConnection
+
+        connection.requestMethod = "POST"
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+        connection.doOutput = true
+
+        try {
+            val requestBody = buildInsertEventBody(event, zone).toString()
+
+            connection.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(requestBody)
+                writer.flush()
+            }
+
+            val code = connection.responseCode
+            val body = if (code in 200..299) {
+                connection.inputStream.bufferedReader().readText()
+            } else {
+                connection.errorStream?.bufferedReader()?.readText() ?: ""
+            }
+
+            if (code !in 200..299) {
+                throw RuntimeException("Calendar insert error ($code): $body")
+            }
+
+            val root = JSONObject(body)
+            parseGoogleEvent(root)
+        } finally {
+            connection.disconnect()
+        }
     }
 
     // Builds the full google calendar api url string
@@ -117,5 +143,89 @@ object GoogleCalendarRepository {
         }
 
         return builder.build().toString()
+    }
+
+    // Builds the JSON body for inserting an event into Google Calendar
+    private fun buildInsertEventBody(
+        event: CalendarEvent,
+        zone: ZoneId
+    ): JSONObject {
+        val timeZoneId = zone.id
+
+        return JSONObject().apply {
+            put("summary", event.title)
+
+            if (!event.location.isNullOrBlank()) {
+                put("location", event.location)
+            }
+
+            put(
+                "start",
+                JSONObject().apply {
+                    put("dateTime", normalizeDateTime(event.start))
+                    put("timeZone", timeZoneId)
+                }
+            )
+
+            put(
+                "end",
+                JSONObject().apply {
+                    put("dateTime", normalizeDateTime(event.end))
+                    put("timeZone", timeZoneId)
+                }
+            )
+        }
+    }
+
+    // Parses a Google Calendar API event object into CalendarEvent
+    private fun parseGoogleEvent(item: JSONObject): CalendarEvent {
+        val id = item.optString("id")
+        val title = item.optString("summary", "(No title)")
+
+        val startObj = item.optJSONObject("start")
+        val endObj = item.optJSONObject("end")
+
+        val start = startObj?.optString("dateTime")?.ifBlank { null }
+            ?: startObj?.optString("date")?.ifBlank { null }
+            ?: ""
+
+        val end = endObj?.optString("dateTime")?.ifBlank { null }
+            ?: endObj?.optString("date")?.ifBlank { null }
+            ?: ""
+
+        val remindersList = mutableListOf<Int>()
+        val remindersObj = item.optJSONObject("reminders")
+        if (remindersObj != null) {
+            val overrides = remindersObj.optJSONArray("overrides")
+            if (overrides != null) {
+                for (j in 0 until overrides.length()) {
+                    val override = overrides.getJSONObject(j)
+                    val minutes = override.optInt("minutes", -1)
+                    if (minutes >= 0) {
+                        remindersList.add(minutes)
+                    }
+                }
+            }
+        }
+
+        val location = item.optString("location").ifBlank { null }
+
+        return CalendarEvent(
+            id = id,
+            title = title,
+            start = start,
+            end = end,
+            location = location,
+            reminderMinutes = remindersList,
+            source = CalendarSource.GOOGLE
+        )
+    }
+
+    // Ensures datetime strings are in a valid format for Google Calendar API
+    private fun normalizeDateTime(dateTime: String): String {
+        return when {
+            dateTime.length == 16 && dateTime.contains('T') -> "$dateTime:00"
+            else -> dateTime
+        }
     }
 }

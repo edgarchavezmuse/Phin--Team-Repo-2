@@ -16,6 +16,61 @@ import com.example.phinui.MainActivity
 
 object NotificationHelper {
 
+    // function specifically for dealing with notifications involving google calendar
+    fun sendNotificationsForCalendar(
+        context: Context,
+        title: String,
+        eventId: String,
+    ) {
+
+        val channelId = "reminders_v2"
+
+        val manager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+
+            manager.createNotificationChannel(channel)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setContentTitle("Upcoming Event")
+            .setContentText(title)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d("NotifDebug", "Permission not granted to send notifications")
+            return
+        }
+
+        NotificationManagerCompat.from(context)
+            .notify(eventId.hashCode(), notification)
+
+    }
+
+    // functions for potential future use of other notification types
+
     fun createNotificationChannels(context: Context) {
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -30,8 +85,7 @@ object NotificationHelper {
 
                 manager.createNotificationChannel(channel)
             }
-        }
-        else {
+        } else {
             Log.d("NotifDebug", "Unable to create notification channels.")
         }
     }
@@ -69,7 +123,7 @@ object NotificationHelper {
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
-            ) {
+        ) {
             Log.d("NotifDebug", "Permission not granted to send notifications")
             return
         }
