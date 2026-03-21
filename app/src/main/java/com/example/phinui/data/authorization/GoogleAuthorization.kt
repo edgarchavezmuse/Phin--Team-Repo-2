@@ -15,11 +15,19 @@ object GoogleAuthManager {
 
     private const val TAG = "GoogleAuthManager"
     private const val CALENDAR_EVENTS = "https://www.googleapis.com/auth/calendar.events"
+    private const val EMAIL = "email"
+    private const val PROFILE = "profile"
     private fun authorizationClient(activity: Activity): AuthorizationClient =
         Identity.getAuthorizationClient(activity)
     private fun calendarAuthorizationRequest(): AuthorizationRequest =
         AuthorizationRequest.builder()
-            .setRequestedScopes(listOf(Scope(CALENDAR_EVENTS)))
+            .setRequestedScopes(
+                listOf(
+                    Scope(CALENDAR_EVENTS),
+                    Scope(EMAIL),
+                    Scope(PROFILE)
+                )
+            )
             .build()
 
     /*
