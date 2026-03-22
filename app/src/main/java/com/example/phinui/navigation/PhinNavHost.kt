@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -18,12 +19,14 @@ import com.example.phinui.data.events.EventData
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
-import com.example.phinui.ui.screens.FavoritesScreen
+import com.example.phinui.ui.screens.MessagesScreen
 import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
 import com.example.phinui.viewmodel.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.example.phinui.screens.MapScreen
+import com.example.phinui.ui.screens.ScheduleScreen
 
 @Composable
 fun PhinNavHost(
@@ -65,12 +68,16 @@ fun PhinNavHost(
             HomeScreen(navController = navController)
         }
 
-        composable(Routes.FAVORITES) {
-            FavoritesScreen()
+        composable(Routes.MESSAGES) {
+            MessagesScreen()
         }
 
         composable(Routes.PROFILE) {
             ProfileScreen()
+        }
+
+        composable(Routes.SCHEDULE) {
+            ScheduleScreen()
         }
 
         composable(Routes.EVENTS) {
@@ -108,9 +115,18 @@ fun PhinNavHost(
         }
 
         composable(Routes.CALENDAR) {
+            // to pass to onClick for removing events
+            val selectedEvent = remember { mutableStateOf<CalendarEvent?>(null) }
+            val showRemoveDialog = remember { mutableStateOf(false) }
             CalendarScreen(
                 savedEvents = savedEvents,
-                calendarViewModel = calendarViewModel
+                calendarViewModel = calendarViewModel,
+                onClick = { event ->
+                    selectedEvent.value = event
+                    showRemoveDialog.value = true
+                },
+                selectedEvent = selectedEvent,
+                showRemoveDialog = showRemoveDialog
             )
         }
 
@@ -133,6 +149,9 @@ fun PhinNavHost(
                     navController.popBackStack()
                 }
             )
+        }
+        composable(Routes.MAP) {
+            MapScreen(navController = navController)
         }
     }
 }

@@ -12,7 +12,7 @@ import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 
 @Composable
-fun FavoritesScreen() {
+fun MessagesScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -20,7 +20,7 @@ fun FavoritesScreen() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Favorites Screen",
+            text = "Messages",
             fontSize = 24.sp,
             color = NavText
         )
