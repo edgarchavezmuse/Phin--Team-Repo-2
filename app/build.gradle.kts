@@ -75,9 +75,12 @@ dependencies {
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0")
+   //start of map depend
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.maps.android:maps-compose:6.4.0")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+   //end of map depend
     implementation("com.google.accompanist:accompanist-permissions:0.37.2")
 
 
