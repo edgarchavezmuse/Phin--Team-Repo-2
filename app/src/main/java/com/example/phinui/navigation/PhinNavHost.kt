@@ -25,13 +25,17 @@ import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.example.phinui.ui.screens.MapScreen
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
-import com.example.phinui.screens.MapScreen
+
 import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
+
 import com.example.phinui.ui.screens.ScheduleScreen
+import com.example.phinui.data.calendar.CalendarSource
+
 
 
 @Composable
@@ -124,7 +128,7 @@ fun PhinNavHost(
                                     when (val result = calendarViewModel.addEventToAppropriateCalendar(event)) {
                                         is AddEventResult.ShouldSaveLocally -> {
                                             if (!existsLocally) {
-                                                savedEvents.add(event)
+                                                savedEvents.add(event.copy(source = CalendarSource.LOCAL))
 
                                                 withContext(Dispatchers.IO) {
                                                     storeEvent.saveEvent(event)
@@ -139,14 +143,6 @@ fun PhinNavHost(
                                         }
 
                                         is AddEventResult.AddedToGoogle -> {
-                                            if (savedEvents.none {
-                                                    it.title == result.event.title &&
-                                                            it.start == result.event.start &&
-                                                            it.source == result.event.source
-                                                }) {
-                                                savedEvents.add(result.event)
-                                            }
-
                                             Toast.makeText(
                                                 context,
                                                 "${event.title} added to your Google Calendar.",
@@ -175,7 +171,7 @@ fun PhinNavHost(
                                 try {
                                     when (val result = calendarViewModel.addEventToAppropriateCalendar(event)) {
                                         is AddEventResult.ShouldSaveLocally -> {
-                                            savedEvents.add(event)
+                                            savedEvents.add(event.copy(source = CalendarSource.LOCAL))
 
                                             withContext(Dispatchers.IO) {
                                                 storeEvent.saveEvent(event)
@@ -189,14 +185,6 @@ fun PhinNavHost(
                                         }
 
                                         is AddEventResult.AddedToGoogle -> {
-                                            if (savedEvents.none {
-                                                    it.title == result.event.title &&
-                                                            it.start == result.event.start &&
-                                                            it.source == result.event.source
-                                                }) {
-                                                savedEvents.add(result.event)
-                                            }
-
                                             Toast.makeText(
                                                 context,
                                                 "${event.title} added to your Google Calendar.",
@@ -285,7 +273,7 @@ fun PhinNavHost(
                                     }
 
                                     if (savedEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
-                                        savedEvents.add(newEvent)
+                                        savedEvents.add(newEvent.copy(source = CalendarSource.LOCAL))
                                     }
 
                                     withContext(Dispatchers.IO) {
@@ -302,10 +290,6 @@ fun PhinNavHost(
                                 }
 
                                 is AddEventResult.AddedToGoogle -> {
-                                    if (savedEvents.none { it.title == result.event.title && it.start == result.event.start }) {
-                                        savedEvents.add(result.event)
-                                    }
-
                                     if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
                                         allEvents.add(newEvent)
                                     }
@@ -335,7 +319,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.MAP) {
-            MapScreen(navController = navController)
+            MapScreen()
         }
     }
 }

@@ -228,4 +228,30 @@ object GoogleCalendarRepository {
             else -> dateTime
         }
     }
+
+    // Deletes events
+    suspend fun deleteEvent(
+        accessToken: String,
+        eventId: String
+    ) = withContext(Dispatchers.IO) {
+
+        val encodedEventId = Uri.encode(eventId)
+        val url = URL("https://www.googleapis.com/calendar/v3/calendars/primary/events/$encodedEventId")
+        val connection = url.openConnection() as HttpURLConnection
+
+        connection.requestMethod = "DELETE"
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Accept", "application/json")
+
+        try {
+            val code = connection.responseCode
+
+            if (code !in 200..299 && code != 204 && code != 410) {
+                val body = connection.errorStream?.bufferedReader()?.readText() ?: ""
+                throw RuntimeException("Calendar delete error ($code): $body")
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
 }
