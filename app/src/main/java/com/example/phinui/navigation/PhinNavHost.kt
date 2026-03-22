@@ -20,7 +20,7 @@ import com.example.phinui.data.events.EventData
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
-import com.example.phinui.ui.screens.FavoritesScreen
+import com.example.phinui.ui.screens.MessagesScreen
 import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,10 @@ import com.example.phinui.viewmodel.CalendarViewModelFactory
 
 import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
+
+import com.example.phinui.ui.screens.ScheduleScreen
 import com.example.phinui.data.calendar.CalendarSource
+
 
 
 @Composable
@@ -74,12 +77,16 @@ fun PhinNavHost(
             HomeScreen(navController = navController)
         }
 
-        composable(Routes.FAVORITES) {
-            FavoritesScreen()
+        composable(Routes.MESSAGES) {
+            MessagesScreen()
         }
 
         composable(Routes.PROFILE) {
             ProfileScreen()
+        }
+
+        composable(Routes.SCHEDULE) {
+            ScheduleScreen()
         }
 
         composable(Routes.EVENTS) {
