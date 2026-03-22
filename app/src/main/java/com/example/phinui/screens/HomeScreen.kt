@@ -42,8 +42,11 @@ fun HomeScreen(
                     onOpenCalendar = {
                         navController.navigate(Routes.CALENDAR) { launchSingleTop = true }
                     },
-                            onOpenMap = {
+                    onOpenMap = {
                         navController.navigate(Routes.MAP)
+                    },
+                    onOpenSchedule = {
+                        navController.navigate(Routes.SCHEDULE) { launchSingleTop = true }
                     }
                 )
             }
