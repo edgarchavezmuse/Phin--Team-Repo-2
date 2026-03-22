@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,7 +52,7 @@ fun CustomBottomBar(
 
     val bottomItems = listOf(
         BottomNavItem("Home", Icons.Default.Home, Routes.HOME),
-        BottomNavItem("Favorites", Icons.Default.Favorite, Routes.FAVORITES),
+        BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
         BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
     )
 
