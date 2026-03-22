@@ -25,10 +25,11 @@ import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.example.phinui.ui.screens.MapScreen
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
-import com.example.phinui.screens.MapScreen
+
 import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
 
@@ -330,7 +331,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.MAP) {
-            MapScreen(navController = navController)
+            MapScreen()
         }
     }
 }
