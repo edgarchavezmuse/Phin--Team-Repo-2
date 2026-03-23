@@ -44,11 +44,15 @@ fun MapScreen() {
     }
 
     val campusCenter = LatLng(34.16205, -119.043572)
+    val southWestLat = 34.15817
+    val southWestLng = -119.04855
+    val northEastLat = 34.17528
+    val northEastLng = -119.03274
 
     val campusBounds = remember {
         LatLngBounds(
-            LatLng(34.15817, -119.04855),   // southwest
-            LatLng(34.17528, -119.03274)    // northeast
+            LatLng(southWestLat, southWestLng),   // southwest
+            LatLng(northEastLat, northEastLng)    // northeast
               
               
 
