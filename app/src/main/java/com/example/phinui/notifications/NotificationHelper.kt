@@ -24,7 +24,8 @@ object NotificationHelper {
         eventId: String,
     ) {
 
-        val channelId = "reminders_v2"
+        // need to make sure to update this whenever editing notification build
+        val channelId = "reminders_v3"
 
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -54,7 +55,6 @@ object NotificationHelper {
             }
 
         val notification = NotificationCompat.Builder(context, channelId)
-            //.setContentTitle("Upcoming Event")
             .setContentTitle(contentTitle)
             .setContentText(title)
             .setSmallIcon(R.drawable.redphin)
