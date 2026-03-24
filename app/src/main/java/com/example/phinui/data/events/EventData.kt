@@ -15,8 +15,8 @@ object EventData {
         CalendarEvent(
             id = "1",
             title = "Health Science Advising Sessions",
-            start = "2026-03-09T09:00",
-            end = "2026-03-09T10:00",
+            start = "2026-03-23T09:00",
+            end = "2026-03-23T10:00",
             location = "del Norte Hall 1500",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
@@ -24,36 +24,36 @@ object EventData {
         CalendarEvent(
             id = "2",
             title = "Student Success Workshop",
-            start = "2026-03-10T09:00",
-            end = "2026-03-10T10:00",
+            start = "2026-03-24T09:00",
+            end = "2026-03-24T10:00",
             location = "Bell Tower Courtyard",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
         ),
         CalendarEvent(
             id = "3",
-            title = "Events 3 Name",
-            start = "2026-03-11T13:00",
-            end = "2026-03-11T14:00",
-            location = "TBD",
+            title = "Hackathon",
+            start = "2026-03-25T13:00",
+            end = "2026-03-25T14:00",
+            location = "Sierra Hall 203",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
         ),
         CalendarEvent(
             id = "4",
-            title = "Events 4 Name",
-            start = "2026-03-12T15:00",
-            end = "2026-03-12T16:00",
-            location = "TBD",
+            title = "Picnic",
+            start = "2026-03-26T15:00",
+            end = "2026-03-26T16:00",
+            location = "North Quad",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
         ),
         CalendarEvent(
             id = "5",
-            title = "Events 5 Name",
-            start = "2026-03-13T11:00",
-            end = "2026-03-13T12:00",
-            location = "TBD",
+            title = "Free Lunch",
+            start = "2026-03-27T11:00",
+            end = "2026-03-27T12:00",
+            location = "Islands Cafe",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
         )
