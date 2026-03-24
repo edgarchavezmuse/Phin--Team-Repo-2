@@ -13,13 +13,14 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.example.phinui.MainActivity
+import com.example.phinui.R
 
 object NotificationHelper {
 
     // function specifically for dealing with notifications involving google calendar
     fun sendNotificationsForCalendar(
         context: Context,
-        title: String,
+        title: String?,
         eventId: String,
     ) {
 
@@ -45,10 +46,18 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val contentTitle =
+            if (title == null) {
+                "You have an event coming up!"
+            } else {
+                "Upcoming Event"
+            }
+
         val notification = NotificationCompat.Builder(context, channelId)
-            .setContentTitle("Upcoming Event")
+            //.setContentTitle("Upcoming Event")
+            .setContentTitle(contentTitle)
             .setContentText(title)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.redphin)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
