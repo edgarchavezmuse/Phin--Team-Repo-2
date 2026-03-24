@@ -12,6 +12,8 @@ import androidx.navigation.NavHostController
 import com.example.phinui.ui.components.TopHeader
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun HomeScreen(
@@ -27,8 +29,9 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Background),
-            contentAlignment = Alignment.TopCenter
+                .background(Background)
+                .padding(top = 16.dp),
+            contentAlignment = Alignment.Center
         ) {
             Column(
                 verticalArrangement = Arrangement.Top,
