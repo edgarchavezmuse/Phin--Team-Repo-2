@@ -23,7 +23,7 @@ fun HomeDashboard(
     onOpenSchedule: () -> Unit
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(40.dp),
+        verticalArrangement = Arrangement.spacedBy(60.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -40,22 +40,28 @@ fun HomeDashboard(
                 label = "Calendar",
                 onClick = onOpenCalendar
             )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(60.dp)
-        ) {
-            HomeActionItem(
-                icon = Icons.Default.Schedule,
-                label = "Schedule",
-                onClick = onOpenSchedule
-            )
 
             HomeActionItem(
                 icon = Icons.Default.Event,
                 label = "Events",
                 onClick = onOpenEvents
             )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(60.dp)
+        ) {
+//            HomeActionItem(
+//                icon = Icons.Default.Schedule,
+//                label = "Schedule",
+//                onClick = onOpenSchedule
+//            )
+
+//            HomeActionItem(
+//                icon = Icons.Default.Event,
+//                label = "Events",
+//                onClick = onOpenEvents
+//            )
         }
     }
 }

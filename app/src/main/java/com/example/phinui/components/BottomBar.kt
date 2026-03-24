@@ -52,8 +52,8 @@ fun CustomBottomBar(
 
     val bottomItems = listOf(
         BottomNavItem("Home", Icons.Default.Home, Routes.HOME),
-        BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
-        BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
+        //BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
+        //BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
     )
 
     Row(
@@ -62,7 +62,9 @@ fun CustomBottomBar(
             .background(Background)
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement =
+            if (bottomItems.size <=2) Arrangement.Center
+            else Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         bottomItems.forEach { item ->

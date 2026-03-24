@@ -38,7 +38,7 @@ fun TopHeader() {
                 text = "CSU",
                 color = HeaderText,
                 fontSize = 22.sp,
-                fontWeight = FontWeight.Thin
+                fontWeight = FontWeight.Light
             )
         }
     }
