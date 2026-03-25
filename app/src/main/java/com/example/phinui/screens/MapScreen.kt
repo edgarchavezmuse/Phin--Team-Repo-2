@@ -91,7 +91,7 @@ fun MapScreen() {
         uiSettings = MapUiSettings(
             myLocationButtonEnabled = true
         )
-    ) {
+    )
         /*
         Marker(
             state = markerState,
@@ -99,7 +99,7 @@ fun MapScreen() {
         )
         
          */
-    }
+
 
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
