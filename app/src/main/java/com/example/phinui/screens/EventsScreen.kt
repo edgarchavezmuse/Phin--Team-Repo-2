@@ -27,10 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.data.calendar.formatEventTimeLine
 import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
@@ -110,25 +112,36 @@ fun EventsScreen(
     if (showDialog && selectedEvent != null) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Add to calendar?") },
-            text = { Text("Do you want to add \"${selectedEvent!!.title}\" to your calendar?") },
+            title = {
+                Text(
+                    text = selectedEvent!!.title,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                EventDetails(event = selectedEvent!!)
+            },
             confirmButton = {
                 Button(
+
+                    // Add event and close message box
                     onClick = {
                         onEventClick(selectedEvent!!)
                         showDialog = false
                     }
                 ) {
-                    Text("Yes")
+                    Text("Add to calendar")
                 }
             },
             dismissButton = {
                 Button(
+
+                    // Cancel adding event and close message box
                     onClick = {
                         showDialog = false
                     }
                 ) {
-                    Text("No")
+                    Text("Close")
                 }
             }
         )
@@ -171,6 +184,28 @@ fun EventCard(
             text = location,
             fontSize = 16.sp,
             color = NavText
+        )
+    }
+}
+
+// Function for displaying the event information in the description box
+@Composable fun EventDetails(event: CalendarEvent){
+    Column {
+        // Time of event
+        Text(
+            text = formatEventTimeLine(event)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Location of event
+        Text(
+            text = event.location ?: "Location: TBD"
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Description of event
+        Text(
+            text = event.description ?: "No description available."
         )
     }
 }

@@ -401,10 +401,20 @@ fun CalendarScreen(
                     if (isGoogleEvent) {
                         AlertDialog(
                             onDismissRequest = { showRemoveDialog.value = false },
-                            title = { Text("Remove Event") },
-                            text = { Text("Would you like to remove \"${eventToDelete.title}\" from your Google Calendar?") },
+                            title = {
+                                Text(
+                                    text = eventToDelete.title,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            },
+                            text = {
+                                // Call the function that displays event info
+                                EventDetails(event = eventToDelete)
+                            },
                             confirmButton = {
                                 Button(
+
+                                    // Remove event and close message box
                                     onClick = {
                                         coroutineScope.launch {
                                             try {
@@ -426,14 +436,16 @@ fun CalendarScreen(
                                         }
                                     }
                                 ) {
-                                    Text("Yes")
+                                    Text("Remove from calendar")
                                 }
                             },
                             dismissButton = {
                                 Button(
+
+                                    // Cancel removing event and close message box
                                     onClick = { showRemoveDialog.value = false }
                                 ) {
-                                    Text("No")
+                                    Text("Close")
                                 }
                             }
                         )
@@ -442,8 +454,16 @@ fun CalendarScreen(
                         // Show dialog box for confirming the removal of the event
                         AlertDialog(
                             onDismissRequest = { showRemoveDialog.value = false },
-                            title = { Text("Remove Event") },
-                            text = { Text("Would you like to remove \"${eventToDelete.title}\" from your local calendar?") },
+                            title = {
+                                Text(
+                                    text = eventToDelete.title,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            },
+                            text = {
+                                // Call the function that displays event info
+                                EventDetails(event = eventToDelete)
+                            },
 
                             // If user taps 'yes' for removal of event
                             confirmButton = {
@@ -474,13 +494,13 @@ fun CalendarScreen(
                                     showRemoveDialog.value = false
                                 }) {
                                     // Confirm button for removing event
-                                    Text("Yes")
+                                    Text("Remove from calendar")
                                 }
                             },
                             // Canceling the removal of event request
                             dismissButton = {
                                 Button(onClick = { showRemoveDialog.value = false }) {
-                                    Text("No")
+                                    Text("Close")
                                 }
                             }
                         )
@@ -501,5 +521,27 @@ private fun groupEventsByDateForWeek(
         events.filter { event ->
             eventDate(event) == date
         }
+    }
+}
+
+// Function for displaying the event information in the description box
+@Composable fun EventDetails(event: CalendarEvent){
+    Column {
+        // Time of event
+        Text(
+            text = formatEventTimeLine(event)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Location of event
+        Text(
+            text = event.location ?: "Location: TBD"
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Description of event
+        Text(
+            text = event.description ?: "No description available."
+        )
     }
 }
