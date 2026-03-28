@@ -32,6 +32,7 @@ fun AddEventScreen(
     var eventStartTime by remember { mutableStateOf("") }
     var eventEndTime by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
+    var eventDescription by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -97,6 +98,19 @@ fun AddEventScreen(
             shape = RoundedCornerShape(12.dp)
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = eventDescription,
+            onValueChange = { eventDescription = it },
+            label = { Text("Description") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            shape = RoundedCornerShape(12.dp),
+            maxLines = 5
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
@@ -107,6 +121,7 @@ fun AddEventScreen(
                     start = "${eventDate}T${eventStartTime}",
                     end = "${eventDate}T${eventEndTime}",
                     location = eventLocation,
+                    description = eventDescription,
                     reminderMinutes = emptyList(),
                     source = CalendarSource.LOCAL
                 )
