@@ -14,11 +14,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
 
 private val dayFormatter = DateTimeFormatter.ofPattern("EEE")
 
+// Handles calendar week date chips
 @Composable
 fun WeekDateSelector(
     dates: List<LocalDate>,

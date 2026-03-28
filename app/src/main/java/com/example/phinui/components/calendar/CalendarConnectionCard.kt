@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+
+// Handles "connect google calendar" button UI
 @Composable
 fun CalendarConnectionCard(
     onConnectClick: () -> Unit

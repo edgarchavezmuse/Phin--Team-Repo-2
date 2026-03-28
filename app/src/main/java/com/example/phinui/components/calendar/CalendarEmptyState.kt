@@ -7,6 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+
+// Handles calendar empty state (no info) UI
 @Composable
 fun CalendarEmptyState(
     title: String,

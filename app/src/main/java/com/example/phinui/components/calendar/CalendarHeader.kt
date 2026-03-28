@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter
 
 private val formatter = DateTimeFormatter.ofPattern("MMM d")
 
+// Handles Calendar header title + refresh button
 @Composable
 fun CalendarHeader(
     currentWeekStartDate: LocalDate,

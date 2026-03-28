@@ -26,6 +26,8 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.calendar.formatEventTimeLine
 import com.example.phinui.data.calendar.formatReminderText
 
+
+// Handles calendar event card
 @Composable
 fun EventCard(
     event: CalendarEvent,
@@ -77,21 +79,6 @@ fun EventCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = accentColor.copy(alpha = 0.14f)
-                    ) {
-                        Text(
-                            text = if (isGoogleEvent) "Google" else "Local",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = accentColor,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

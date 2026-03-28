@@ -249,6 +249,7 @@ fun CalendarScreen(
 
         // Decide what to show based on auth/loading/data state
         when {
+            // When no events print:
             googleAccessToken == null && eventsForSelectedDate.isEmpty() -> {
                 CalendarEmptyState(
                     title = "Connect your calendar",
@@ -263,6 +264,7 @@ fun CalendarScreen(
                 )
             }
 
+            // When events present:
             else -> {
                 LazyColumn(
                     modifier = Modifier
@@ -282,7 +284,7 @@ fun CalendarScreen(
         }
     }
 
-    // Removing local events from calendar
+    // Removing events from calendar
     if (showRemoveDialog.value && selectedEvent.value != null) {
 
         // Check if Google Event
@@ -306,6 +308,8 @@ fun CalendarScreen(
             confirmButton = {
                 Button(
                     onClick = {
+
+                        // Google event removal
                         if (isGoogleEvent) {
                             coroutineScope.launch {
                                 try {
@@ -327,6 +331,8 @@ fun CalendarScreen(
                                     showRemoveDialog.value = false
                                 }
                             }
+
+                            // Local event removal
                         } else {
                             // Remove from CalendarStorage
                             coroutineScope.launch(Dispatchers.IO) {

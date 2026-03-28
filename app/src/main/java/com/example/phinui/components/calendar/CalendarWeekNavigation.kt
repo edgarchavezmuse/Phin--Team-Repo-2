@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+
+// Handles calendar navigation bar (prev + today + next)
 @Composable
 fun CalendarWeekNavigation(
     onPreviousWeek: () -> Unit,
