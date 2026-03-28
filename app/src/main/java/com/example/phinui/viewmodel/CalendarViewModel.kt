@@ -154,6 +154,17 @@ class CalendarViewModel(
         savedStateHandle["userEmail"] = null
     }
 
+    fun goToCurrentWeek() {
+        val today = LocalDate.now()
+        currentReferenceDate = today
+        selectedDateInWeek = today
+        persistWeekState()
+
+        if (googleAccessToken != null) {
+            loadEventsForCurrentWeek()
+        }
+    }
+
     // Adds event to Google or local calendar depending on sign-in state
     suspend fun addEventToAppropriateCalendar(event: CalendarEvent): AddEventResult {
         val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
