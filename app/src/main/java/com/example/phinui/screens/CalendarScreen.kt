@@ -4,9 +4,12 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
@@ -31,19 +34,58 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.phinui.data.calendar.eventDate
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.components.calendar.*
+import com.example.phinui.data.calendar.formatEventTimeLine
+import com.example.phinui.data.calendar.formatReminderText
 import com.example.phinui.ui.components.calendar.CalendarEmptyState
 import com.example.phinui.ui.components.calendar.CalendarHeader
 import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 // Data formatters
 private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
+
+private fun groupEventsByDateForWeek(
+    events: List<CalendarEvent>,
+    weekStartDate: LocalDate
+): Map<LocalDate, List<CalendarEvent>> {
+    val weekDates = (0L..6L).map { weekStartDate.plusDays(it) }
+
+    return weekDates.associateWith { date ->
+        events.filter { event ->
+            eventDate(event) == date
+        }
+    }
+}
+
+// Function for displaying the event information in the description box
+@Composable fun EventDetails(event: CalendarEvent){
+    Column {
+        // Time of event
+        Text(
+            text = formatEventTimeLine(event)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Location of event
+        Text(
+            text = event.location ?: "Location: TBD"
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Description of event
+        Text(
+            text = event.description ?: "No description available."
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -275,270 +317,238 @@ fun CalendarScreen(
                 ) {
                     items(eventsForSelectedDate) { event ->
                         ElevatedCard(
-                          modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onClick(event) }
-                            .padding(vertical = 6.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(Modifier.padding(14.dp)) {
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onClick(event) }
+                                .padding(vertical = 6.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Column(Modifier.padding(14.dp)) {
 
-                            val isGoogleEvent = event.source == CalendarSource.GOOGLE
+                                val isGoogleEvent = event.source == CalendarSource.GOOGLE
 
-                            // Title
-                            Text(
-                                text = event.title.ifBlank { "(No title)" },
-                                style = MaterialTheme.typography.titleMedium,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-
-                            val timeLine = formatEventTimeLine(event)
-                            if (timeLine.isNotBlank()) {
-                                Spacer(Modifier.height(6.dp))
+                                // Title
                                 Text(
-                                    text = timeLine,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = event.title.ifBlank { "(No title)" },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
                                 )
-                            }
 
-                            // Reminders
-                            if (isGoogleEvent) {
-                                val reminderText = formatReminderText(event.reminderMinutes)
-                                if (reminderText != null) {
-                                    Spacer(Modifier.height(4.dp))
+                                val timeLine = formatEventTimeLine(event)
+                                if (timeLine.isNotBlank()) {
+                                    Spacer(Modifier.height(6.dp))
                                     Text(
-                                        text = "Reminders: $reminderText",
-                                        style = MaterialTheme.typography.bodySmall,
+                                        text = timeLine,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                            }
 
-                            // Location
-                            event.location?.let { location ->
-                                Spacer(Modifier.height(6.dp))
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.LocationOn,
-                                        contentDescription = "Location",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = location,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
-                //}
-
-                // Removing local events from calendar
-                if (showRemoveDialog.value && selectedEvent.value != null) {
-
-                    // Check if Google Event
-                    val eventToDelete = selectedEvent.value!!
-                    val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
-                    
-                        AlertDialog(
-                            onDismissRequest = { showRemoveDialog.value = false },
-                            title = {
-                                Text(
-                                    text = eventToDelete.title,
-                                    style = MaterialTheme.typography.titleLarge
-                                )
-                            },
-                            text = {
-                                // Call the function that displays event info
-                                EventDetails(event = eventToDelete)
-                            },
-                            confirmButton = {
-                                Button(
-
-                                    // Remove event and close message box
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            try {
-						    if (isGoogleEvent) {
-                                                calendarViewModel.deleteGoogleEvent(eventToDelete)
-                                                Toast.makeText(
-                                                    context,
-                                                    "${eventToDelete.title} removed from Google Calendar",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            } else {
-                                                      storage.removeEvent(eventToDelete)
-                                            val updatedEvents = storage.loadEvents()
-                                            withContext(Dispatchers.Main) {
-                                                savedEvents.clear()
-                                                savedEvents.addAll(updatedEvents)
-                                                Toast.makeText(
-                                                    context,
-                                                    "${eventToDelete.title} removed from calendar",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-					}
-				}
-			}
-						    catch (e: Exception) {
-                                                Toast.makeText(
-                                                    context,
-                                                    e.message ?: "Failed to remove Google event.",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            } finally {
-                                                showRemoveDialog.value = false
-                                            }
-                                        }
+                                // Reminders
+                                if (isGoogleEvent) {
+                                    val reminderText = formatReminderText(event.reminderMinutes)
+                                    if (reminderText != null) {
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = "Reminders: $reminderText",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                ) {
-                                    Text("Remove from calendar")
                                 }
-                            },
-                            dismissButton = {
-                                Button(
 
-                                    // Cancel removing event and close message box
-                                    onClick = { showRemoveDialog.value = false }
-                                ) {
-                                    Text("Close")
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
+                                // Location
+                                event.location?.let { location ->
+                                    Spacer(Modifier.height(6.dp))
 
-    // Removing events from calendar
-    if (showRemoveDialog.value && selectedEvent.value != null) {
-
-        // Check if Google Event
-        val eventToDelete = selectedEvent.value!!
-        val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
-
-        AlertDialog(
-            onDismissRequest = { showRemoveDialog.value = false },
-            title = { Text("Remove Event") },
-            text = {
-                Text(
-                    if (isGoogleEvent) {
-                        "Would you like to remove \"${eventToDelete.title}\" from your Google Calendar?"
-                    } else {
-                        "Would you like to remove \"${eventToDelete.title}\" from your local calendar?"
-                    }
-                )
-            },
-
-            // If user taps 'yes' for removal of event
-            confirmButton = {
-                Button(
-                    onClick = {
-
-                        // Google event removal
-                        if (isGoogleEvent) {
-                            coroutineScope.launch {
-                                try {
-                                    calendarViewModel.deleteGoogleEvent(eventToDelete)
-
-                                    // Display confirmation message
-                                    Toast.makeText(
-                                        context,
-                                        "${eventToDelete.title} removed from Google Calendar",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        context,
-                                        e.message ?: "Failed to remove Google event.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } finally {
-                                    showRemoveDialog.value = false
-                                }
-                            }
-
-                            // Local event removal
-                        } else {
-                            // Remove from CalendarStorage
-                            coroutineScope.launch(Dispatchers.IO) {
-                                storage.removeEvent(eventToDelete)
-
-                                // Update calendar screen
-                                val updatedEvents = storage.loadEvents()
-                                withContext(Dispatchers.Main) {
-                                    savedEvents.clear()
-                                    savedEvents.addAll(updatedEvents)
-
-                                    // Display confirmation message
-                                    Toast.makeText(
-                                        context,
-                                        "${eventToDelete.title} removed from calendar",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    // Close dialog box
-                                    showRemoveDialog.value = false
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocationOn,
+                                            contentDescription = "Location",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = location,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
                             }
                         }
+                        //}
+
+                        // Removing local events from calendar
+                        if (showRemoveDialog.value && selectedEvent.value != null) {
+
+                            // Check if Google Event
+                            val eventToDelete = selectedEvent.value!!
+                            val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
+
+                            AlertDialog(
+                                onDismissRequest = { showRemoveDialog.value = false },
+                                title = {
+                                    Text(
+                                        text = eventToDelete.title,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                },
+                                text = {
+                                    // Call the function that displays event info
+                                    EventDetails(event = eventToDelete)
+                                },
+                                confirmButton = {
+                                    Button(
+
+                                        // Remove event and close message box
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                try {
+                                                    if (isGoogleEvent) {
+                                                        calendarViewModel.deleteGoogleEvent(
+                                                            eventToDelete
+                                                        )
+                                                        Toast.makeText(
+                                                            context,
+                                                            "${eventToDelete.title} removed from Google Calendar",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    } else {
+                                                        storage.removeEvent(eventToDelete)
+                                                        val updatedEvents = storage.loadEvents()
+                                                        withContext(Dispatchers.Main) {
+                                                            savedEvents.clear()
+                                                            savedEvents.addAll(updatedEvents)
+                                                            Toast.makeText(
+                                                                context,
+                                                                "${eventToDelete.title} removed from calendar",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    }
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        e.message
+                                                            ?: "Failed to remove Google event.",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                } finally {
+                                                    showRemoveDialog.value = false
+                                                }
+                                            }
+                                        })
+                                    {
+                                        Text("Remove from calendar")
+                                    }
+                                },
+                                dismissButton = {
+                                    Button(
+                                        // Cancel removing event and close message box
+                                        onClick = { showRemoveDialog.value = false }
+                                    ) {
+                                        Text("Close")
+                                    }
+                                }
+                            )
+                        }
                     }
-                ) {
-                    // Confirm button for removing event
-                    Text("Yes")
-                }
-            },
-            // Canceling the removal of event request
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { showRemoveDialog.value = false }
-                ) {
-                    Text("No")
                 }
             }
-        )
-    }
-}
-private fun groupEventsByDateForWeek(
-    events: List<CalendarEvent>,
-    weekStartDate: LocalDate
-): Map<LocalDate, List<CalendarEvent>> {
-    val weekDates = (0L..6L).map { weekStartDate.plusDays(it) }
-
-    return weekDates.associateWith { date ->
-        events.filter { event ->
-            eventDate(event) == date
         }
-    }
-}
 
-// Function for displaying the event information in the description box
-@Composable fun EventDetails(event: CalendarEvent){
-    Column {
-        // Time of event
-        Text(
-            text = formatEventTimeLine(event)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+        // Removing events from calendar
+        //if (showRemoveDialog.value && selectedEvent.value != null) {
 
-        // Location of event
-        Text(
-            text = event.location ?: "Location: TBD"
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+            // Check if Google Event
+        //    val eventToDelete = selectedEvent.value!!
+        //    val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
 
-        // Description of event
-        Text(
-            text = event.description ?: "No description available."
-        )
+        //    AlertDialog(
+        //        onDismissRequest = { showRemoveDialog.value = false },
+        //        title = { Text("Remove Event") },
+        //        text = {
+        //            Text(
+        //                if (isGoogleEvent) {
+        //                    "Would you like to remove \"${eventToDelete.title}\" from your Google Calendar?"
+        //                } else {
+        //                    "Would you like to remove \"${eventToDelete.title}\" from your local calendar?"
+        //                }
+        //            )
+        //        },
+
+                // If user taps 'yes' for removal of event
+        //        confirmButton = {
+        //            Button(
+        //                onClick = {
+
+                            // Google event removal
+        //                    if (isGoogleEvent) {
+        //                        coroutineScope.launch {
+        //                            try {
+        //                                calendarViewModel.deleteGoogleEvent(eventToDelete)
+
+                                        // Display confirmation message
+        //                                Toast.makeText(
+        //                                    context,
+        //                                    "${eventToDelete.title} removed from Google Calendar",
+        //                                    Toast.LENGTH_SHORT
+        //                                ).show()
+        //                            } catch (e: Exception) {
+        //                                Toast.makeText(
+        //                                    context,
+        //                                    e.message ?: "Failed to remove Google event.",
+        //                                    Toast.LENGTH_SHORT
+        //                                ).show()
+        //                            } finally {
+        //                                showRemoveDialog.value = false
+        //                            }
+        //                        }
+
+                                // Local event removal
+        //                    } else {
+                                // Remove from CalendarStorage
+        //                        coroutineScope.launch(Dispatchers.IO) {
+        //                            storage.removeEvent(eventToDelete)
+
+                                    // Update calendar screen
+        //                            val updatedEvents = storage.loadEvents()
+        //                            withContext(Dispatchers.Main) {
+        //                                savedEvents.clear()
+        //                                savedEvents.addAll(updatedEvents)
+
+                                        // Display confirmation message
+        //                                Toast.makeText(
+        //                                    context,
+        //                                    "${eventToDelete.title} removed from calendar",
+        //                                    Toast.LENGTH_SHORT
+        //                                ).show()
+
+                                        // Close dialog box
+        //                                showRemoveDialog.value = false
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            ) {
+                        // Confirm button for removing event
+        //                Text("Remove from calendar")
+        //            }
+        //        },
+                // Canceling the removal of event request
+        //        dismissButton = {
+        //            OutlinedButton(
+        //                onClick = { showRemoveDialog.value = false }
+        //            ) {
+        //                Text("Close")
+        //            }
+        //        }
+        //    )
+        //}
     }
 }
