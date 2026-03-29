@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.data.events.EventData
@@ -211,7 +212,15 @@ fun PhinNavHost(
             )
         }
 
-        composable(Routes.CALENDAR) {
+        composable(
+            Routes.CALENDAR,
+            deepLinks = listOf(
+                navDeepLink {
+                    // deep link allows notification to navigate to this screen
+                    uriPattern = "phin://calendar"
+                }
+            )
+        ) {
 
             // setup for ViewModelFactory
             val context = LocalContext.current
