@@ -1,13 +1,18 @@
 package com.example.phinui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.AccountBox
@@ -20,12 +25,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.phinui.R
 import com.example.phinui.ui.navigation.Routes
+import com.example.phinui.ui.theme.HeaderText
 
 data class MenuItem (
     val label: String,
@@ -51,6 +60,20 @@ fun SideMenu(
     )
 
     Column(modifier = Modifier.padding(16.dp)) {
+
+        // make this the user's profile pic in the future?
+        Image(
+            painter = painterResource(id = R.drawable.redphin),
+            contentDescription = "Profile",
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .border(2.dp, Color.Gray, CircleShape)
+                .background(HeaderText)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         menuItems.forEach { item ->
             MenuRowBuilder(
                 label = item.label,
