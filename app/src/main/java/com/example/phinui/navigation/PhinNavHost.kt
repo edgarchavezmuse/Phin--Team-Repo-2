@@ -30,6 +30,7 @@ import com.example.phinui.ui.screens.MapScreen
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
+import com.example.phinui.data.calendar.sameCalendarEvent
 
 import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
@@ -98,8 +99,9 @@ fun PhinNavHost(
                 ReminderScheduler(context.applicationContext)
             }
 
+            val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler)
+                CalendarViewModelFactory(reminderScheduler, calendarStorage)
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -230,8 +232,9 @@ fun PhinNavHost(
                 ReminderScheduler(context.applicationContext)
             }
 
+            val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler)
+                CalendarViewModelFactory(reminderScheduler, calendarStorage)
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -262,8 +265,9 @@ fun PhinNavHost(
                 ReminderScheduler(context.applicationContext)
             }
 
+            val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler)
+                CalendarViewModelFactory(reminderScheduler, calendarStorage)
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -334,7 +338,7 @@ fun PhinNavHost(
 }
 
 // Checks if two events are the same (based on title + start time)
-private fun sameCalendarEvent(a: CalendarEvent, b: CalendarEvent): Boolean {
-    return a.title.trim().equals(b.title.trim(), ignoreCase = true) &&
-            a.start.take(16) == b.start.take(16)
-}
+//private fun sameCalendarEvent(a: CalendarEvent, b: CalendarEvent): Boolean {
+//    return a.title.trim().equals(b.title.trim(), ignoreCase = true) &&
+//            a.start.take(16) == b.start.take(16)
+//}

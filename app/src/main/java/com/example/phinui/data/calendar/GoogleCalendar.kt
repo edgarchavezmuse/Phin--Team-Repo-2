@@ -115,7 +115,8 @@ object GoogleCalendarRepository {
             }
 
             val root = JSONObject(body)
-            parseGoogleEvent(root)
+            return@withContext parseGoogleEvent(root)
+            //parseGoogleEvent(root)
         } finally {
             connection.disconnect()
         }

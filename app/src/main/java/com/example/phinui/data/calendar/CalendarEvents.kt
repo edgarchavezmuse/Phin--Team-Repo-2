@@ -16,5 +16,7 @@ data class CalendarEvent(
     val reminderMinutes: List<Int> = emptyList(),
     val source: CalendarSource,
     // for description box
-    val description: String? = null
+    val description: String? = null,
+    // for linking google and local events
+    val googleEventID: String? = null
 )

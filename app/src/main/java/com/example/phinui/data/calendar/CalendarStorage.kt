@@ -39,6 +39,8 @@ class CalendarStorage(private val context: Context) {
             buildList {
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
+                    // for linking google and local events
+                    val googleEventID = obj.optString("googleEventID").ifBlank { null }
 
                     add(
                         CalendarEvent(
@@ -49,7 +51,8 @@ class CalendarStorage(private val context: Context) {
                             location = obj.optString("location").ifBlank { null },
                             description = obj.optString("description").ifBlank { null },
                             reminderMinutes = emptyList(),
-                            source = CalendarSource.LOCAL
+                            source = CalendarSource.LOCAL,
+                            googleEventID = googleEventID
                         )
                     )
                 }
@@ -64,6 +67,18 @@ class CalendarStorage(private val context: Context) {
         val updatedEvents = loadEvents().filterNot { it.id == event.id }
         saveAllEvents(updatedEvents)
     }
+
+    // for linking google and local events
+    suspend fun updateEvent(updatedEvent: CalendarEvent) {
+        val events = loadEvents().toMutableList()
+
+        val index = events.indexOfFirst { it.id == updatedEvent.id}
+        if (index != -1) {
+            events[index] = updatedEvent
+            saveAllEvents(events)
+        }
+    }
+
     // Save full list back into DataStore as JSON
     private suspend fun saveAllEvents(events: List<CalendarEvent>) {
         val jsonArray = JSONArray()
@@ -76,6 +91,7 @@ class CalendarStorage(private val context: Context) {
                 put("end", event.end)
                 put("location", event.location ?: "")
                 put("description", event.description ?: "")
+                put("googleEventID", event.googleEventID ?: "")
         }
         jsonArray.put(obj)
     }

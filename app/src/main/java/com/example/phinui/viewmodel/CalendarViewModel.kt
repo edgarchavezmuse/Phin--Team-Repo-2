@@ -19,14 +19,17 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import com.example.phinui.data.calendar.CalendarSource
+import com.example.phinui.data.calendar.CalendarStorage
+import com.example.phinui.data.calendar.sameCalendarEvent
 
 sealed class AddEventResult {
-    data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
+    data class AddedToGoogle(val event: CalendarEvent, val googleEventID: String?) : AddEventResult()
     data object ShouldSaveLocally : AddEventResult()
 }
 class CalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
-    private val reminderScheduler: ReminderScheduler
+    private val reminderScheduler: ReminderScheduler,
+    private val calendarStorage: CalendarStorage
 ) : ViewModel() {
 
     //  Authorization + calendar data state
@@ -50,6 +53,9 @@ class CalendarViewModel(
     var eventsGroupedByDate by mutableStateOf<Map<LocalDate, List<CalendarEvent>>>(emptyMap())
         private set
 
+    //private fun sameCalendarEvent(event1: CalendarEvent, event2: CalendarEvent): Boolean {
+    //    return event1.id == event2.id
+    //}
 
     //  Week navigation state
     // Restored from SavedStateHandle if available
@@ -92,6 +98,29 @@ class CalendarViewModel(
             val email = fetchUserEmail(token)
             userEmail = email
             savedStateHandle["userEmail"] = email
+
+            // Sync local events to google
+            try {
+                val localEvents = calendarStorage.loadEvents()
+                val googleEvents = eventsGroupedByDate.values.flatten()
+
+                localEvents.forEach { localEvent ->
+                    // Check if event has a google event ID.
+                    val alreadyInGoogle = googleEvents.any { sameCalendarEvent(it, localEvent)}
+                    if (!alreadyInGoogle) {
+                    //if (localEvent.googleEventID == null) {
+                        val addLocalEventToGoogleResult = addEventToAppropriateCalendar(localEvent)
+                        if (addLocalEventToGoogleResult is AddEventResult.AddedToGoogle) {
+                            // Update local event with google event ID
+                            val updatedEvent = localEvent.copy(googleEventID = addLocalEventToGoogleResult.googleEventID)
+                            calendarStorage.updateEvent(updatedEvent)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = "Failed to sync local events: ${e.message}"
+            }
+            // End of syncing local events to google
 
             loadEventsForCurrentWeek()
         }
@@ -167,16 +196,65 @@ class CalendarViewModel(
 
     // Adds event to Google or local calendar depending on sign-in state
     suspend fun addEventToAppropriateCalendar(event: CalendarEvent): AddEventResult {
-        val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
+        //val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
 
-        val createdEvent = GoogleCalendarRepository.insertEvent(
-            accessToken = token,
-            event = event,
-            zone = ZoneId.systemDefault()
-        )
+        //val createdEvent = GoogleCalendarRepository.insertEvent(
+        //    accessToken = token,
+        //    event = event,
+        //    zone = ZoneId.systemDefault()
+        //)
 
+        val isSignedInToGoogle = googleAccessToken != null
+
+        // Check if event exists in Google Calendar if signed in
+        //val googleEvents = eventsGroupedByDate.values.flatten()
+        val googleEvents = if (isSignedInToGoogle) {
+            val weekStart = LocalDate.now().with(java.time.DayOfWeek.MONDAY)
+            GoogleCalendarRepository.fetchWeekEvents(googleAccessToken!!, weekStart)
+        } else {
+            emptyList()
+        }
+        val existsInGoogle = googleEvents.any { sameCalendarEvent(it, event) }
+
+        // Add event to google calendar if it doesn't exist
+        if (isSignedInToGoogle && !existsInGoogle) {
+            try {
+                //val googleEvent = GoogleCalendarRepository.insertEvent(
+                GoogleCalendarRepository.insertEvent(
+                    accessToken = googleAccessToken!!,
+                    event = event,
+                    zone = ZoneId.systemDefault()
+                )
+
+                // Refresh events for current week
+                loadEventsForCurrentWeek()
+                return AddEventResult.AddedToGoogle(event, googleEventID = null)
+                //return AddEventResult.AddedToGoogle(event, googleEvent.id)
+            } catch (e: Exception) {
+                throw Exception("Failed to add event to Google Calendar: ${e.message}")
+            }
+        }
+
+        // If not signed in or already exists in Google, save it locally
+        val localEvents = calendarStorage.loadEvents()
+        val existsLocally = localEvents.any { sameCalendarEvent(it, event) }
+        if (!existsLocally) {
+            try {
+                withContext(Dispatchers.IO) {
+                    calendarStorage.saveEvent(event)
+                }
+                // Refresh events for current week
+                //loadEventsForCurrentWeek()
+                //return AddEventResult.ShouldSaveLocally
+
+            } catch (e: Exception) {
+                throw Exception("Failed to save event locally: ${e.message}")
+            }
+        }
+
+        // Refresh events for current week
         loadEventsForCurrentWeek()
-        return AddEventResult.AddedToGoogle(createdEvent)
+        return AddEventResult.ShouldSaveLocally
     }
 
     /*
