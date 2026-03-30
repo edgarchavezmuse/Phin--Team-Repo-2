@@ -10,4 +10,6 @@ object Routes {
     const val ADD_EVENT = "add_event"
     const val MAP = "map"
     const val SCHEDULE = "schedule"
+    const val REGISTER = "register"
+    const val LOGIN = "login"
 }

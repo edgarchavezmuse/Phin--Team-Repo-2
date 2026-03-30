@@ -18,6 +18,9 @@ import com.example.phinui.ui.navigation.PhinNavHost
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.PhinUITheme
 
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.phinui.ui.navigation.Routes
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,13 +37,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PhinUIApp() {
     val navController = rememberNavController()
+    val currentBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry.value?.destination?.route
+
     NotificationPermissionRequest()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Background,
         bottomBar = {
-            CustomBottomBar(navController = navController)
+            if (currentRoute != Routes.LOGIN && currentRoute != Routes.REGISTER) {
+                CustomBottomBar(navController = navController)
+            }
         }
     ) { innerPadding ->
         PhinNavHost(
