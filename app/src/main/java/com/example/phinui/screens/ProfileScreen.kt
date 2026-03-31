@@ -31,7 +31,7 @@ fun ProfileScreen(navController: NavHostController) {
     var name by remember { mutableStateOf("Loading...") }
     var email by remember { mutableStateOf(user?.email ?: "") }
 
-    // 🔥 Load user data from Firestore
+    // Load user data from Firestore
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
             db.collection("users")
