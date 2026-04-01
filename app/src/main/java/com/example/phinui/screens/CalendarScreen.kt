@@ -121,6 +121,8 @@ fun CalendarScreen(
     val datesInCurrentWeek = calendarViewModel.datesInCurrentWeek
     val selectedDateInWeek = calendarViewModel.selectedDateInWeek
 
+
+    /* START OF OLD
     // Merge Google events + local saved events for display only
     val googleEvents = eventsGroupedByDate.values.flatten()
 
@@ -131,6 +133,12 @@ fun CalendarScreen(
         .distinctBy { "${it.title.trim().lowercase()}-${it.start.take(16)}" }
 
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
+
+    END OF OLD */
+
+    //ADDED 3/31
+    val displayedEventsGroupedByDate = eventsGroupedByDate
+    //END OF ADDED
 
     //  Authorization launcher (opens Google consent UI)
     val authorizationLauncher = rememberLauncherForActivityResult(
@@ -409,28 +417,70 @@ fun CalendarScreen(
                                         onClick = {
                                             coroutineScope.launch {
                                                 try {
+
+                                                    // ADDED 3/31
+                                                    val eventToDelete = selectedEvent.value!!
+
+                                                    // 1. ALWAYS delete local first
+                                                    //storage.removeEvent(eventToDelete)
+
+                                                    // 2. THEN delete from Google IF needed
+                                                    if (eventToDelete.source == CalendarSource.GOOGLE
+                                                    //if (eventToDelete.source == CalendarSource.GOOGLE &&
+                                                    //    eventToDelete.googleEventID != null
+                                                    ) {
+                                                        calendarViewModel.deleteGoogleEvent(eventToDelete)
+                                                    }
+
+                                                    else {
+                                                        storage.removeEvent(eventToDelete)
+                                                    }
+
+                                                    // 3. Refresh UI
+                                                    val updatedEvents = storage.loadEvents()
+                                                    savedEvents.clear()
+                                                    savedEvents.addAll(updatedEvents)
+
+                                                    withContext(Dispatchers.Main) {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "${eventToDelete.title} removed from calendar",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                    //END OF ADDED
+
+                                                    /*
+                                                    // START OF OLD CODE
                                                     if (isGoogleEvent) {
+                                                        //storage.removeEvent(eventToDelete)
                                                         calendarViewModel.deleteGoogleEvent(
                                                             eventToDelete
                                                         )
+                                                        //storage.removeEvent(eventToDelete)
+                                                        //Toast.makeText(
+                                                        //    context,
+                                                        //    "${eventToDelete.title} removed from Google Calendar",
+                                                        //    Toast.LENGTH_SHORT
+                                                        //).show()
+                                                    } //else {
+                                                    storage.removeEvent(eventToDelete)
+                                                    //}
+                                                    val updatedEvents = storage.loadEvents()
+                                                    savedEvents.clear()
+                                                    savedEvents.addAll(updatedEvents)
+                                                    withContext(Dispatchers.Main) {
+                                                        savedEvents.clear()
+                                                        savedEvents.addAll(updatedEvents)
                                                         Toast.makeText(
                                                             context,
-                                                            "${eventToDelete.title} removed from Google Calendar",
+                                                            "${eventToDelete.title} removed from calendar",
                                                             Toast.LENGTH_SHORT
                                                         ).show()
-                                                    } else {
-                                                        storage.removeEvent(eventToDelete)
-                                                        val updatedEvents = storage.loadEvents()
-                                                        withContext(Dispatchers.Main) {
-                                                            savedEvents.clear()
-                                                            savedEvents.addAll(updatedEvents)
-                                                            Toast.makeText(
-                                                                context,
-                                                                "${eventToDelete.title} removed from calendar",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
                                                     }
+                                                    // END OF OLD CODE
+
+                                                     */
                                                 } catch (e: Exception) {
                                                     Toast.makeText(
                                                         context,
@@ -465,7 +515,7 @@ fun CalendarScreen(
         // Removing events from calendar
         //if (showRemoveDialog.value && selectedEvent.value != null) {
 
-            // Check if Google Event
+        // Check if Google Event
         //    val eventToDelete = selectedEvent.value!!
         //    val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
 
@@ -482,18 +532,18 @@ fun CalendarScreen(
         //            )
         //        },
 
-                // If user taps 'yes' for removal of event
+        // If user taps 'yes' for removal of event
         //        confirmButton = {
         //            Button(
         //                onClick = {
 
-                            // Google event removal
+        // Google event removal
         //                    if (isGoogleEvent) {
         //                        coroutineScope.launch {
         //                            try {
         //                                calendarViewModel.deleteGoogleEvent(eventToDelete)
 
-                                        // Display confirmation message
+        // Display confirmation message
         //                                Toast.makeText(
         //                                    context,
         //                                    "${eventToDelete.title} removed from Google Calendar",
@@ -510,37 +560,37 @@ fun CalendarScreen(
         //                            }
         //                        }
 
-                                // Local event removal
+        // Local event removal
         //                    } else {
-                                // Remove from CalendarStorage
+        // Remove from CalendarStorage
         //                        coroutineScope.launch(Dispatchers.IO) {
         //                            storage.removeEvent(eventToDelete)
 
-                                    // Update calendar screen
+        // Update calendar screen
         //                            val updatedEvents = storage.loadEvents()
         //                            withContext(Dispatchers.Main) {
         //                                savedEvents.clear()
         //                                savedEvents.addAll(updatedEvents)
 
-                                        // Display confirmation message
+        // Display confirmation message
         //                                Toast.makeText(
         //                                    context,
         //                                    "${eventToDelete.title} removed from calendar",
         //                                    Toast.LENGTH_SHORT
         //                                ).show()
 
-                                        // Close dialog box
+        // Close dialog box
         //                                showRemoveDialog.value = false
         //                            }
         //                        }
         //                    }
         //                }
         //            ) {
-                        // Confirm button for removing event
+        // Confirm button for removing event
         //                Text("Remove from calendar")
         //            }
         //        },
-                // Canceling the removal of event request
+        // Canceling the removal of event request
         //        dismissButton = {
         //            OutlinedButton(
         //                onClick = { showRemoveDialog.value = false }

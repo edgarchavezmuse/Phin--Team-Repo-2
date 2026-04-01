@@ -1,5 +1,6 @@
 package com.example.phinui.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,6 +22,10 @@ import java.net.URL
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.data.calendar.sameCalendarEvent
+import java.util.UUID
+
+
+
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent, val googleEventID: String?) : AddEventResult()
@@ -108,7 +113,7 @@ class CalendarViewModel(
                     // Check if event has a google event ID.
                     val alreadyInGoogle = googleEvents.any { sameCalendarEvent(it, localEvent)}
                     if (!alreadyInGoogle) {
-                    //if (localEvent.googleEventID == null) {
+                        //if (localEvent.googleEventID == null) {
                         val addLocalEventToGoogleResult = addEventToAppropriateCalendar(localEvent)
                         if (addLocalEventToGoogleResult is AddEventResult.AddedToGoogle) {
                             // Update local event with google event ID
@@ -176,11 +181,40 @@ class CalendarViewModel(
         userEmail = null
         errorMessage = null
         isLoadingEvents = false
-        eventsGroupedByDate = emptyMap()
+        //eventsGroupedByDate = emptyMap()
+
+        // ADDED 3/31
+        viewModelScope.launch {
+            val localEvents = calendarStorage.loadEvents()
+            Log.d("CalendarStorage", "Local events BEFORE sign out: ${localEvents.map { it.id to it.googleEventID }}")
+        }
+        //END OF ADDED
 
         // Clear persisted state used by this ViewModel
         savedStateHandle["googleAccessToken"] = null
         savedStateHandle["userEmail"] = null
+
+        // Load local events after sign out
+        viewModelScope.launch {
+            val localEvents = calendarStorage.loadEvents()
+
+            //ADDED 3/31
+            Log.d("CalendarStorage", "Local events after sign out: ${localEvents.map { it.id to it.googleEventID }}")
+            //END OF ADDED
+
+            eventsGroupedByDate = groupEventsByDateForWeek(localEvents, currentWeekStartDate)
+
+            // ADDED 3/31
+            Log.d(
+                "CalendarStorage",
+                "eventsGroupedByDate AFTER sign out: ${
+                    eventsGroupedByDate.mapValues { entry -> entry.value.map { it.id } }
+                }"
+            )
+            Log.d("CalendarStorage", "Local event dates: ${localEvents.map { it.start }}")
+            Log.d("CalendarStorage", "Current week start: $currentWeekStartDate")
+            // END OF ADDED
+        }
     }
 
     fun goToCurrentWeek() {
@@ -196,6 +230,76 @@ class CalendarViewModel(
 
     // Adds event to Google or local calendar depending on sign-in state
     suspend fun addEventToAppropriateCalendar(event: CalendarEvent): AddEventResult {
+        val isSignedInToGoogle = googleAccessToken != null
+
+        // Event is from event screen
+        if (event.googleEventID == null) {
+            // Check if event exists locally
+            val localEvents = calendarStorage.loadEvents()
+
+            //val existsLocally = localEvents.any { sameCalendarEvent(it, event) }
+
+            // ADDED 3/31
+            val existsLocally = localEvents.any {
+                (it.googleEventID != null && it.googleEventID == event.googleEventID) ||
+                sameCalendarEvent(it, event)
+            }
+            // END OF ADDED
+
+            if (!existsLocally) {
+                try {
+                    withContext(Dispatchers.IO) {
+                        calendarStorage.saveEvent(event) // Save to local storage
+                    }
+                    Log.d("CalendarStorage", "Saved event from event screen locally: $event")
+                } catch (e: Exception) {
+                    throw Exception("Failed to save event from event screen locally: ${e.message}")
+                }
+            }
+        }
+
+        // If signed in to Google and event doesn't exist in Google Calendar
+        if (isSignedInToGoogle) {
+            val googleEvents = GoogleCalendarRepository.fetchWeekEvents(googleAccessToken!!, LocalDate.now())
+
+            //val existsInGoogle = googleEvents.any { sameCalendarEvent(it, event) }
+
+            // ADDED 3/31
+            val existsInGoogle = googleEvents.any {
+                (event.googleEventID !=null && it.id == event.googleEventID) ||
+                sameCalendarEvent(it, event)
+            }
+            // END OF ADDED
+
+            if (!existsInGoogle) {
+                try {
+                    // Save to Google Calendar
+                    val createdEvent = GoogleCalendarRepository.insertEvent(
+                        accessToken = googleAccessToken!!,
+                        event = event,
+                        zone = ZoneId.systemDefault()
+                    )
+
+                    Log.d("CalendarStorage", "Event added to Google Calendar: $event")
+                    //return AddEventResult.AddedToGoogle(event, googleEventID = null)
+
+                    //ADDED 3/31
+                    val updatedLocalEvent = event.copy(googleEventID = createdEvent.id) // <-- store Google ID
+                    calendarStorage.updateEvent(updatedLocalEvent)
+
+                    return AddEventResult.AddedToGoogle(createdEvent, createdEvent.googleEventID)
+                    //END OF ADDED
+
+                } catch (e: Exception) {
+                    throw Exception("Failed to add event to Google Calendar: ${e.message}")
+                }
+            }
+        }
+
+        // If not signed in to Google, only save the event locally
+        return AddEventResult.ShouldSaveLocally
+
+        /* Old code
         //val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
 
         //val createdEvent = GoogleCalendarRepository.insertEvent(
@@ -255,6 +359,8 @@ class CalendarViewModel(
         // Refresh events for current week
         loadEventsForCurrentWeek()
         return AddEventResult.ShouldSaveLocally
+
+        end of old code */
     }
 
     /*
@@ -445,6 +551,17 @@ class CalendarViewModel(
             accessToken = token,
             eventId = event.id
         )
+
+        // ADDED 3/31
+        calendarStorage.removeGoogleEvent(event)
+
+        //calendarStorage.removeEvent(event)
+
+        //val localEvents = calendarStorage.loadEvents()
+        //val eventInLocalStorage = localEvents.find { it.id == event.id }
+        //if (eventInLocalStorage != null) {
+        //    calendarStorage.removeEvent(eventInLocalStorage)
+        //}
 
         loadEventsForCurrentWeek()
     }
