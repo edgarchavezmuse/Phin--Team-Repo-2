@@ -36,8 +36,8 @@ import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.PhinUITheme
 import kotlinx.coroutines.launch
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.phinui.ui.navigation.Routes
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +63,10 @@ fun PhinUIApp() {
 
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
+
+    LaunchedEffect(currentRoute) {
+        drawerState.close()
+    }
 
     NotificationPermissionRequest()
 
