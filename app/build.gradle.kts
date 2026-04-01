@@ -2,6 +2,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    //id("com.android.application")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -82,6 +84,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
    //end of map depend
     implementation("com.google.accompanist:accompanist-permissions:0.37.2")
-
-
+    implementation(platform("com.google.firebase:firebase-bom:34.11.0")) //for firebase
+    implementation("com.google.firebase:firebase-analytics") //for firebase
+    implementation("com.google.firebase:firebase-auth") //for firebase
+    implementation("com.google.firebase:firebase-firestore")
 }
