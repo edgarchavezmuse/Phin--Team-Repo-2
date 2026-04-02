@@ -36,6 +36,12 @@ import com.example.phinui.viewmodel.AddEventResult
 import com.example.phinui.ui.screens.ScheduleScreen
 import com.example.phinui.data.calendar.CalendarSource
 
+//firebase
+import com.example.phinui.ui.screens.LoginScreen
+import com.example.phinui.ui.screens.RegisterScreen
+import com.google.firebase.auth.FirebaseAuth
+
+
 @Composable
 fun PhinNavHost(
     navController: NavHostController,
@@ -47,6 +53,8 @@ fun PhinNavHost(
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
     val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
+    val auth = remember { FirebaseAuth.getInstance() }
+    val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
 
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
@@ -66,9 +74,40 @@ fun PhinNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.HOME,
+        //startDestination = Routes.HOME,
+        startDestination = startDestination,
         modifier = modifier
     ) {
+        composable(Routes.LOGIN) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onOpenRegister = {
+                    navController.navigate(Routes.REGISTER) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(Routes.REGISTER) {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onOpenLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         // navigate to x screen
         composable(Routes.HOME) {
             HomeScreen(navController = navController)
@@ -79,7 +118,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.PROFILE) {
-            ProfileScreen()
+            ProfileScreen(navController = navController)
         }
 
         composable(Routes.SCHEDULE) {
@@ -96,7 +135,14 @@ fun PhinNavHost(
 
             val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler, calendarStorage)
+ 	        //HEAD VERSION - NEED TO TEST
+                //CalendarViewModelFactory(reminderScheduler, calendarStorage)
+
+        	//DEVELOP VERSION - NEED TO TEST
+                CalendarViewModelFactory(
+                    context = context.applicationContext,
+                    reminderScheduler = reminderScheduler
+                )
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -229,7 +275,13 @@ fun PhinNavHost(
 
             val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler, calendarStorage)
+                //HEAD VERSION - NEED TO TEST
+                //CalendarViewModelFactory(reminderScheduler, calendarStorage)
+                //DEVELOP VERSION - NEED TO TEST
+                CalendarViewModelFactory(
+                    context = context.applicationContext,
+                    reminderScheduler = reminderScheduler
+                )
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -262,7 +314,13 @@ fun PhinNavHost(
 
             val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler, calendarStorage)
+                //HEAD VERSION - NEED TO TEST
+                //CalendarViewModelFactory(reminderScheduler, calendarStorage)
+                //DEVELOP VERSION - NEED TO TEST
+                CalendarViewModelFactory(
+                    context = context.applicationContext,
+                    reminderScheduler = reminderScheduler
+                )
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(

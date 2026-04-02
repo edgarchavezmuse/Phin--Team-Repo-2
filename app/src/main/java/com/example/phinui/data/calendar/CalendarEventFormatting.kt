@@ -62,9 +62,9 @@ private fun formatGoogleEventTimeLine(event: CalendarEvent): String {
     val start = event.start
     val end = event.end
 
-    if (start.isBlank()) return ""
+    if (start.isBlank()) return "TBD"
 
-    if (!start.contains("T")) return "All day"
+    if (!start.contains(("T"))) return "All day"
 
     val startTime = extractGoogleDisplayTime(start)
     val endTime = if (end.isNotBlank() && end.contains("T")) extractGoogleDisplayTime(end) else ""
@@ -72,7 +72,7 @@ private fun formatGoogleEventTimeLine(event: CalendarEvent): String {
     return when {
         startTime.isNotBlank() && endTime.isNotBlank() -> "$startTime - $endTime"
         startTime.isNotBlank() -> startTime
-        else -> ""
+        else -> "TBD"
     }
 }
 
@@ -81,9 +81,9 @@ private fun formatLocalEventTimeLine(event: CalendarEvent): String {
     val start = event.start
     val end = event.end
 
-    if (start.isBlank()) return ""
+    if (start.isBlank()) return "TBD"
 
-    if (!start.contains("T")) return "All day"
+    if (!start.contains(("T"))) return "All day"
 
     val startTime = extractLocalDisplayTime(start)
     val endTime = if (end.isNotBlank() && end.contains("T")) extractLocalDisplayTime(end) else ""
@@ -91,7 +91,7 @@ private fun formatLocalEventTimeLine(event: CalendarEvent): String {
     return when {
         startTime.isNotBlank() && endTime.isNotBlank() -> "$startTime - $endTime"
         startTime.isNotBlank() -> startTime
-        else -> ""
+        else -> "TBD"
     }
 }
 

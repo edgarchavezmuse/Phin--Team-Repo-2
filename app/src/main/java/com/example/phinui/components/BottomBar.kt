@@ -53,7 +53,7 @@ fun CustomBottomBar(
     val bottomItems = listOf(
         BottomNavItem("Home", Icons.Default.Home, Routes.HOME),
         //BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
-        //BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
+        BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
     )
 
     Row(

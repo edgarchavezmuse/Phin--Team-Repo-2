@@ -2,7 +2,6 @@ package com.example.phinui.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
@@ -16,30 +15,19 @@ import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 
 @Composable
-fun TopHeader() {
+fun AuthHeader() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(145.dp)
-            .background(HeaderRed),
+            .background(HeaderText),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Phin",
-                color = HeaderText,
-                fontSize = 46.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = "CSUCI",
-                color = HeaderText,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Light
-            )
-        }
+        Text(
+            text = "Phin",
+            color = HeaderRed,
+            fontSize = 100.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

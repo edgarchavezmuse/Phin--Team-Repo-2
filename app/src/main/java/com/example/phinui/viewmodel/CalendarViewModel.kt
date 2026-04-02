@@ -23,6 +23,8 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.data.calendar.sameCalendarEvent
 import java.util.UUID
+import com.example.phinui.data.authorization.GoogleCalendarSessionStorage
+
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent, val googleEventID: String?) : AddEventResult()
@@ -31,18 +33,23 @@ sealed class AddEventResult {
 class CalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val reminderScheduler: ReminderScheduler,
+    //HEAD VERSION - NEED TO TEST
     private val calendarStorage: CalendarStorage
+    //DEVELOP VERSION - NEED TO TEST
+    private val sessionStorage: GoogleCalendarSessionStorage
 ) : ViewModel() {
 
     //  Authorization + calendar data state
     // Restored automatically if process is recreated
     var googleAccessToken by mutableStateOf(
         savedStateHandle.get<String>("googleAccessToken")
+            ?: sessionStorage.getAccessToken()
     )
         private set
 
     var userEmail by mutableStateOf(
         savedStateHandle.get<String>("userEmail")
+            ?: sessionStorage.getUserEmail()
     )
         private set
 
@@ -114,6 +121,7 @@ class CalendarViewModel(
             userEmail = email
             savedStateHandle["userEmail"] = email
 
+            //HEAD VERSION - NEED TO TEST
             // Sync local events to google
             try {
                 val localEvents = calendarStorage.loadEvents()
@@ -139,6 +147,12 @@ class CalendarViewModel(
                 errorMessage = "Failed to sync local events: ${e.message}"
             }
             // End of syncing local events to google
+
+            //DEVELOP VERSION - NEED TO TEST
+            sessionStorage.saveSession(
+                accessToken = token,
+                userEmail = email
+            )
 
             loadEventsForCurrentWeek()
 
@@ -216,6 +230,7 @@ class CalendarViewModel(
         savedStateHandle["googleAccessToken"] = null
         savedStateHandle["userEmail"] = null
 
+        //HEAD VERSION - NEED TO TEST
         // Load local events after sign out
         viewModelScope.launch {
             val localEvents = calendarStorage.loadEvents()
@@ -238,6 +253,8 @@ class CalendarViewModel(
             Log.d("CalendarStorage", "Local event dates: ${localEvents.map { it.start }}")
             Log.d("CalendarStorage", "Current week start: $currentWeekStartDate")
         }
+        //DEVELOP VERSION - NEED TO TEST
+        sessionStorage.clearSession()
     }
 
     fun goToCurrentWeek() {

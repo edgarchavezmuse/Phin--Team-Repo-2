@@ -80,20 +80,4 @@ object EventData {
             description = "The Islands Cafe will be serving free iced coffee and sweet treats!"
         )
     )
-
-
-    // For displaying time as HH:MM (i.e. 12:30)
-    fun formatEventDateTime(event: CalendarEvent): String{
-        return try {
-            val datePart = LocalDate.parse(event.start.substring(0,10))
-                .format(displayDateFormatter)
-            val timePart = if(event.start.contains('T') && event.start.length >= 16) {
-                event.start.substring(11,16)
-            }
-            else ""
-            "Date: $datePart\nTime: $timePart"
-        } catch (_: Exception) {
-            "Date: TBD\nTime: TBD"
-        }
-    }
 }

@@ -1,17 +1,13 @@
 package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -34,11 +30,11 @@ import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.formatEventTimeLine
 import com.example.phinui.data.events.EventData.formatEventDateTime
+import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.NavText
-import com.example.phinui.ui.theme.SelectedPill
 
 @Composable
 fun EventsScreen(
@@ -46,7 +42,6 @@ fun EventsScreen(
     onEventClick: (CalendarEvent) -> Unit,
     onAddEventClick: () -> Unit
 ) {
-    // variables for showing 'add to calendar' message
     var showDialog by remember { mutableStateOf(false) }
     var selectedEvent by remember { mutableStateOf<CalendarEvent?>(null) }
 
@@ -56,7 +51,6 @@ fun EventsScreen(
             .background(Background)
             .padding(top = 24.dp)
     ) {
-        // Elements must be wrapped in "item{}" to make scrollable work
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -75,14 +69,10 @@ fun EventsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Fetches the list of events from EventData.kt, with info
             items(events) { event ->
                 EventCard(
-                    title = event.title,
-                    dateTime = formatEventDateTime(event),
-                    location = event.location ?: "Location: TBD",
-
-                    // calls the 'add to calendar' message
+                    event = event,
+                    showDate = true,
                     onClick = {
                         selectedEvent = event
                         showDialog = true
@@ -108,7 +98,6 @@ fun EventsScreen(
         }
     }
 
-    // 'add to calendar' message box
     if (showDialog && selectedEvent != null) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -148,6 +137,7 @@ fun EventsScreen(
     }
 }
 
+/* NEED TO TEST
 @Composable
 fun EventCard(
     title: String,
@@ -187,6 +177,7 @@ fun EventCard(
         )
     }
 }
+*/
 
 // Function for displaying the event information in the description box
 @Composable fun EventDetails(event: CalendarEvent){
