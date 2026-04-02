@@ -31,14 +31,10 @@ import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.data.calendar.sameCalendarEvent
-
 import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
-
 import com.example.phinui.ui.screens.ScheduleScreen
 import com.example.phinui.data.calendar.CalendarSource
-
-
 
 @Composable
 fun PhinNavHost(
@@ -52,7 +48,6 @@ fun PhinNavHost(
     val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
 
-    //
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
 
@@ -336,9 +331,3 @@ fun PhinNavHost(
         }
     }
 }
-
-// Checks if two events are the same (based on title + start time)
-//private fun sameCalendarEvent(a: CalendarEvent, b: CalendarEvent): Boolean {
-//    return a.title.trim().equals(b.title.trim(), ignoreCase = true) &&
-//            a.start.take(16) == b.start.take(16)
-//}

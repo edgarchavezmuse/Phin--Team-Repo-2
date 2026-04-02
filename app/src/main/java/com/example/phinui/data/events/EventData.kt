@@ -68,6 +68,16 @@ object EventData {
             source = CalendarSource.LOCAL,
             description = "Take a break from the studying with some free food!" +
             "The Islands Cafe will be serving free pizza, fries, salads, and more!"
+        ),
+        CalendarEvent(
+            id = "6",
+            title = "Free Lunch",
+            start = "2026-04-01T11:00",
+            end = "2026-04-01T12:00",
+            location = "Islands Cafe",
+            reminderMinutes = emptyList(),
+            source = CalendarSource.LOCAL,
+            description = "The Islands Cafe will be serving free iced coffee and sweet treats!"
         )
     )
 

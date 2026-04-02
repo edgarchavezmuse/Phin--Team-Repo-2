@@ -116,14 +116,10 @@ object GoogleCalendarRepository {
 
             val root = JSONObject(body)
 
-            //ADDED 3/31
             val googleId = root.getString("id")
             val eventWithGoogleId = parseGoogleEvent(root).copy(googleEventID = googleId)
             return@withContext eventWithGoogleId
-            // END OF ADDED
 
-            //return@withContext parseGoogleEvent(root)
-            //parseGoogleEvent(root)
         } finally {
             connection.disconnect()
         }
