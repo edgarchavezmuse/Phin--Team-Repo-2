@@ -136,7 +136,10 @@ fun PhinNavHost(
             }
 
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler)
+                CalendarViewModelFactory(
+                    context = context.applicationContext,
+                    reminderScheduler = reminderScheduler
+                )
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -268,7 +271,10 @@ fun PhinNavHost(
             }
 
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler)
+                CalendarViewModelFactory(
+                    context = context.applicationContext,
+                    reminderScheduler = reminderScheduler
+                )
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
@@ -300,7 +306,10 @@ fun PhinNavHost(
             }
 
             val factory = remember {
-                CalendarViewModelFactory(reminderScheduler)
+                CalendarViewModelFactory(
+                    context = context.applicationContext,
+                    reminderScheduler = reminderScheduler
+                )
             }
 
             val calendarViewModel: CalendarViewModel = viewModel(
