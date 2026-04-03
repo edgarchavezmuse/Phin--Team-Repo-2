@@ -16,7 +16,7 @@ object EventData {
             id = "1",
             title = "Health Science Advising Sessions",
             start = "2026-04-04T09:00",
-            end = "2026-04-04T10:00",
+            end = "2026-04-07T10:00",
             location = "del Norte Hall 1500",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
@@ -43,7 +43,7 @@ object EventData {
             id = "4",
             title = "Picnic",
             start = "2026-04-04T15:00",
-            end = "2026-03-26T16:00",
+            end = "2026-04-04T16:00",
             location = "North Quad",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL

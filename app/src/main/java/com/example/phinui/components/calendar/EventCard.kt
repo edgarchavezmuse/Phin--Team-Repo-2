@@ -186,26 +186,31 @@ private fun InfoRow(
 // Extracts date and formats to readable date - used to display date for events screen
 private fun formatEventDate(event: CalendarEvent): String {
     val start = event.start
+    val end = event.end
+
     if (start.isBlank()) return "TBD"
 
-    return try {
-        when (event.source) {
-            CalendarSource.GOOGLE -> {
-                if (start.contains("T")) {
-                    OffsetDateTime.parse(start).toLocalDate().format(eventDateFormatter)
-                } else {
-                    LocalDate.parse(start).format(eventDateFormatter)
+    fun parseLocalDate(dateText: String): LocalDate? {
+        return try {
+            if (dateText.contains("T")) {
+                when (event.source) {
+                    CalendarSource.GOOGLE -> OffsetDateTime.parse(dateText).toLocalDate()
+                    CalendarSource.LOCAL -> LocalDateTime.parse(dateText).toLocalDate()
                 }
+            } else {
+                LocalDate.parse(dateText)
             }
-            CalendarSource.LOCAL -> {
-                if (start.contains("T")) {
-                    LocalDateTime.parse(start).toLocalDate().format(eventDateFormatter)
-                } else {
-                    LocalDate.parse(start).format(eventDateFormatter)
-                }
-            }
+        } catch (_: Exception) {
+            null
         }
-    } catch (_: Exception) {
-        "TBD"
+    }
+
+    val startDate = parseLocalDate(start) ?: return "TBD"
+    val endDate = parseLocalDate(end)
+
+    return if (endDate != null && endDate != startDate) {
+        "${startDate.format(eventDateFormatter)} - ${endDate.format(eventDateFormatter)}"
+    } else {
+        startDate.format(eventDateFormatter)
     }
 }
