@@ -98,7 +98,6 @@ fun EventsScreen(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Add to calendar?") },
-            //text = { Text("Do you want to add \"${selectedEvent!!.title}\" to your calendar?") },
             text = {
                 EventDetails(event = selectedEvent!!)
             },

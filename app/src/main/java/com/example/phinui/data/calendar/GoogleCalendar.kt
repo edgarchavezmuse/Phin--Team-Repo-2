@@ -154,6 +154,7 @@ object GoogleCalendarRepository {
 
         return JSONObject().apply {
             put("summary", event.title)
+            put("description", event.description)
 
             if (!event.location.isNullOrBlank()) {
                 put("location", event.location)

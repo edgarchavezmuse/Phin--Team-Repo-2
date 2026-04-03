@@ -295,16 +295,6 @@ fun CalendarScreen(
         AlertDialog(
             onDismissRequest = { showRemoveDialog.value = false },
             title = { Text("Remove Event") },
-            //text = {
-            //    Text(
-            //        if (isGoogleEvent) {
-            //            "Would you like to remove \"${eventToDelete.title}\" from your Google Calendar?"
-            //        } else {
-            //            "Would you like to remove \"${eventToDelete.title}\" from your local calendar?"
-            //        }
-            //    )
-            //},
-
             text = {
                 EventDetails(event = eventToDelete)
             },
