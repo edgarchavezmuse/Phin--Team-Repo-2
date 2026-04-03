@@ -47,6 +47,7 @@ class CalendarStorage(private val context: Context) {
                             start = obj.optString("start"),
                             end = obj.optString("end"),
                             location = obj.optString("location").ifBlank { null },
+                            description = obj.optString("description").ifBlank { null },
                             reminderMinutes = emptyList(),
                             source = CalendarSource.LOCAL
                         )
@@ -74,6 +75,7 @@ class CalendarStorage(private val context: Context) {
             put("start", event.start)
             put("end", event.end)
             put("location", event.location ?: "")
+            put("description", event.description ?: "")
         }
         jsonArray.put(obj)
     }
