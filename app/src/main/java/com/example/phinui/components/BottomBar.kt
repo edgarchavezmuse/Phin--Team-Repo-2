@@ -5,26 +5,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -34,9 +29,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.NavText
-import com.example.phinui.ui.theme.SelectedPill
-
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.DateRange
 data class BottomNavItem(
     val label: String,
     val icon: ImageVector,
@@ -51,40 +45,44 @@ fun CustomBottomBar(
     val currentRoute = navBackStackEntry.value?.destination?.route
 
     val bottomItems = listOf(
-        BottomNavItem("Home", Icons.Default.Home, Routes.HOME),
-        //BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
+        BottomNavItem("Map", Icons.Default.LocationOn, Routes.MAP),
+        BottomNavItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
         BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
     )
 
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Background)
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        horizontalArrangement =
-            if (bottomItems.size <=2) Arrangement.Center
-            else Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .navigationBarsPadding(),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = Background,
+        shadowElevation = 0.dp
     ) {
-        bottomItems.forEach { item ->
-            BottomBarItem(
-                label = item.label,
-                icon = item.icon,
-                selected = currentRoute == item.route,
-                onClick = {
-                    if (item.route == Routes.HOME) {
-                        navController.popBackStack(Routes.HOME, false)
-                    }
-                    else {
-                        navController.navigate(item.route) {
-                            popUpTo(Routes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            bottomItems.forEach { item ->
+                BottomBarItem(
+                    label = item.label,
+                    icon = item.icon,
+                    selected = currentRoute == item.route,
+                    onClick = {
+                        if (item.route == Routes.HOME) {
+                            navController.popBackStack(Routes.HOME, false)
+                        } else {
+                            navController.navigate(item.route) {
+                                popUpTo(Routes.HOME) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
@@ -96,32 +94,39 @@ fun BottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val activeBackground = Color(0xFFFFE3E3)
+    val activeColor = Color(0xFFD62828)
+    val inactiveColor = Color(0xFF2C2C2C)
+
     Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(28.dp))
-                .background(if (selected) SelectedPill else Color.Transparent)
-                .clickable { onClick() }
-                .padding(horizontal = 28.dp, vertical = 10.dp),
+                .background(
+                    color = if (selected) activeBackground else Color.Transparent,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = NavText,
-                modifier = Modifier.size(34.dp)
+                tint = if (selected) activeColor else inactiveColor,
+                modifier = Modifier.size(22.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
         Text(
             text = label,
-            fontSize = 18.sp,
-            color = NavText,
-            fontWeight = FontWeight.Medium
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (selected) activeColor else inactiveColor,
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }
