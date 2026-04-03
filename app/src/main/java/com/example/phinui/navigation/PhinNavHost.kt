@@ -19,7 +19,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarStorage
-import com.example.phinui.data.events.EventData
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
