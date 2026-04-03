@@ -151,20 +151,20 @@ fun ProfileScreen(navController: NavHostController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFE53935)
-            )
+                containerColor = Color(0xFFE53935),
+                contentColor = Color(0xFFFFFFFF)
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {
             Icon(
                 imageVector = Icons.Outlined.Logout,
-                contentDescription = "Log out",
-                tint = Color.White
+                contentDescription = "Log out"
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Log Out",
-                color = Color.White,
                 style = MaterialTheme.typography.titleMedium
             )
         }
