@@ -28,6 +28,13 @@ android {
         versionName = "1.0"
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "MAPS_API_KEY",
+            "\"$mapsApiKey\""
+        )
+
     }
 
     buildTypes {
@@ -46,6 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
 }
@@ -67,6 +75,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
@@ -80,6 +89,8 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:6.4.0")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("com.google.android.libraries.places:places:4.4.1")
+
    //end of map depend
     implementation("com.google.accompanist:accompanist-permissions:0.37.2")
 
