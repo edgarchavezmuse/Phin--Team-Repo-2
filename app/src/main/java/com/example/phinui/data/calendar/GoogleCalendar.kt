@@ -209,6 +209,7 @@ object GoogleCalendarRepository {
         }
 
         val location = item.optString("location").ifBlank { null }
+        val description = item.optString("description").ifBlank { null }
 
         return CalendarEvent(
             id = id,
@@ -216,6 +217,7 @@ object GoogleCalendarRepository {
             start = start,
             end = end,
             location = location,
+            description = description,
             reminderMinutes = remindersList,
             source = CalendarSource.GOOGLE
         )
