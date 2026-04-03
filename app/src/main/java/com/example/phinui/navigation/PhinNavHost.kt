@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,7 +19,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarStorage
-import com.example.phinui.data.events.EventData
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
@@ -40,6 +41,9 @@ import com.example.phinui.data.calendar.CalendarSource
 //firebase
 import com.example.phinui.ui.screens.LoginScreen
 import com.example.phinui.ui.screens.RegisterScreen
+import com.example.phinui.viewmodel.EventsRepository
+import com.example.phinui.viewmodel.EventsViewModel
+import com.example.phinui.viewmodel.EventsViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -57,7 +61,8 @@ fun PhinNavHost(
     val auth = remember { FirebaseAuth.getInstance() }
     val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
 
-    //
+    // is this still needed?
+    /*
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
 
@@ -73,6 +78,8 @@ fun PhinNavHost(
             }
         }
     }
+
+     */
 
     NavHost(
         navController = navController,
@@ -150,8 +157,22 @@ fun PhinNavHost(
                 factory = factory
             )
 
+            val eventFactory = remember {
+                EventsViewModelFactory(
+                    repository = EventsRepository()
+                )
+            }
+
+            val eventsViewModel: EventsViewModel = viewModel(
+                viewModelStoreOwner = activity,
+                factory = eventFactory
+            )
+
+            val schoolEvents by eventsViewModel.events.collectAsState()
+
             EventsScreen(
-                events = allEvents,
+                //events = allEvents,
+                events = schoolEvents,
                 onEventClick = { event ->
                     val googleEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
                     val isSignedInToGoogle = calendarViewModel.googleAccessToken != null
@@ -245,11 +266,6 @@ fun PhinNavHost(
                                 }
                             }
                         }
-                    }
-                },
-                onAddEventClick = {
-                    navController.navigate(Routes.ADD_EVENT) {
-                        launchSingleTop = true
                     }
                 }
             )

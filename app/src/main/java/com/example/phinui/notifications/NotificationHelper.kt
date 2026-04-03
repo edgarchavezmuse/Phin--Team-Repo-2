@@ -18,7 +18,6 @@ import com.example.phinui.R
 
 object NotificationHelper {
 
-    // function specifically for dealing with notifications involving google calendar
     fun sendNotificationsForCalendar(
         context: Context,
         title: String?,
