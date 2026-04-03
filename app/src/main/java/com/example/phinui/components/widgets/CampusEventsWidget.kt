@@ -37,6 +37,7 @@ private val fullDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
 @Composable
 fun CampusEventsWidget(
     events: List<CalendarEvent>,
+    isLoading: Boolean,
     onViewAllClick: () -> Unit
 ) {
     val today = LocalDate.now()
@@ -98,7 +99,31 @@ fun CampusEventsWidget(
                 )
             }
 
-            if (visibleEvents.isEmpty()) {
+            if (isLoading) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Loading events...",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Please wait while campus events load.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else if (visibleEvents.isEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     tonalElevation = 1.dp,

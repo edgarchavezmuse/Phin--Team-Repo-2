@@ -18,7 +18,8 @@ import com.example.phinui.ui.theme.Background
 @Composable
 fun HomeScreen(
     navController: NavHostController,
-    events: List<CalendarEvent>
+    events: List<CalendarEvent>,
+    isLoading: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -36,6 +37,7 @@ fun HomeScreen(
         ) {
             HomeDashboard(
                 events = events,
+                isLoading = isLoading,
                 onOpenEvents = {
                     navController.navigate(Routes.EVENTS) { launchSingleTop = true }
                 },

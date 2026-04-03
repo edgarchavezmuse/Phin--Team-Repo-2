@@ -13,13 +13,15 @@ fun HomeDashboard(
     onOpenEvents: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenMap: () -> Unit,
-    onOpenSchedule: () -> Unit
+    onOpenSchedule: () -> Unit,
+    isLoading: Boolean
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         CampusEventsWidget(
             events = events,
+            isLoading = isLoading,
             onViewAllClick = onOpenEvents
         )
     }
