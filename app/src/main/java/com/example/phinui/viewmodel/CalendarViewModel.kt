@@ -19,6 +19,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import com.example.phinui.data.calendar.CalendarSource
+import com.example.phinui.data.authorization.GoogleCalendarSessionStorage
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
@@ -26,18 +27,21 @@ sealed class AddEventResult {
 }
 class CalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
-    private val reminderScheduler: ReminderScheduler
+    private val reminderScheduler: ReminderScheduler,
+    private val sessionStorage: GoogleCalendarSessionStorage
 ) : ViewModel() {
 
     //  Authorization + calendar data state
     // Restored automatically if process is recreated
     var googleAccessToken by mutableStateOf(
         savedStateHandle.get<String>("googleAccessToken")
+            ?: sessionStorage.getAccessToken()
     )
         private set
 
     var userEmail by mutableStateOf(
         savedStateHandle.get<String>("userEmail")
+            ?: sessionStorage.getUserEmail()
     )
         private set
 
@@ -92,6 +96,11 @@ class CalendarViewModel(
             val email = fetchUserEmail(token)
             userEmail = email
             savedStateHandle["userEmail"] = email
+
+            sessionStorage.saveSession(
+                accessToken = token,
+                userEmail = email
+            )
 
             loadEventsForCurrentWeek()
         }
@@ -152,6 +161,8 @@ class CalendarViewModel(
         // Clear persisted state used by this ViewModel
         savedStateHandle["googleAccessToken"] = null
         savedStateHandle["userEmail"] = null
+
+        sessionStorage.clearSession()
     }
 
     fun goToCurrentWeek() {

@@ -41,6 +41,7 @@ import com.example.phinui.ui.components.calendar.CalendarHeader
 import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
+import com.example.phinui.data.events.EventDetails
 
 // Data formatters
 private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
@@ -295,16 +296,10 @@ fun CalendarScreen(
             onDismissRequest = { showRemoveDialog.value = false },
             title = { Text("Remove Event") },
             text = {
-                Text(
-                    if (isGoogleEvent) {
-                        "Would you like to remove \"${eventToDelete.title}\" from your Google Calendar?"
-                    } else {
-                        "Would you like to remove \"${eventToDelete.title}\" from your local calendar?"
-                    }
-                )
+                EventDetails(event = eventToDelete)
             },
 
-            // If user taps 'yes' for removal of event
+            // If user taps 'Remove from calendar' for removal of event
             confirmButton = {
                 Button(
                     onClick = {
@@ -359,7 +354,7 @@ fun CalendarScreen(
                     }
                 ) {
                     // Confirm button for removing event
-                    Text("Yes")
+                    Text("Remove from calendar")
                 }
             },
             // Canceling the removal of event request
@@ -367,7 +362,7 @@ fun CalendarScreen(
                 OutlinedButton(
                     onClick = { showRemoveDialog.value = false }
                 ) {
-                    Text("No")
+                    Text("Cancel")
                 }
             }
         )

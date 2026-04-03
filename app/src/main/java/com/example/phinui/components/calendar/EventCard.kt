@@ -12,7 +12,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,13 +24,21 @@ import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.calendar.formatEventTimeLine
 import com.example.phinui.data.calendar.formatReminderText
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import androidx.compose.material.icons.filled.CalendarToday
+
+private val eventDateFormatter = DateTimeFormatter.ofPattern("MMM d")
 
 
 // Handles calendar event card
 @Composable
 fun EventCard(
     event: CalendarEvent,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showDate: Boolean = false
 ) {
     val isGoogleEvent = event.source == CalendarSource.GOOGLE
 
@@ -78,6 +85,25 @@ fun EventCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
+                    )
+                }
+
+                /* To ensure that the date only displays on event cards on event
+                *  screen and not also calendar event card
+                */
+                if (showDate) {
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    InfoRow(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = "Date",
+                                tint = accentColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        text = formatEventDate(event)
                     )
                 }
 
@@ -154,5 +180,32 @@ private fun InfoRow(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+// Extracts date and formats to readable date - used to display date for events screen
+private fun formatEventDate(event: CalendarEvent): String {
+    val start = event.start
+    if (start.isBlank()) return "TBD"
+
+    return try {
+        when (event.source) {
+            CalendarSource.GOOGLE -> {
+                if (start.contains("T")) {
+                    OffsetDateTime.parse(start).toLocalDate().format(eventDateFormatter)
+                } else {
+                    LocalDate.parse(start).format(eventDateFormatter)
+                }
+            }
+            CalendarSource.LOCAL -> {
+                if (start.contains("T")) {
+                    LocalDateTime.parse(start).toLocalDate().format(eventDateFormatter)
+                } else {
+                    LocalDate.parse(start).format(eventDateFormatter)
+                }
+            }
+        }
+    } catch (_: Exception) {
+        "TBD"
     }
 }

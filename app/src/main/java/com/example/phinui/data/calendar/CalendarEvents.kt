@@ -14,5 +14,6 @@ data class CalendarEvent(
     val location: String? = null,
     // for reminders set in google calendar
     val reminderMinutes: List<Int> = emptyList(),
-    val source: CalendarSource
+    val source: CalendarSource,
+    val description: String? = null
 )
