@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,18 +24,26 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.phinui.R
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.HeaderText
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class MenuItem (
     val label: String,
@@ -59,18 +68,54 @@ fun SideMenu(
         MenuItem("Map", Icons.Default.LocationOn, Routes.MAP)
     )
 
+    val auth = FirebaseAuth.getInstance()
+    val db = FirebaseFirestore.getInstance()
+    val user = auth.currentUser
+
+    var name by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+
+    user?.uid?.let { uid ->
+        db.collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                name = document.getString("name") ?: "No Name"
+                if (name != "No Name") {
+                    firstName = name.substringBefore(" ")
+                }
+            }
+    }
+
     Column(modifier = Modifier.padding(16.dp)) {
 
-        // make this the user's profile pic in the future?
-        Image(
-            painter = painterResource(id = R.drawable.redphin),
-            contentDescription = "Profile",
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .border(2.dp, Color.Gray, CircleShape)
-                .background(HeaderText)
-        )
+        Row() {
+            // make this the user's profile pic in the future?
+            Image(
+                painter = painterResource(id = R.drawable.redphin),
+                contentDescription = "Profile",
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, Color.Gray, CircleShape)
+                    .background(HeaderText)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Box(
+                modifier = Modifier.padding(top = 5.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Welcome" +
+                            if (name == "No Name") "!" else ", $firstName!",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
