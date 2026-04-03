@@ -33,9 +33,7 @@ sealed class AddEventResult {
 class CalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val reminderScheduler: ReminderScheduler,
-    //HEAD VERSION - NEED TO TEST
-    private val calendarStorage: CalendarStorage
-    //DEVELOP VERSION - NEED TO TEST
+    private val calendarStorage: CalendarStorage,
     private val sessionStorage: GoogleCalendarSessionStorage
 ) : ViewModel() {
 
@@ -121,7 +119,6 @@ class CalendarViewModel(
             userEmail = email
             savedStateHandle["userEmail"] = email
 
-            //HEAD VERSION - NEED TO TEST
             // Sync local events to google
             try {
                 val localEvents = calendarStorage.loadEvents()
@@ -148,7 +145,6 @@ class CalendarViewModel(
             }
             // End of syncing local events to google
 
-            //DEVELOP VERSION - NEED TO TEST
             sessionStorage.saveSession(
                 accessToken = token,
                 userEmail = email
@@ -230,8 +226,6 @@ class CalendarViewModel(
         savedStateHandle["googleAccessToken"] = null
         savedStateHandle["userEmail"] = null
 
-        //HEAD VERSION - NEED TO TEST
-        // Load local events after sign out
         viewModelScope.launch {
             val localEvents = calendarStorage.loadEvents()
 
@@ -253,7 +247,6 @@ class CalendarViewModel(
             Log.d("CalendarStorage", "Local event dates: ${localEvents.map { it.start }}")
             Log.d("CalendarStorage", "Current week start: $currentWeekStartDate")
         }
-        //DEVELOP VERSION - NEED TO TEST
         sessionStorage.clearSession()
     }
 

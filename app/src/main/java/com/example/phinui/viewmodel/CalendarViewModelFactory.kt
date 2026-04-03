@@ -22,20 +22,14 @@ class CalendarViewModelFactory(
         extras: CreationExtras
     ) : T {
         if (modelClass.isAssignableFrom(CalendarViewModel::class.java)) {
-            // CreationExtras API to get SavedStateHandle
             val savedStateHandle: SavedStateHandle = extras.createSavedStateHandle()
-            //HEAD VERSION - NEED TO TEST
-            return CalendarViewModel(savedStateHandle, reminderScheduler, calendarStorage) as T
-
-            //DEVELOP VERSION - NEED TO TEST
             val sessionStorage = GoogleCalendarSessionStorage(context.applicationContext)
-
             return CalendarViewModel(
                 savedStateHandle = savedStateHandle,
                 reminderScheduler = reminderScheduler,
+                calendarStorage = calendarStorage,
                 sessionStorage = sessionStorage
             ) as T
-            //END OF DEVELOP
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

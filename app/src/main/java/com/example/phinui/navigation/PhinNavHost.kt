@@ -135,13 +135,10 @@ fun PhinNavHost(
 
             val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
- 	        //HEAD VERSION - NEED TO TEST
-                //CalendarViewModelFactory(reminderScheduler, calendarStorage)
-
-        	//DEVELOP VERSION - NEED TO TEST
                 CalendarViewModelFactory(
                     context = context.applicationContext,
-                    reminderScheduler = reminderScheduler
+                    reminderScheduler = reminderScheduler,
+                    calendarStorage = calendarStorage
                 )
             }
 
@@ -275,12 +272,10 @@ fun PhinNavHost(
 
             val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                //HEAD VERSION - NEED TO TEST
-                //CalendarViewModelFactory(reminderScheduler, calendarStorage)
-                //DEVELOP VERSION - NEED TO TEST
                 CalendarViewModelFactory(
                     context = context.applicationContext,
-                    reminderScheduler = reminderScheduler
+                    reminderScheduler = reminderScheduler,
+                    calendarStorage = calendarStorage
                 )
             }
 
@@ -314,12 +309,10 @@ fun PhinNavHost(
 
             val calendarStorage = remember { CalendarStorage(context) }
             val factory = remember {
-                //HEAD VERSION - NEED TO TEST
-                //CalendarViewModelFactory(reminderScheduler, calendarStorage)
-                //DEVELOP VERSION - NEED TO TEST
                 CalendarViewModelFactory(
                     context = context.applicationContext,
-                    reminderScheduler = reminderScheduler
+                    reminderScheduler = reminderScheduler,
+                    calendarStorage = calendarStorage
                 )
             }
 

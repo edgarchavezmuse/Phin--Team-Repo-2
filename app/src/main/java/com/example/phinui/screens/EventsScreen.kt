@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -29,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.formatEventTimeLine
-import com.example.phinui.data.events.EventData.formatEventDateTime
 import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
@@ -137,47 +137,6 @@ fun EventsScreen(
     }
 }
 
-/* NEED TO TEST
-@Composable
-fun EventCard(
-    title: String,
-    dateTime: String,
-    location: String,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(SelectedPill)
-            .padding(20.dp)
-            .clickable { onClick() }
-    ) {
-        Text(
-            text = title,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = NavText
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = dateTime,
-            fontSize = 16.sp,
-            color = NavText
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = location,
-            fontSize = 16.sp,
-            color = NavText
-        )
-    }
-}
-*/
 
 // Function for displaying the event information in the description box
 @Composable fun EventDetails(event: CalendarEvent){
