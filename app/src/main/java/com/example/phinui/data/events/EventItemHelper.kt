@@ -10,6 +10,7 @@ fun EventItem.toCalendarEvent(): CalendarEvent {
 
     val startEnd = parseRssDate(description)
     val location = extractLocation(description)
+    val shownDescription = parseRssDescription(description)
 
     return CalendarEvent(
         id = link,
@@ -18,7 +19,8 @@ fun EventItem.toCalendarEvent(): CalendarEvent {
         end = startEnd.second,
         location = location,
         reminderMinutes = emptyList(),
-        source = CalendarSource.LOCAL
+        source = CalendarSource.LOCAL,
+        description = shownDescription
     )
 }
 
@@ -110,4 +112,31 @@ fun extractLocation(description: String): String? {
     val clean = description.cleanHtml()
     val firstLine = clean.lines().firstOrNull() ?: return null
     return firstLine.split("-").firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+}
+
+fun parseRssDescription(description: String): String? {
+    if (description.isBlank()) return null
+
+    val clean = description.cleanHtml()
+        .replace("&quot;", "\"")
+        .replace("&nbsp;", " ")
+        .replace("&#160;", " ")
+        .replace("&ndash;", "-")
+        .replace("&#8211;", "-")
+        .replace("&#39;", "\'")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&apos;", "\'")
+
+    val shownDescription = Regex("<p>(.*?)</p>", RegexOption.DOT_MATCHES_ALL)
+    val match = shownDescription.find(clean) ?: return null
+    val pContent = match.groups.get(1)?.value ?: return ""
+
+    val finalText = pContent
+        .replace(Regex("<[^>]*>"), "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    return finalText.ifBlank { null }
 }

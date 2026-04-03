@@ -62,6 +62,7 @@ fun PhinNavHost(
     val auth = remember { FirebaseAuth.getInstance() }
     val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
 
+    // is this still needed?
     /*
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
