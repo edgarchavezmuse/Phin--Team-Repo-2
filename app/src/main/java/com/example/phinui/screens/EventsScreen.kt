@@ -8,12 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,16 +23,13 @@ import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.HeaderRed
-import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.data.events.EventDetails
 
 @Composable
 fun EventsScreen(
     events: List<CalendarEvent>,
-    onEventClick: (CalendarEvent) -> Unit,
-    onAddEventClick: () -> Unit
+    onEventClick: (CalendarEvent) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedEvent by remember { mutableStateOf<CalendarEvent?>(null) }
@@ -77,20 +70,6 @@ fun EventsScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
             }
-        }
-
-        FloatingActionButton(
-            onClick = onAddEventClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 20.dp),
-            containerColor = HeaderRed,
-            contentColor = HeaderText
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Event"
-            )
         }
     }
 
