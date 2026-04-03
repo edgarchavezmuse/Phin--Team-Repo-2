@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +42,9 @@ import com.example.phinui.data.calendar.CalendarSource
 //firebase
 import com.example.phinui.ui.screens.LoginScreen
 import com.example.phinui.ui.screens.RegisterScreen
+import com.example.phinui.viewmodel.EventsRepository
+import com.example.phinui.viewmodel.EventsViewModel
+import com.example.phinui.viewmodel.EventsViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -147,8 +152,22 @@ fun PhinNavHost(
                 factory = factory
             )
 
+            val eventFactory = remember {
+                EventsViewModelFactory(
+                    repository = EventsRepository()
+                )
+            }
+
+            val eventsViewModel: EventsViewModel = viewModel(
+                viewModelStoreOwner = activity,
+                factory = eventFactory
+            )
+
+            val schoolEvents by eventsViewModel.events.collectAsState()
+
             EventsScreen(
-                events = allEvents,
+                //events = allEvents,
+                events = schoolEvents,
                 onEventClick = { event ->
                     val googleEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
                     val isSignedInToGoogle = calendarViewModel.googleAccessToken != null
@@ -376,6 +395,15 @@ fun PhinNavHost(
         composable(Routes.MAP) {
             MapScreen()
         }
+
+        /*
+        composable(Routes.TEST_EVENTS) {
+            //val eventsViewModel: EventsViewModel = viewModel()
+
+            TestEventsScreen()
+        }
+
+         */
     }
 }
 
