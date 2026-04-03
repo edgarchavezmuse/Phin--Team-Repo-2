@@ -30,6 +30,7 @@ import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.NavText
+import com.example.phinui.data.events.EventDetails
 
 @Composable
 fun EventsScreen(
@@ -97,7 +98,9 @@ fun EventsScreen(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Add to calendar?") },
-            text = { Text("Do you want to add \"${selectedEvent!!.title}\" to your calendar?") },
+            text = {
+                EventDetails(event = selectedEvent!!)
+            },
             confirmButton = {
                 Button(
                     onClick = {
@@ -105,7 +108,7 @@ fun EventsScreen(
                         showDialog = false
                     }
                 ) {
-                    Text("Yes")
+                    Text("Add to calendar")
                 }
             },
             dismissButton = {
@@ -114,7 +117,7 @@ fun EventsScreen(
                         showDialog = false
                     }
                 ) {
-                    Text("No")
+                    Text("Cancel")
                 }
             }
         )
