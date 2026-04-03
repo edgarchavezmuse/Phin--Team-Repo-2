@@ -42,14 +42,19 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.tasks.await
 import com.example.phinui.BuildConfig
 import androidx.compose.foundation.clickable
+import com.google.android.libraries.places.api.model.RectangularBounds
 
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
-        Places.initialize(context.applicationContext, BuildConfig.MAPS_API_KEY)
+        Places.initializeWithNewPlacesApiEnabled(
+            context.applicationContext,
+            BuildConfig.MAPS_API_KEY
+        )
     }
+
 
     val placesClient = remember { Places.createClient(context) }
 
@@ -65,7 +70,9 @@ fun MapScreen() {
             LatLng(34.17528, -119.03274)
         )
     }
-
+    val campusRestriction = remember {
+        RectangularBounds.newInstance(campusBounds)
+    }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
     var selectedPlaceLatLng by remember { mutableStateOf<LatLng?>(null) }
@@ -109,7 +116,16 @@ fun MapScreen() {
                 }
 
                 PlaceAutocompleteActivity.RESULT_ERROR -> {
-                    // Optional: show a Snackbar or Toast
+                    val data = result.data
+                    if (data != null) {
+                        val status = PlaceAutocomplete.getResultStatusFromIntent(data)
+                        android.util.Log.e(
+                            "PlacesAutocomplete",
+                            "Error code: ${status?.statusCode}, message: ${status?.statusMessage}"
+                        )
+                    } else {
+                        android.util.Log.e("PlacesAutocomplete", "No intent data returned")
+                    }
                 }
 
                 Activity.RESULT_CANCELED,
@@ -161,6 +177,7 @@ fun MapScreen() {
                 .clickable {
                     val intent = PlaceAutocomplete.IntentBuilder()
                         .setInitialQuery(searchText)
+                        .setLocationRestriction(campusRestriction)
                         .build(context)
 
                     autocompleteLauncher.launch(intent)
