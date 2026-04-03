@@ -112,7 +112,10 @@ fun PhinNavHost(
 
         // navigate to x screen
         composable(Routes.HOME) {
-            HomeScreen(navController = navController)
+            HomeScreen(
+                navController = navController,
+                events = allEvents
+            )
         }
 
         composable(Routes.MESSAGES) {

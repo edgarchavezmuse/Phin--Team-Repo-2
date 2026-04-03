@@ -15,8 +15,8 @@ object EventData {
         CalendarEvent(
             id = "1",
             title = "Health Science Advising Sessions",
-            start = "2026-03-23T09:00",
-            end = "2026-03-23T10:00",
+            start = "2026-04-04T09:00",
+            end = "2026-04-04T10:00",
             location = "del Norte Hall 1500",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
@@ -24,8 +24,8 @@ object EventData {
         CalendarEvent(
             id = "2",
             title = "Student Success Workshop",
-            start = "2026-03-24T09:00",
-            end = "2026-03-24T10:00",
+            start = "2026-04-04T09:00",
+            end = "2026-04-05T10:00",
             location = "Bell Tower Courtyard",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
@@ -33,8 +33,8 @@ object EventData {
         CalendarEvent(
             id = "3",
             title = "Hackathon",
-            start = "2026-03-25T13:00",
-            end = "2026-03-25T14:00",
+            start = "2026-04-04T13:00",
+            end = "2026-04-04T14:00",
             location = "Sierra Hall 203",
             reminderMinutes = emptyList(),
             source = CalendarSource.LOCAL
@@ -42,7 +42,7 @@ object EventData {
         CalendarEvent(
             id = "4",
             title = "Picnic",
-            start = "2026-03-26T15:00",
+            start = "2026-04-04T15:00",
             end = "2026-03-26T16:00",
             location = "North Quad",
             reminderMinutes = emptyList(),
