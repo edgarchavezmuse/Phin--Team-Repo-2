@@ -40,6 +40,9 @@ fun String.toLocalDateTimeOrNull(): LocalDateTime? {
 }
 
 class EventsViewModel(private val repository: EventsRepository) : ViewModel() {
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
     private val _events = MutableStateFlow<List<CalendarEvent>>(emptyList())
     val events: StateFlow<List<CalendarEvent>> = _events
 
@@ -49,13 +52,14 @@ class EventsViewModel(private val repository: EventsRepository) : ViewModel() {
 
     private fun fetchEvents() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val eventsList = repository.fetchEvents()
-                Log.d("EventsVM", "Fetched ${eventsList.size} events")
                 _events.value = eventsList
             } catch (e: Exception) {
-                //_events.value = emptyList()
                 Log.e("EventsVM", "Failed to fetch events", e)
+            } finally {
+                _isLoading.value = false
             }
         }
     }

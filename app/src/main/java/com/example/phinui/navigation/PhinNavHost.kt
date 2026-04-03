@@ -3,7 +3,6 @@ package com.example.phinui.ui.navigation
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -81,6 +80,22 @@ fun PhinNavHost(
 
      */
 
+    val activity = context as ComponentActivity
+
+    val eventFactory = remember {
+        EventsViewModelFactory(
+            repository = EventsRepository()
+        )
+    }
+
+    val eventsViewModel: EventsViewModel = viewModel(
+        viewModelStoreOwner = activity,
+        factory = eventFactory
+    )
+
+    val isLoading by eventsViewModel.isLoading.collectAsState()
+    val schoolEvents by eventsViewModel.events.collectAsState()
+
     NavHost(
         navController = navController,
         //startDestination = Routes.HOME,
@@ -119,7 +134,11 @@ fun PhinNavHost(
 
         // navigate to x screen
         composable(Routes.HOME) {
-            HomeScreen(navController = navController)
+            HomeScreen(
+                navController = navController,
+                events = schoolEvents,
+                isLoading = isLoading
+            )
         }
 
         composable(Routes.MESSAGES) {
@@ -136,7 +155,6 @@ fun PhinNavHost(
 
         composable(Routes.EVENTS) {
             val context = LocalContext.current
-            val activity = context as ComponentActivity
 
             val reminderScheduler = remember {
                 ReminderScheduler(context.applicationContext)
@@ -153,19 +171,6 @@ fun PhinNavHost(
                 viewModelStoreOwner = activity,
                 factory = factory
             )
-
-            val eventFactory = remember {
-                EventsViewModelFactory(
-                    repository = EventsRepository()
-                )
-            }
-
-            val eventsViewModel: EventsViewModel = viewModel(
-                viewModelStoreOwner = activity,
-                factory = eventFactory
-            )
-
-            val schoolEvents by eventsViewModel.events.collectAsState()
 
             EventsScreen(
                 //events = allEvents,
@@ -280,7 +285,6 @@ fun PhinNavHost(
 
             // setup for ViewModelFactory
             val context = LocalContext.current
-            val activity = context as ComponentActivity
 
             val reminderScheduler = remember {
                 ReminderScheduler(context.applicationContext)
@@ -315,8 +319,6 @@ fun PhinNavHost(
 
         composable(Routes.ADD_EVENT) {
             val context = LocalContext.current
-            val activity = context as ComponentActivity
-
             val reminderScheduler = remember {
                 ReminderScheduler(context.applicationContext)
             }
