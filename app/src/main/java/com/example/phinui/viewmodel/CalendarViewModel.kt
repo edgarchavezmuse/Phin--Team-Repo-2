@@ -20,6 +20,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.authorization.GoogleCalendarSessionStorage
+import com.example.phinui.data.calendar.GoogleCalendarUnauthorizedException
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
@@ -33,11 +34,11 @@ class CalendarViewModel(
 
     //  Authorization + calendar data state
     // Restored automatically if process is recreated
-    var googleAccessToken by mutableStateOf(
-        savedStateHandle.get<String>("googleAccessToken")
-            ?: sessionStorage.getAccessToken()
-    )
+    var googleAccessToken by mutableStateOf<String?>(null)
         private set
+
+    val isGoogleCalendarConnected: Boolean
+        get() = sessionStorage.isConnected()
 
     var userEmail by mutableStateOf(
         savedStateHandle.get<String>("userEmail")
@@ -80,27 +81,16 @@ class CalendarViewModel(
         get() = (0..6).map { offset -> currentWeekStartDate.plusDays(offset.toLong()) }
 
 
-    init {
-        // If a token already exists (restored from state), reload events
-        googleAccessToken?.let {
-            loadEventsForCurrentWeek()
-        }
-    }
-
     // Load current events for the week the authorization is successful
     fun onAuthorizationSuccess(token: String) {
         googleAccessToken = token
-        savedStateHandle["googleAccessToken"] = token
 
         viewModelScope.launch {
             val email = fetchUserEmail(token)
             userEmail = email
             savedStateHandle["userEmail"] = email
 
-            sessionStorage.saveSession(
-                accessToken = token,
-                userEmail = email
-            )
+            sessionStorage.saveSession(userEmail = email)
 
             loadEventsForCurrentWeek()
         }
@@ -159,7 +149,6 @@ class CalendarViewModel(
         eventsGroupedByDate = emptyMap()
 
         // Clear persisted state used by this ViewModel
-        savedStateHandle["googleAccessToken"] = null
         savedStateHandle["userEmail"] = null
 
         sessionStorage.clearSession()
@@ -180,14 +169,21 @@ class CalendarViewModel(
     suspend fun addEventToAppropriateCalendar(event: CalendarEvent): AddEventResult {
         val token = googleAccessToken ?: return AddEventResult.ShouldSaveLocally
 
-        val createdEvent = GoogleCalendarRepository.insertEvent(
-            accessToken = token,
-            event = event,
-            zone = ZoneId.systemDefault()
-        )
+        return try {
+            val createdEvent = GoogleCalendarRepository.insertEvent(
+                accessToken = token,
+                event = event,
+                zone = ZoneId.systemDefault()
+            )
 
-        loadEventsForCurrentWeek()
-        return AddEventResult.AddedToGoogle(createdEvent)
+            loadEventsForCurrentWeek()
+            AddEventResult.AddedToGoogle(createdEvent)
+
+        } catch (e: GoogleCalendarUnauthorizedException) {
+            googleAccessToken = null
+            errorMessage = "Session expired. Please reconnect."
+            AddEventResult.ShouldSaveLocally
+        }
     }
 
     /*
@@ -234,19 +230,18 @@ class CalendarViewModel(
                     reminderScheduler.cancelReminder(removedId)
                 }
 
-            } catch (e: Exception) {
-
-                errorMessage = e.message ?: "Failed to load events."
+            } catch (e: GoogleCalendarUnauthorizedException) {
+                googleAccessToken = null
+                errorMessage = "Session expired. Reconnecting required."
                 eventsGroupedByDate = emptyMap()
 
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Failed to load events."
+                eventsGroupedByDate = emptyMap()
             } finally {
-
                 isLoadingEvents = false
-
             }
-
         }
-
     }
 
 
@@ -364,7 +359,8 @@ class CalendarViewModel(
 
     // Deletes google event
     suspend fun deleteGoogleEvent(event: CalendarEvent) {
-        val token = googleAccessToken ?: throw IllegalStateException("Not signed in to Google Calendar.")
+        val token = googleAccessToken
+            ?: throw IllegalStateException("Not signed in to Google Calendar.")
 
         if (event.source != CalendarSource.GOOGLE) {
             throw IllegalArgumentException("Only Google events can be deleted here.")
@@ -374,12 +370,18 @@ class CalendarViewModel(
             throw IllegalArgumentException("Missing Google event ID.")
         }
 
-        GoogleCalendarRepository.deleteEvent(
-            accessToken = token,
-            eventId = event.id
-        )
+        try {
+            GoogleCalendarRepository.deleteEvent(
+                accessToken = token,
+                eventId = event.id
+            )
 
-        loadEventsForCurrentWeek()
+            loadEventsForCurrentWeek()
+
+        } catch (e: GoogleCalendarUnauthorizedException) {
+            googleAccessToken = null
+            errorMessage = "Session expired. Please reconnect."
+            throw e
+        }
     }
-
 }

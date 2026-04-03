@@ -42,6 +42,7 @@ import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
+import androidx.compose.runtime.LaunchedEffect
 
 // Data formatters
 private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
@@ -72,6 +73,7 @@ fun CalendarScreen(
     val isLoadingEvents = calendarViewModel.isLoadingEvents
     val errorMessage = calendarViewModel.errorMessage
     val eventsGroupedByDate = calendarViewModel.eventsGroupedByDate
+    val isGoogleCalendarConnected = calendarViewModel.isGoogleCalendarConnected
 
     //  Week navigation state
     val currentWeekStartDate = calendarViewModel.currentWeekStartDate
@@ -105,6 +107,23 @@ fun CalendarScreen(
         calendarViewModel.onAuthorizationSuccess(tokenFromResult)
     }
 
+    LaunchedEffect(isGoogleCalendarConnected, googleAccessToken) {
+        if (isGoogleCalendarConnected && googleAccessToken == null) {
+            calendarViewModel.setError(null)
+
+            GoogleAuthManager.startAuthorization(
+                activity = activity,
+                launcher = authorizationLauncher,
+                onAccessToken = { token ->
+                    calendarViewModel.onAuthorizationSuccess(token)
+                },
+                onError = {
+                    calendarViewModel.signOut()
+                }
+            )
+        }
+    }
+
     /*
      * Auto-refresh calendar when screen is reopened
      * Uses ON_RESUME so it updates when navigating back or returning to the app.
@@ -124,14 +143,14 @@ fun CalendarScreen(
     }
 
     // Main Calendar UI Layout
-    Column(modifier.padding(16.dp)) {
+    Column(modifier = modifier.padding(16.dp)) {
 
         //  Header (week range + prev/next)
         CalendarHeader(
             currentWeekStartDate = currentWeekStartDate,
             onRefreshClick = { calendarViewModel.refreshEvents() },
             isRefreshing = isLoadingEvents,
-            isSignedIn = googleAccessToken != null
+            isSignedIn = isGoogleCalendarConnected
         )
 
         Spacer(Modifier.height(12.dp))
@@ -143,7 +162,7 @@ fun CalendarScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (googleAccessToken == null) {
+            if (!isGoogleCalendarConnected && googleAccessToken == null) {
                 CalendarConnectionCard(
                     onConnectClick = {
                         calendarViewModel.setError(null)
@@ -169,7 +188,11 @@ fun CalendarScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = userEmail?.let { "Signed in as $it" } ?: "Signed in",
+                        text = when {
+                            googleAccessToken != null && userEmail != null -> "Signed in as $userEmail"
+                            googleAccessToken != null -> "Signed in"
+                            else -> "Reconnecting to Google Calendar..."
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
@@ -190,6 +213,7 @@ fun CalendarScreen(
                                 calendarViewModel.signOut()
                             }
                         },
+                        enabled = isGoogleCalendarConnected,
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.primary
                         )
@@ -251,10 +275,17 @@ fun CalendarScreen(
         // Decide what to show based on auth/loading/data state
         when {
             // When no events print:
-            googleAccessToken == null && eventsForSelectedDate.isEmpty() -> {
+            !isGoogleCalendarConnected && eventsForSelectedDate.isEmpty() -> {
                 CalendarEmptyState(
                     title = "Connect your calendar",
                     subtitle = "Sign in to see your events."
+                )
+            }
+
+            isGoogleCalendarConnected && googleAccessToken == null && eventsForSelectedDate.isEmpty() -> {
+                CalendarEmptyState(
+                    title = "Reconnecting...",
+                    subtitle = "Restoring your Google Calendar session."
                 )
             }
 
