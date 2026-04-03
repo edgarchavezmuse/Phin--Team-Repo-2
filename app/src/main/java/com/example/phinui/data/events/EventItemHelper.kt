@@ -54,15 +54,17 @@ fun parseRssDate(description: String): Pair<String, String> {
         ?: LocalDate.now().year.toString()
 
     val localDate = try {
-        LocalDate.parse("$month $day $year",
-            DateTimeFormatter.ofPattern("MMMM d yyyy", Locale.ENGLISH))
+        LocalDate.parse(
+            "$month $day $year",
+            DateTimeFormatter.ofPattern("MMMM d yyyy", Locale.ENGLISH)
+        )
     } catch (e: Exception) {
         return Pair("", "")
     }
 
-    val timeMatch =
-        Regex("(\\d{1,2})(?::(\\d{2}))?([ap]m)?\\s*[-–]\\s*(\\d{1,2})(?::(\\d{2}))?([ap]m)")
-        .find(dateTimeLine)
+    val timeMatch = Regex(
+        "(\\d{1,2})(?::(\\d{2}))?([ap]m)?\\s*[-–]\\s*(\\d{1,2})(?::(\\d{2}))?([ap]m)"
+    ).find(dateTimeLine)
 
     if(timeMatch != null) {
         val startHour = timeMatch.groupValues[1]

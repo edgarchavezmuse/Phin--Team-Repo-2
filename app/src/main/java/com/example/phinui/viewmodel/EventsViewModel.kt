@@ -9,11 +9,33 @@ import com.example.phinui.data.events.toCalendarEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 class EventsRepository {
     suspend fun fetchEvents(): List<CalendarEvent> {
         val rssItems = RetrofitInstance.api.getEvents().channel?.items ?: emptyList()
-        return rssItems.map { it.toCalendarEvent() }
+
+        val now = LocalDateTime.now()
+
+        return rssItems
+            .map { it.toCalendarEvent() }
+            // filter for only upcoming events
+            .filter { event ->
+                val start = event.start.toLocalDateTimeOrNull()
+                val end = event.end.toLocalDateTimeOrNull()
+
+                start != null && end != null && end.isAfter(now)
+            }
+            .sortedBy { it.start.toLocalDateTimeOrNull() }
+            .take(20)
+    }
+}
+
+fun String.toLocalDateTimeOrNull(): LocalDateTime? {
+    return try {
+        LocalDateTime.parse(this)
+    } catch (e: Exception) {
+        null
     }
 }
 

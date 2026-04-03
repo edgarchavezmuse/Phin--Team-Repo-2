@@ -62,7 +62,7 @@ fun PhinNavHost(
     val auth = remember { FirebaseAuth.getInstance() }
     val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
 
-    //
+    /*
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
 
@@ -78,6 +78,8 @@ fun PhinNavHost(
             }
         }
     }
+
+     */
 
     NavHost(
         navController = navController,
@@ -262,11 +264,6 @@ fun PhinNavHost(
                             }
                         }
                     }
-                },
-                onAddEventClick = {
-                    navController.navigate(Routes.ADD_EVENT) {
-                        launchSingleTop = true
-                    }
                 }
             )
         }
@@ -395,15 +392,6 @@ fun PhinNavHost(
         composable(Routes.MAP) {
             MapScreen()
         }
-
-        /*
-        composable(Routes.TEST_EVENTS) {
-            //val eventsViewModel: EventsViewModel = viewModel()
-
-            TestEventsScreen()
-        }
-
-         */
     }
 }
 
