@@ -40,6 +40,9 @@ class CalendarViewModel(
     val isGoogleCalendarConnected: Boolean
         get() = sessionStorage.isConnected()
 
+    var isRestoringGoogleSession by mutableStateOf(false)
+        private set
+
     var userEmail by mutableStateOf(
         savedStateHandle.get<String>("userEmail")
             ?: sessionStorage.getUserEmail()
@@ -84,6 +87,7 @@ class CalendarViewModel(
     // Load current events for the week the authorization is successful
     fun onAuthorizationSuccess(token: String) {
         googleAccessToken = token
+        isRestoringGoogleSession = false
 
         viewModelScope.launch {
             val email = fetchUserEmail(token)
@@ -96,6 +100,20 @@ class CalendarViewModel(
         }
     }
 
+    fun beginGoogleSessionRestore() {
+        if (!sessionStorage.isConnected()) return
+        if (googleAccessToken != null) return
+        if (isRestoringGoogleSession) return
+
+        isRestoringGoogleSession = true
+        errorMessage = null
+    }
+
+    fun onGoogleSessionRestoreFailed(message: String? = null) {
+        isRestoringGoogleSession = false
+        googleAccessToken = null
+        errorMessage = message ?: "Failed to restore Google Calendar session."
+    }
 
     // Refresh events when updated
     fun refreshEvents() {
@@ -146,6 +164,7 @@ class CalendarViewModel(
         userEmail = null
         errorMessage = null
         isLoadingEvents = false
+        isRestoringGoogleSession = false
         eventsGroupedByDate = emptyMap()
 
         // Clear persisted state used by this ViewModel
@@ -181,6 +200,7 @@ class CalendarViewModel(
 
         } catch (e: GoogleCalendarUnauthorizedException) {
             googleAccessToken = null
+            isRestoringGoogleSession = false
             errorMessage = "Session expired. Please reconnect."
             AddEventResult.ShouldSaveLocally
         }
@@ -232,6 +252,7 @@ class CalendarViewModel(
 
             } catch (e: GoogleCalendarUnauthorizedException) {
                 googleAccessToken = null
+                isRestoringGoogleSession = false
                 errorMessage = "Session expired. Reconnecting required."
                 eventsGroupedByDate = emptyMap()
 
@@ -379,9 +400,10 @@ class CalendarViewModel(
             loadEventsForCurrentWeek()
 
         } catch (e: GoogleCalendarUnauthorizedException) {
-            googleAccessToken = null
-            errorMessage = "Session expired. Please reconnect."
-            throw e
-        }
+        googleAccessToken = null
+        isRestoringGoogleSession = false
+        errorMessage = "Session expired. Please reconnect."
+        throw e
+    }
     }
 }

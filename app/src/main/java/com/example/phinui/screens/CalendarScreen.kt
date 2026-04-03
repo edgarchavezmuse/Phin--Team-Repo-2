@@ -2,8 +2,6 @@ package com.example.phinui.screens
 
 import android.app.Activity
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.notifications.ExactAlarmPermissionRequest
 import com.example.phinui.data.calendar.CalendarStorage
@@ -42,7 +39,6 @@ import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
-import androidx.compose.runtime.LaunchedEffect
 
 // Data formatters
 private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
@@ -54,6 +50,7 @@ fun CalendarScreen(
     modifier: Modifier = Modifier,
     calendarViewModel: CalendarViewModel,
     onClick: (CalendarEvent) -> Unit,
+    onConnectClick: () -> Unit,
     selectedEvent: MutableState<CalendarEvent?>,
     showRemoveDialog: MutableState<Boolean>
 ) {
@@ -92,37 +89,6 @@ fun CalendarScreen(
         .distinctBy { "${it.title.trim().lowercase()}-${it.start.take(16)}" }
 
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
-
-    //  Authorization launcher (opens Google consent UI)
-    val authorizationLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        val tokenFromResult = GoogleAuthManager.handleAuthorizationResult(activity, result)
-        if (tokenFromResult.isNullOrBlank()) {
-            calendarViewModel.setError("Authorization canceled or failed.")
-            return@rememberLauncherForActivityResult
-        }
-
-        // Save token & load this weeks events
-        calendarViewModel.onAuthorizationSuccess(tokenFromResult)
-    }
-
-    LaunchedEffect(isGoogleCalendarConnected, googleAccessToken) {
-        if (isGoogleCalendarConnected && googleAccessToken == null) {
-            calendarViewModel.setError(null)
-
-            GoogleAuthManager.startAuthorization(
-                activity = activity,
-                launcher = authorizationLauncher,
-                onAccessToken = { token ->
-                    calendarViewModel.onAuthorizationSuccess(token)
-                },
-                onError = {
-                    calendarViewModel.signOut()
-                }
-            )
-        }
-    }
 
     /*
      * Auto-refresh calendar when screen is reopened
@@ -164,22 +130,7 @@ fun CalendarScreen(
         ) {
             if (!isGoogleCalendarConnected && googleAccessToken == null) {
                 CalendarConnectionCard(
-                    onConnectClick = {
-                        calendarViewModel.setError(null)
-
-                        GoogleAuthManager.startAuthorization(
-                            activity = activity,
-                            launcher = authorizationLauncher,
-                            onAccessToken = { immediateToken ->
-                                calendarViewModel.onAuthorizationSuccess(immediateToken)
-                            },
-                            onError = { exception ->
-                                calendarViewModel.setError(
-                                    exception.message ?: "Authorization error."
-                                )
-                            }
-                        )
-                    }
+                    onConnectClick = onConnectClick
                 )
             } else {
 
@@ -373,7 +324,7 @@ fun CalendarScreen(
                                     // Display confirmation message
                                     Toast.makeText(
                                         context,
-                                        "${eventToDelete.title} removed from calendar",
+                                        "${eventToDelete.title} removed from Phin calendar",
                                         Toast.LENGTH_SHORT
                                     ).show()
 
