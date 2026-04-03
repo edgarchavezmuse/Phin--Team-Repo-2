@@ -217,9 +217,9 @@ object GoogleCalendarRepository {
             start = start,
             end = end,
             location = location,
-            description = description,
             reminderMinutes = remindersList,
-            source = CalendarSource.GOOGLE
+            source = CalendarSource.GOOGLE,
+            description = description
         )
     }
 
