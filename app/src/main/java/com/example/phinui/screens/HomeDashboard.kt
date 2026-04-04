@@ -2,66 +2,27 @@ package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
-import com.example.phinui.ui.components.HomeActionItem
-
+import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.ui.components.widgets.CampusEventsWidget
 @Composable
 fun HomeDashboard(
-
     // makes the xx icons clickable
+    events: List<CalendarEvent>,
     onOpenEvents: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenMap: () -> Unit,
-    onOpenSchedule: () -> Unit
+    onOpenSchedule: () -> Unit,
+    isLoading: Boolean
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(60.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(60.dp)
-        ) {
-            HomeActionItem(
-                icon = Icons.Default.LocationOn,
-                label = "Map",
-                onClick = onOpenMap
-            )
-
-            HomeActionItem(
-                icon = Icons.Default.DateRange,
-                label = "Calendar",
-                onClick = onOpenCalendar
-            )
-
-            HomeActionItem(
-                icon = Icons.Default.Event,
-                label = "Events",
-                onClick = onOpenEvents
-            )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(60.dp)
-        ) {
-//            HomeActionItem(
-//                icon = Icons.Default.Schedule,
-//                label = "Schedule",
-//                onClick = onOpenSchedule
-//            )
-
-//            HomeActionItem(
-//                icon = Icons.Default.Event,
-//                label = "Events",
-//                onClick = onOpenEvents
-//            )
-        }
+        CampusEventsWidget(
+            events = events,
+            isLoading = isLoading,
+            onViewAllClick = onOpenEvents
+        )
     }
 }

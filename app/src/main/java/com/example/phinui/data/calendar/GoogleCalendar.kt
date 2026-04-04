@@ -53,6 +53,10 @@ object GoogleCalendarRepository {
                     connection.errorStream?.bufferedReader()?.readText() ?: ""
                 }
 
+                if (code == 401) {
+                    throw GoogleCalendarUnauthorizedException()
+                }
+
                 // Fail fast if the API returned an error status code
                 if (code !in 200..299) {
                     throw RuntimeException("Calendar API error ($code): $body")
