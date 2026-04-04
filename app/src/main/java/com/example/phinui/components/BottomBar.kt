@@ -31,6 +31,7 @@ import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.DateRange
+
 data class BottomNavItem(
     val label: String,
     val icon: ImageVector,
