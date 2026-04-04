@@ -54,7 +54,11 @@ import java.util.Locale
 import java.util.TimeZone
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
-
+import com.example.phinui.components.calendar.event_form.EventInputRow
+import com.example.phinui.components.calendar.event_form.EventPickerRow
+import com.example.phinui.components.calendar.event_form.EventTextArea
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +83,7 @@ fun AddEventScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.Top
     ) {
@@ -90,23 +95,28 @@ fun AddEventScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        OutlinedTextField(
+        var eventNameFocused by remember { mutableStateOf(false) }
+
+        EventInputRow(
+            label = "Event Name",
             value = eventName,
+            placeholder = "Enter event name",
             onValueChange = {
                 eventName = it
                 errorMessage = null
             },
-            label = { Text("Event Name") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            singleLine = true
+            isActive = eventNameFocused,
+            modifier = Modifier
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        DateField(
+        EventPickerRow(
             label = "Date",
-            value = eventDate,
+            value = if (eventDate.isBlank()) "" else formatDisplayDate(eventDate),
+            placeholder = "Select date",
+            icon = Icons.Default.DateRange,
+            isActive = showDatePicker,
             onClick = {
                 errorMessage = null
                 showDatePicker = true
@@ -115,52 +125,64 @@ fun AddEventScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TimeField(
-            label = "Start Time",
-            value = eventStartTime,
-            onClick = {
-                errorMessage = null
-                showStartPicker = true
-            }
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            EventPickerRow(
+                label = "Start",
+                value = eventStartTime,
+                placeholder = "Start",
+                icon = Icons.Default.Schedule,
+                isActive = showStartPicker,
+                onClick = {
+                    errorMessage = null
+                    showStartPicker = true
+                },
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = "to",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF7A766F)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            EventPickerRow(
+                label = "End",
+                value = eventEndTime,
+                placeholder = "End",
+                icon = Icons.Default.Schedule,
+                isActive = showEndPicker,
+                onClick = {
+                    errorMessage = null
+                    showEndPicker = true
+                },
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TimeField(
-            label = "End Time",
-            value = eventEndTime,
-            onClick = {
-                errorMessage = null
-                showEndPicker = true
-            }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
+        EventInputRow(
+            label = "Location",
             value = eventLocation,
+            placeholder = "Add location",
             onValueChange = { eventLocation = it },
-            label = { Text("Location") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            singleLine = true,
-            trailingIcon = {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = androidx.compose.ui.graphics.Color(0xFFFF1F1F)
-                )
-            }
+            trailingIcon = Icons.Default.LocationOn
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        EventTextArea(
+            label = "Description",
             value = eventDescription,
-            onValueChange = { eventDescription = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            placeholder = "Add notes about the event",
+            onValueChange = { eventDescription = it }
         )
 
         if (errorMessage != null) {
