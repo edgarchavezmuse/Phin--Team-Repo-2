@@ -15,12 +15,22 @@ import com.example.phinui.data.calendar.formatEventTimeLine
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import java.time.format.DateTimeFormatter
+import java.time.OffsetDateTime
+import androidx.compose.material.icons.filled.CalendarToday
+import com.example.phinui.data.calendar.eventDate
+
 
 private val PrimaryRed = Color(0xFFE53935)
 private val TextDark = Color(0xFF1F1F1F)
 private val TextMuted = Color(0xFF000000)
+
+private val eventDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
+
 
 @Composable
 fun EventDetails(event: CalendarEvent) {
@@ -28,6 +38,25 @@ fun EventDetails(event: CalendarEvent) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+
+        eventDate(event)?.let { date ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "Date",
+                    tint = PrimaryRed
+                )
+                Text(
+                    text = date.format(eventDateFormatter),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextDark,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(
