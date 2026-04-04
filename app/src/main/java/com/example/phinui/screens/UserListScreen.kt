@@ -9,15 +9,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.phinui.ui.navigation.Routes
-//import com.google.firebase.firestore.auth.User
 import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import com.example.phinui.components.messages.UserListRepository
+import com.example.phinui.components.messages.User
 
-data class User(
-    val uid: String,
-    val name: String
-)
 
-@Composable fun UserListScreen (navController: NavController, users: List<User>) {
+@Composable fun UserListScreen (navController: NavController) {
+    val currentUserID = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val userListRepository = remember { UserListRepository() }
+
+    var users by remember { mutableStateOf(listOf<User>()) }
+
+    LaunchedEffect(Unit) {
+        users = userListRepository.getAllUsers(currentUserID)
+    }
+
     LazyColumn {
         items(users) { user ->
             Row(
