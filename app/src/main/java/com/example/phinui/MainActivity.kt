@@ -72,7 +72,7 @@ fun PhinUIApp() {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = !hideNavigationUi,
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             if (!hideNavigationUi) {
                 ModalDrawerSheet(
