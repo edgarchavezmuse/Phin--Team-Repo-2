@@ -58,6 +58,7 @@ fun CalendarScreen(
     calendarViewModel: CalendarViewModel,
     onClick: (CalendarEvent) -> Unit,
     onConnectClick: () -> Unit,
+    onAddEventClick: () -> Unit,
     selectedEvent: MutableState<CalendarEvent?>,
     showRemoveDialog: MutableState<Boolean>
 ) {
@@ -189,6 +190,15 @@ fun CalendarScreen(
             onTodayClick = { calendarViewModel.goToCurrentWeek() },
             onNextWeek = { calendarViewModel.goToNextWeek() }
         )
+
+        Spacer(Modifier.height(12.dp))
+
+        Button(
+            onClick = onAddEventClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Create Event")
+        }
 
         Spacer(Modifier.height(12.dp))
 

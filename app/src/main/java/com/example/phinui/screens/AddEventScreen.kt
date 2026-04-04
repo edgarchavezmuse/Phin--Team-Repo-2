@@ -32,6 +32,7 @@ fun AddEventScreen(
     var eventStartTime by remember { mutableStateOf("") }
     var eventEndTime by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
+    var eventDescription by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -97,18 +98,49 @@ fun AddEventScreen(
             shape = RoundedCornerShape(12.dp)
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = eventDescription,
+            onValueChange = { eventDescription = it },
+            label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
+                val trimmedName = eventName.trim()
+                val trimmedDate = eventDate.trim()
+                val trimmedStartTime = eventStartTime.trim()
+                val trimmedEndTime = eventEndTime.trim()
+                val trimmedLocation = eventLocation.trim()
+                val trimmedDescription = eventDescription.trim()
+
+                if (
+                    trimmedName.isBlank() ||
+                    trimmedDate.isBlank() ||
+                    trimmedStartTime.isBlank() ||
+                    trimmedEndTime.isBlank()
+                ) {
+                    return@Button
+                }
+
+                if ("${trimmedDate}T${trimmedEndTime}" <= "${trimmedDate}T${trimmedStartTime}") {
+                    return@Button
+                }
+
                 val newEvent = CalendarEvent(
                     id = System.currentTimeMillis().toString(),
-                    title = eventName,
-                    start = "${eventDate}T${eventStartTime}",
-                    end = "${eventDate}T${eventEndTime}",
-                    location = eventLocation,
+                    title = trimmedName,
+                    start = "${trimmedDate}T${trimmedStartTime}",
+                    end = "${trimmedDate}T${trimmedEndTime}",
+                    location = trimmedLocation.ifBlank { null },
                     reminderMinutes = emptyList(),
-                    source = CalendarSource.LOCAL
+                    source = CalendarSource.LOCAL,
+                    description = trimmedDescription.ifBlank { null }
                 )
 
                 onSaveEvent(newEvent)

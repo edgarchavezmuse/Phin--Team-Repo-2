@@ -114,6 +114,10 @@ object GoogleCalendarRepository {
                 connection.errorStream?.bufferedReader()?.readText() ?: ""
             }
 
+            if (code == 401) {
+                throw GoogleCalendarUnauthorizedException()
+            }
+
             if (code !in 200..299) {
                 throw RuntimeException("Calendar insert error ($code): $body")
             }
