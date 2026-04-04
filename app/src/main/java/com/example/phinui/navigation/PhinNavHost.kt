@@ -39,7 +39,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.authorization.GoogleAuthManager
+import com.example.phinui.screens.UserListScreen
 
 //firebase
 import com.example.phinui.ui.screens.LoginScreen
@@ -200,6 +202,10 @@ fun PhinNavHost(
                 senderUserID = currentUserID,
                 receiverUserID = receiverID
             )
+        }
+
+        composable (Routes.USERLIST) {
+            UserListScreen(navController = navController)
         }
 
         composable(Routes.PROFILE) {

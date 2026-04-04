@@ -49,6 +49,9 @@ fun HomeScreen(
                 },
                 onOpenSchedule = {
                     navController.navigate(Routes.SCHEDULE) { launchSingleTop = true }
+                },
+                onOpenMessages = {
+                    navController.navigate(Routes.USERLIST)
                 }
             )
         }
