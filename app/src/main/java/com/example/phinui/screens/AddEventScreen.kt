@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,19 +21,48 @@ import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.data.calendar.CalendarSource
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.platform.LocalContext
+import android.app.TimePickerDialog
 
 @Composable
 fun AddEventScreen(
     onSaveEvent: (CalendarEvent) -> Unit,
     onBackClick: () -> Unit
 ) {
-
+    val context = LocalContext.current
     var eventName by remember { mutableStateOf("") }
     var eventDate by remember { mutableStateOf("") }
-    var eventStartTime by remember { mutableStateOf("") }
-    var eventEndTime by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
+    var eventStartTime by remember { mutableStateOf("") }
+    var eventEndTime by remember { mutableStateOf("") }
+
+    val startTimePicker = {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                eventStartTime = formatTo12Hour(hourOfDay, minute)
+            },
+            9,
+            0,
+            false
+        ).show()
+    }
+
+    val endTimePicker = {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                eventEndTime = formatTo12Hour(hourOfDay, minute)
+            },
+            10,
+            0,
+            false
+        ).show()
+    }
 
     Column(
         modifier = Modifier
@@ -70,23 +100,53 @@ fun AddEventScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = eventStartTime,
-            onValueChange = { eventStartTime = it },
-            label = { Text("Start Time (HH:MM)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { startTimePicker() }
+        ) {
+            OutlinedTextField(
+                value = eventStartTime,
+                onValueChange = {},
+                readOnly = true,
+                enabled = false,
+                label = { Text("Start Time") },
+                placeholder = { Text("Select time") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = eventEndTime,
-            onValueChange = { eventEndTime = it },
-            label = { Text("End Time (HH:MM)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { endTimePicker() }
+        ) {
+            OutlinedTextField(
+                value = eventEndTime,
+                onValueChange = {},
+                readOnly = true,
+                enabled = false,
+                label = { Text("End Time") },
+                placeholder = { Text("Select time") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -120,33 +180,68 @@ fun AddEventScreen(
                 val trimmedDescription = eventDescription.trim()
 
                 if (
-                    trimmedName.isBlank() ||
-                    trimmedDate.isBlank() ||
-                    trimmedStartTime.isBlank() ||
-                    trimmedEndTime.isBlank()
+                    trimmedName.isNotBlank() &&
+                    trimmedDate.isNotBlank() &&
+                    trimmedStartTime.isNotBlank() &&
+                    trimmedEndTime.isNotBlank()
                 ) {
-                    return@Button
+                    val start24 = convertTo24Hour(trimmedStartTime)
+                    val end24 = convertTo24Hour(trimmedEndTime)
+
+                    if ("${trimmedDate}T$end24" > "${trimmedDate}T$start24") {
+                        val newEvent = CalendarEvent(
+                            id = System.currentTimeMillis().toString(),
+                            title = trimmedName,
+                            start = "${trimmedDate}T$start24",
+                            end = "${trimmedDate}T$end24",
+                            location = trimmedLocation.ifBlank { null },
+                            reminderMinutes = emptyList(),
+                            source = CalendarSource.LOCAL,
+                            description = trimmedDescription.ifBlank { null }
+                        )
+
+                        onSaveEvent(newEvent)
+                    }
                 }
-
-                if ("${trimmedDate}T${trimmedEndTime}" <= "${trimmedDate}T${trimmedStartTime}") {
-                    return@Button
-                }
-
-                val newEvent = CalendarEvent(
-                    id = System.currentTimeMillis().toString(),
-                    title = trimmedName,
-                    start = "${trimmedDate}T${trimmedStartTime}",
-                    end = "${trimmedDate}T${trimmedEndTime}",
-                    location = trimmedLocation.ifBlank { null },
-                    reminderMinutes = emptyList(),
-                    source = CalendarSource.LOCAL,
-                    description = trimmedDescription.ifBlank { null }
-                )
-
-                onSaveEvent(newEvent)
             }
         ) {
             Text("Save Event")
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(
+            onClick = onBackClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cancel")
+        }
     }
+}
+
+private fun convertTo24Hour(time12: String): String {
+    val parts = time12.split(" ")
+    val time = parts[0]
+    val period = parts[1]
+
+    val (hourStr, minute) = time.split(":")
+    var hour = hourStr.toInt()
+
+    if (period == "PM" && hour != 12) {
+        hour += 12
+    } else if (period == "AM" && hour == 12) {
+        hour = 0
+    }
+
+    return String.format("%02d:%s", hour, minute)
+}
+
+private fun formatTo12Hour(hour24: Int, minute: Int): String {
+    val period = if (hour24 >= 12) "PM" else "AM"
+    val hour12 = when {
+        hour24 == 0 -> 12
+        hour24 > 12 -> hour24 - 12
+        else -> hour24
+    }
+    return String.format("%d:%02d %s", hour12, minute, period)
 }
