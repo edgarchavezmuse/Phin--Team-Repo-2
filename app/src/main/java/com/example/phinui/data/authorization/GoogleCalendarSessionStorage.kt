@@ -10,22 +10,19 @@ class GoogleCalendarSessionStorage(context: Context) {
     )
 
     companion object {
-        private const val KEY_ACCESS_TOKEN = "access_token"
+        private const val KEY_CONNECTED = "connected"
         private const val KEY_USER_EMAIL = "user_email"
     }
 
-    fun saveSession(
-        accessToken: String,
-        userEmail: String?
-    ) {
+    fun saveSession(userEmail: String?) {
         sessionPreference.edit()
-            .putString(KEY_ACCESS_TOKEN, accessToken)
+            .putBoolean(KEY_CONNECTED, true)
             .putString(KEY_USER_EMAIL, userEmail)
             .apply()
     }
 
-    fun getAccessToken(): String? {
-        return sessionPreference.getString(KEY_ACCESS_TOKEN, null)
+    fun isConnected(): Boolean {
+        return sessionPreference.getBoolean(KEY_CONNECTED, false)
     }
 
     fun getUserEmail(): String? {
@@ -34,7 +31,7 @@ class GoogleCalendarSessionStorage(context: Context) {
 
     fun clearSession() {
         sessionPreference.edit()
-            .remove(KEY_ACCESS_TOKEN)
+            .remove(KEY_CONNECTED)
             .remove(KEY_USER_EMAIL)
             .apply()
     }
