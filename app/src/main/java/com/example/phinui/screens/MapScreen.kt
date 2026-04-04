@@ -1,6 +1,11 @@
 @file:Suppress("MissingPermission")
 package com.example.phinui.ui.screens
-
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import android.Manifest
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -37,12 +42,19 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.tasks.await
 import com.example.phinui.BuildConfig
 import androidx.compose.foundation.clickable
 import com.google.android.libraries.places.api.model.RectangularBounds
+import com.example.phinui.data.fetchCampusLocations
+import com.example.phinui.data.filterCampusLocations
+import com.example.phinui.data.CampusLocation
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import com.google.maps.android.compose.rememberMarkerState
+import androidx.compose.runtime.key
 
 @Composable
 fun MapScreen() {
@@ -55,6 +67,8 @@ fun MapScreen() {
         )
     }
 
+    var campusLocations by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
+    var selectedCategory by remember { mutableStateOf("all") }
 
     val placesClient = remember { Places.createClient(context) }
 
@@ -88,13 +102,18 @@ fun MapScreen() {
         hasLocationPermission = granted
     }
 
+    val filteredCampusLocations = filterCampusLocations(
+        locations = campusLocations,
+        selectedCategory = selectedCategory
+    )
+
     val autocompleteLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             when (result.resultCode) {
                 PlaceAutocompleteActivity.RESULT_OK -> {
                     val data = result.data ?: return@rememberLauncherForActivityResult
                     val prediction = PlaceAutocomplete.getPredictionFromIntent(data)
-                    val placeId = prediction?.placeId
+                    val placeId = prediction?.placeId ?: return@rememberLauncherForActivityResult
 
                     val request = FetchPlaceRequest.builder(
                         placeId,
@@ -146,6 +165,31 @@ fun MapScreen() {
             )
         }
     }
+    LaunchedEffect(campusLocations) {
+        android.util.Log.d("FIREBASE_DEBUG", "campusLocations size = ${campusLocations.size}")
+        campusLocations.forEach { location ->
+            android.util.Log.d(
+                "FIREBASE_DEBUG",
+                "Loaded: name=${location.name}, category=${location.category}, lat=${location.latitude}, lng=${location.longitude}, active=${location.isActive}"
+            )
+        }
+    }
+
+    LaunchedEffect(filteredCampusLocations) {
+        android.util.Log.d("FIREBASE_DEBUG", "filteredCampusLocations size = ${filteredCampusLocations.size}")
+    }
+
+    LaunchedEffect(Unit) {
+        campusLocations = fetchCampusLocations()
+    }
+
+    LaunchedEffect(campusLocations) {
+        android.util.Log.d("MAP_DEBUG", "Loaded campus locations: ${campusLocations.size}")
+    }
+
+    LaunchedEffect(filteredCampusLocations) {
+        android.util.Log.d("MAP_DEBUG", "Filtered campus locations: ${filteredCampusLocations.size}")
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
@@ -161,12 +205,26 @@ fun MapScreen() {
                 myLocationButtonEnabled = true
             )
         ) {
+            filteredCampusLocations.forEach { location ->
+                key(location.id) {
+                    Marker(
+                        state = rememberMarkerState(
+                            position = LatLng(location.latitude, location.longitude)
+                        ),
+                        title = location.name,
+                        snippet = location.description
+                    )
+                }
+            }
+
             selectedPlaceLatLng?.let { latLng ->
                 Marker(
-                    state = MarkerState(position = latLng),
+                    state = rememberMarkerState(position = latLng),
                     title = selectedPlaceName ?: "Selected place"
                 )
             }
+
+
         }
 
         Box(
@@ -199,8 +257,21 @@ fun MapScreen() {
                 )
             )
         }
-
-        // Make the whole text field tappable by wrapping or replacing with clickable container if needed.
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 96.dp)
+                .shadow(8.dp, RoundedCornerShape(24.dp))
+                .background(Color.White, RoundedCornerShape(24.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            CategoryFilterBar(
+                selectedCategory = selectedCategory,
+                onCategorySelected = { category ->
+                    selectedCategory = category
+                }
+            )
+        }
 
     }
 
@@ -225,5 +296,36 @@ fun MapScreen() {
 
     LaunchedEffect(searchText) {
         // no-op, just here to keep Compose state visible while you build
+    }
+}
+
+@Composable
+fun CategoryFilterBar(
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit
+) {
+    val categories = listOf(
+        "all" to "All",
+        "restroom" to "Restrooms",
+        "microwave" to "Microwaves",
+        "vending" to "Vending",
+        "printer" to "Printers"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        categories.forEach { (value, label) ->
+            FilterChip(
+                selected = selectedCategory == value,
+                onClick = { onCategorySelected(value) },
+                label = { Text(label) },
+                colors = FilterChipDefaults.filterChipColors()
+            )
+        }
     }
 }
