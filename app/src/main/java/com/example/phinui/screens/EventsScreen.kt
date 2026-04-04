@@ -98,7 +98,7 @@ fun EventsScreen(
             shape = RoundedCornerShape(28.dp),
             title = {
                 Text(
-                    text = "Add to calendar?",
+                    text = selectedEvent!!.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = TextDark
@@ -108,16 +108,13 @@ fun EventsScreen(
                 EventDetails(event = selectedEvent!!)
             },
             dismissButton = {
-                OutlinedButton(
-                    onClick = { showDialog = false },
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = PrimaryRed
-                    )
+                TextButton(
+                    onClick = { showDialog = false }
                 ) {
                     Text(
                         text = "Cancel",
-                        fontWeight = FontWeight.SemiBold
+                        color = TextMuted,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             },
