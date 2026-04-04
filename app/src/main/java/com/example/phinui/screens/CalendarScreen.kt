@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
@@ -28,6 +29,8 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.phinui.data.calendar.eventDate
@@ -40,7 +43,11 @@ import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
 
-// Data formatters
+
+private val PrimaryRed = Color(0xFFE53935)
+private val SoftBackground = Color(0xFFFFFBFA)
+private val TextDark = Color(0xFF1F1F1F)
+private val TextMuted = Color(0xFF666666)
 private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -276,7 +283,16 @@ fun CalendarScreen(
 
         AlertDialog(
             onDismissRequest = { showRemoveDialog.value = false },
-            title = { Text("Remove Event") },
+            containerColor = SoftBackground,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = eventToDelete.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+            },
             text = {
                 EventDetails(event = eventToDelete)
             },
@@ -308,7 +324,6 @@ fun CalendarScreen(
                                     showRemoveDialog.value = false
                                 }
                             }
-
                             // Local event removal
                         } else {
                             // Remove from CalendarStorage
@@ -333,18 +348,30 @@ fun CalendarScreen(
                                 }
                             }
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryRed,
+                        contentColor = Color.White
+                    )
                 ) {
                     // Confirm button for removing event
-                    Text("Remove from calendar")
+                    Text(
+                        text = "Remove from calendar",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             },
             // Canceling the removal of event request
             dismissButton = {
-                OutlinedButton(
+                TextButton(
                     onClick = { showRemoveDialog.value = false }
                 ) {
-                    Text("Cancel")
+                    Text(
+                        text = "Cancel",
+                        color = TextMuted,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         )
