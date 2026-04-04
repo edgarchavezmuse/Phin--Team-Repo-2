@@ -1,16 +1,25 @@
 package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,13 +27,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.data.events.EventDetails
 import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
-import com.example.phinui.data.events.EventDetails
+
+private val PrimaryRed = Color(0xFFE53935)
+private val DeepRed = Color(0xFFB71C1C)
+private val SoftBackground = Color(0xFFFFFBFA)
+private val TextDark = Color(0xFF1F1F1F)
+private val TextMuted = Color(0xFF666666)
 
 @Composable
 fun EventsScreen(
@@ -50,6 +67,7 @@ fun EventsScreen(
                 Text(
                     text = "Events",
                     fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = NavText
                 )
             }
@@ -76,27 +94,46 @@ fun EventsScreen(
     if (showDialog && selectedEvent != null) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Add to calendar?") },
+            containerColor = SoftBackground,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = selectedEvent!!.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+            },
             text = {
                 EventDetails(event = selectedEvent!!)
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDialog = false }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = TextMuted,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         onEventClick(selectedEvent!!)
                         showDialog = false
-                    }
+                    },
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryRed,
+                        contentColor = Color.White
+                    )
                 ) {
-                    Text("Add to calendar")
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = {
-                        showDialog = false
-                    }
-                ) {
-                    Text("Cancel")
+                    Text(
+                        text = "Add to calendar",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         )
