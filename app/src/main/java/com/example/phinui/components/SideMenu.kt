@@ -62,7 +62,7 @@ fun SideMenu(
     val menuItems = listOf(
         MenuItem("Home", Icons.Default.Home, Routes.HOME),
         MenuItem("Profile", Icons.Default.AccountBox, Routes.PROFILE),
-        MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
+        MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST),
         MenuItem("Events", Icons.Default.Event, Routes.EVENTS),
         MenuItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
         MenuItem("Map", Icons.Default.LocationOn, Routes.MAP)

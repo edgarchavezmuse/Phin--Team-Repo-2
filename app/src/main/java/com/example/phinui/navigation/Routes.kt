@@ -12,4 +12,5 @@ object Routes {
     const val SCHEDULE = "schedule"
     const val REGISTER = "register"
     const val LOGIN = "login"
+    const val USERLIST = "userList"
 }

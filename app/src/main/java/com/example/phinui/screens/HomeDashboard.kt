@@ -14,6 +14,7 @@ fun HomeDashboard(
     onOpenCalendar: () -> Unit,
     onOpenMap: () -> Unit,
     onOpenSchedule: () -> Unit,
+    onOpenMessages: () -> Unit,
     isLoading: Boolean
 ) {
     Column(
