@@ -43,6 +43,17 @@ import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.LocationOn
 
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -61,6 +72,8 @@ fun AddEventScreen(
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -91,16 +104,13 @@ fun AddEventScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        DateField(
+            label = "Date",
             value = eventDate,
-            onValueChange = {
-                eventDate = it
+            onClick = {
                 errorMessage = null
-            },
-            label = { Text("Date (YYYY-MM-DD)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            singleLine = true
+                showDatePicker = true
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -133,7 +143,14 @@ fun AddEventScreen(
             label = { Text("Location") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            singleLine = true
+            singleLine = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color(0xFFFF1F1F)
+                )
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -232,6 +249,17 @@ fun AddEventScreen(
             }
         )
     }
+
+    if (showDatePicker) {
+        EventDatePickerDialog(
+            initialDate = eventDate,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { selectedDate ->
+                eventDate = selectedDate
+                showDatePicker = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -245,7 +273,7 @@ private fun TimeField(
     val hintGray = androidx.compose.ui.graphics.Color(0xFF777777)
 
     OutlinedTextField(
-        value = value,
+        value = formatDisplayDate(value),
         onValueChange = {},
         readOnly = true,
         enabled = false,
@@ -424,4 +452,144 @@ private fun formatTo12Hour(hour24: Int, minute: Int): String {
 private fun isValidDate(date: String): Boolean {
     val regex = Regex("""\d{4}-\d{2}-\d{2}""")
     return regex.matches(date)
+}
+
+@Composable
+private fun DateField(
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    val accentRed = androidx.compose.ui.graphics.Color(0xFFFF1F1F)
+    val textDark = androidx.compose.ui.graphics.Color(0xFF111111)
+    val hintGray = androidx.compose.ui.graphics.Color(0xFF777777)
+
+    val displayValue = if (value.isBlank()) "" else formatDisplayDate(value)
+
+    OutlinedTextField(
+        value = displayValue,
+        onValueChange = {},
+        readOnly = true,
+        enabled = false,
+        label = { Text(label) },
+        placeholder = { Text("Select date") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        singleLine = true,
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.DateRange,
+                contentDescription = null,
+                tint = accentRed
+            )
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledBorderColor = hintGray,
+            disabledLabelColor = hintGray,
+            disabledTextColor = textDark,
+            disabledTrailingIconColor = accentRed
+        )
+    )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun EventDatePickerDialog(
+    initialDate: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    val accentRed = Color(0xFFFF1F1F)
+    val cardColor = Color(0xFFF7F5F2)
+
+    val initialMillis = remember(initialDate) {
+        parseIsoDateToMillis(initialDate)
+    }
+
+    val datePickerState = androidx.compose.material3.rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        onConfirm(formatMillisToIsoDate(millis))
+                    }
+                },
+                enabled = datePickerState.selectedDateMillis != null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accentRed,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = accentRed)
+            }
+        },
+        colors = DatePickerDefaults.colors(
+            containerColor = Color.White, // 👈 THIS fixes purple background
+        )
+    ) {
+        DatePicker(
+            state = datePickerState,
+            showModeToggle = true,
+            colors = DatePickerDefaults.colors(
+                containerColor = Color.White, // 👈 important
+                titleContentColor = Color.Black,
+                headlineContentColor = Color.Black,
+                weekdayContentColor = Color.DarkGray,
+                subheadContentColor = Color.DarkGray,
+
+                selectedDayContainerColor = accentRed,
+                selectedDayContentColor = Color.White,
+
+                todayDateBorderColor = accentRed,
+                todayContentColor = accentRed,
+
+                selectedYearContainerColor = accentRed,
+                selectedYearContentColor = Color.White,
+
+                dayContentColor = Color.Black,
+                disabledDayContentColor = Color.LightGray
+            )
+        )
+    }
+}
+
+private fun formatMillisToIsoDate(millis: Long): String {
+    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    formatter.timeZone = TimeZone.getTimeZone("UTC")
+    return formatter.format(Date(millis))
+}
+
+private fun parseIsoDateToMillis(date: String): Long? {
+    return try {
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        formatter.timeZone = TimeZone.getTimeZone("UTC")
+        formatter.parse(date)?.time
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun formatDisplayDate(date: String): String {
+    return try {
+        val input = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val output = SimpleDateFormat("MMM d, yyyy", Locale.US)
+        val parsed = input.parse(date)
+        if (parsed != null) output.format(parsed) else date
+    } catch (e: Exception) {
+        date
+    }
 }
