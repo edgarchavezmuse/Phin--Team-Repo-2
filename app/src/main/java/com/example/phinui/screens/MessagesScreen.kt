@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,14 +46,28 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
         viewModel.loadSelectedUser(receiverUserID)
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         if (isLoading) {
             CircularProgressIndicator()
         } else {
-            Text (
-                text = "Chatting with " + (selectedUser?.name ?: "Unknown User"),
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Box(
+                modifier = Modifier
+                    .background(color = ReceiverUserColor)
+                    .widthIn(max = 250.dp)
+                    .padding(4.dp)
+
+            ) {
+                Text(
+                    text = "Chatting with " + (selectedUser?.name ?: "Unknown User"),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
