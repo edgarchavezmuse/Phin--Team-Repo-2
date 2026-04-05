@@ -30,4 +30,16 @@ class UserListRepository {
             emptyList()
         }
     }
+
+    suspend fun getUserByID(userID: String): User? {
+        return try{
+            val document = usersCollection.document(userID)
+                .get()
+                .await()
+            val userName = document.getString("name") ?: return null
+            User(userID, userName)
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

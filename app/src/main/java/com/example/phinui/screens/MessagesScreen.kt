@@ -8,6 +8,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
@@ -16,19 +18,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.NavText
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.*
+import com.example.phinui.viewmodel.UserListViewModel
 
 
 @Composable
-fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: NavController) {
+fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: NavController, viewModel: UserListViewModel = viewModel()) {
     val chatRepository = remember { ChatRepository() }
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
+    val selectedUser = viewModel.selectedUser
+    val isLoading = viewModel.isLoading
 
     LaunchedEffect(senderUserID, receiverUserID) {
         chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
@@ -37,11 +41,25 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
         }
     }
 
+    LaunchedEffect(receiverUserID) {
+        viewModel.loadSelectedUser(receiverUserID)
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            Text (
+                text = "Chatting with " + (selectedUser?.name ?: "Unknown User"),
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
         ) {
+            Spacer(modifier = Modifier.weight(1f))
+
             Button(onClick = {
                 navController.navigate(Routes.USERLIST)
             }
