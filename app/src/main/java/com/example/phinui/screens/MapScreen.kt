@@ -55,6 +55,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.shadow
 import com.google.maps.android.compose.rememberMarkerState
 import androidx.compose.runtime.key
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 @Composable
 fun MapScreen() {
@@ -218,10 +219,15 @@ fun MapScreen() {
             }
 
             selectedPlaceLatLng?.let { latLng ->
-                Marker(
-                    state = rememberMarkerState(position = latLng),
-                    title = selectedPlaceName ?: "Selected place"
-                )
+                key(latLng.latitude, latLng.longitude, selectedPlaceName) {
+                    Marker(
+                        state = rememberMarkerState(position = latLng),
+                        title = selectedPlaceName ?: "Selected place",
+                        icon = BitmapDescriptorFactory.defaultMarker(
+                            BitmapDescriptorFactory.HUE_BLUE
+                        )
+                    )
+                }
             }
 
 
@@ -269,6 +275,11 @@ fun MapScreen() {
                 selectedCategory = selectedCategory,
                 onCategorySelected = { category ->
                     selectedCategory = category
+
+
+                    selectedPlaceLatLng = null
+                    selectedPlaceName = null
+                    searchText = ""
                 }
             )
         }
@@ -283,7 +294,7 @@ fun MapScreen() {
 
                 if (campusBounds.contains(userLatLng)) {
                     cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngZoom(userLatLng, 17f)
+                        CameraUpdateFactory.newLatLngZoom(userLatLng, 16f)
                     )
                 } else {
                     cameraPositionState.animate(
