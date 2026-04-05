@@ -118,196 +118,206 @@ fun PeopleScreen() {
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
+                text = { Text("Requests") }
+            )
+            Tab(
+                selected = selectedTab == 2,
+                onClick = { selectedTab = 2 },
                 text = { Text("Blocked") }
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (selectedTab == 0) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                label = { Text("Search users by name") },
-                modifier = Modifier.fillMaxWidth()
-            )
+        when (selectedTab) {
+            0 -> {
+                OutlinedTextField(
+                    value = search,
+                    onValueChange = { search = it },
+                    label = { Text("Search users by name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Search Results", color = NavText)
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Search Results", color = NavText)
+                Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-            ) {
-                items(searchResults) { (uid, user) ->
-                    val name = user["name"] as? String ?: "Unknown"
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            UserAvatar(name = name, size = 40)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = name,
-                                color = NavText
-                            )
-                        }
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    items(searchResults) { (uid, user) ->
+                        val name = user["name"] as? String ?: "Unknown"
 
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Button(
-                                onClick = {
-                                    repo.sendFriendRequest(
-                                        toUid = uid,
-                                        fromName = myName,
-                                        onSuccess = { message = "Request sent." },
-                                        onError = { e -> message = e.message }
-                                    )
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text("Add")
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            OutlinedButton(
-                                onClick = {
-                                    repo.blockUser(
-                                        blockedUid = uid,
-                                        onSuccess = {
-                                            message = "User blocked."
-                                        },
-                                        onError = { e -> message = e.message }
-                                    )
-                                }
-                            ) {
-                                Text("Block")
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Incoming Requests", color = NavText)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                items(incoming) { (requestId, req) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            UserAvatar(name = req.fromName, size = 40)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = req.fromName,
-                                color = NavText
-                            )
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = {
-                                    repo.acceptFriendRequest(
-                                        requestId = requestId,
-                                        fromUid = req.fromUid,
-                                        onSuccess = {
-                                            message = "Friend added."
-                                        },
-                                        onError = { e -> message = e.message }
-                                    )
-                                }
-                            ) {
-                                Text("Accept")
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            OutlinedButton(
-                                onClick = {
-                                    repo.declineFriendRequest(
-                                        requestId = requestId,
-                                        onSuccess = {
-                                            message = "Request declined."
-                                        },
-                                        onError = { e -> message = e.message }
-                                    )
-                                }
-                            ) {
-                                Text("Decline")
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            Text("Blocked Users", color = NavText)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                items(blockedUsers) { (uid, user) ->
-                    val name = user["name"] as? String ?: "Unknown"
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            UserAvatar(name = name, size = 40)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = name,
-                                color = NavText
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                repo.unblockUser(
-                                    blockedUid = uid,
-                                    onSuccess = {
-                                        message = "User unblocked."
-                                    },
-                                    onError = { e -> message = e.message }
+                                UserAvatar(name = name, size = 40)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = name,
+                                    color = NavText
                                 )
                             }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = {
+                                        repo.sendFriendRequest(
+                                            toUid = uid,
+                                            fromName = myName,
+                                            onSuccess = { message = "Request sent." },
+                                            onError = { e -> message = e.message }
+                                        )
+                                    }
+                                ) {
+                                    Text("Add")
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                OutlinedButton(
+                                    onClick = {
+                                        repo.blockUser(
+                                            blockedUid = uid,
+                                            onSuccess = {
+                                                message = "User blocked."
+                                            },
+                                            onError = { e -> message = e.message }
+                                        )
+                                    }
+                                ) {
+                                    Text("Block")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            1 -> {
+                Text("Friend Requests", color = NavText)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    items(incoming) { (requestId, req) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Unblock")
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                UserAvatar(name = req.fromName, size = 40)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = req.fromName,
+                                    color = NavText
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = {
+                                        repo.acceptFriendRequest(
+                                            requestId = requestId,
+                                            fromUid = req.fromUid,
+                                            onSuccess = {
+                                                message = "Friend added."
+                                            },
+                                            onError = { e -> message = e.message }
+                                        )
+                                    }
+                                ) {
+                                    Text("Accept")
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                OutlinedButton(
+                                    onClick = {
+                                        repo.declineFriendRequest(
+                                            requestId = requestId,
+                                            onSuccess = {
+                                                message = "Request declined."
+                                            },
+                                            onError = { e -> message = e.message }
+                                        )
+                                    }
+                                ) {
+                                    Text("Decline")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            2 -> {
+                Text("Blocked Users", color = NavText)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    items(blockedUsers) { (uid, user) ->
+                        val name = user["name"] as? String ?: "Unknown"
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                UserAvatar(name = name, size = 40)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = name,
+                                    color = NavText
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    repo.unblockUser(
+                                        blockedUid = uid,
+                                        onSuccess = {
+                                            message = "User unblocked."
+                                        },
+                                        onError = { e -> message = e.message }
+                                    )
+                                }
+                            ) {
+                                Text("Unblock")
+                            }
                         }
                     }
                 }
