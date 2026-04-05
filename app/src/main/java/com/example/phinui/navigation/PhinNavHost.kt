@@ -200,7 +200,8 @@ fun PhinNavHost(
 
             MessagesScreen(
                 senderUserID = currentUserID,
-                receiverUserID = receiverID
+                receiverUserID = receiverID,
+                navController = navController
             )
         }
 
