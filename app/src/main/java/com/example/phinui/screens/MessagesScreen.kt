@@ -43,7 +43,7 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
             horizontalArrangement = Arrangement.End,
         ) {
             Button(onClick = {
-                navController.navigate(Routes.USERLIST)
+                navController.popBackStack()
             }
             ) {
                 Text ("Back to list")
