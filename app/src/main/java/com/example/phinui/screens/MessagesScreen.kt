@@ -1,11 +1,13 @@
 package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
@@ -15,9 +17,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.components.messages.ChatRepository
+import com.example.phinui.ui.theme.*
+import com.google.android.libraries.places.api.model.kotlin.rectangularBounds
 
 @Composable
 fun MessagesScreen(senderUserID: String, receiverUserID: String) {
@@ -43,33 +50,42 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String) {
                 val senderID = message["senderID"] as? String?: ""
                 val isMe = senderID == senderUserID
 
-                Box(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(4.dp)
-                        .background(
-                            if (isMe) Color(0xFFDCF8C6)
-                            else Color(0xFFFFFFFF)
-                        )
-                        .padding(8.dp)
+                        .padding(4.dp),
+                    horizontalArrangement = if (isMe) Arrangement.End
+                    else Arrangement.Start,
                 ) {
-                    Text (
-                        text = text
-                    )
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = 250.dp)
+                        .background(
+                            color = if (isMe) SenderUserColor
+                            else ReceiverUserColor
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(text = text)
+                  }
                 }
             }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             BasicTextField(
                 value = messageText,
                 onValueChange = { messageText = it },
                 modifier = Modifier
                     .weight(1f)
-                    .background(Color.LightGray)
-                    .padding(8.dp)
+                    .background(MessageBox)
+                    .padding(16.dp),
+                textStyle = TextStyle(
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
             )
 
             Button(onClick = {
