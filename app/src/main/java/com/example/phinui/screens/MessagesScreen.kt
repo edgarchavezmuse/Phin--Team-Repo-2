@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
@@ -66,7 +67,10 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String) {
                         )
                         .padding(12.dp)
                 ) {
-                    Text(text = text)
+                    Text(
+                        text = text,
+                        fontWeight = FontWeight.Bold
+                    )
                   }
                 }
             }
