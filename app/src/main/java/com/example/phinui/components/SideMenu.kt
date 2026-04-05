@@ -130,9 +130,14 @@ fun SideMenu(
                         navController.popBackStack(Routes.HOME, false)
                     } else {
                         navController.navigate(item.route) {
-                            popUpTo(Routes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                            if (item.route == Routes.USERLIST) {
+                                popUpTo(Routes.USERLIST) { inclusive = true }
+                            }
+                            else {
+                                popUpTo(Routes.HOME) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
                     onItemClick()

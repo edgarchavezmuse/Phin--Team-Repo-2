@@ -87,16 +87,4 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String) {
             }
         }
     }
-    //Box(
-    //    modifier = Modifier
-    //        .fillMaxSize()
-    //        .background(Background),
-    //    contentAlignment = Alignment.Center
-    //) {
-    //    Text(
-    //        text = "Messages Screen",
-    //        fontSize = 24.sp,
-    //        color = NavText
-    //    )
-    //}
 }
