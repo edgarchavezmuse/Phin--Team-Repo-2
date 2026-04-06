@@ -13,4 +13,6 @@ object Routes {
     const val REGISTER = "register"
     const val LOGIN = "login"
     const val USERLIST = "userList"
+    const val FRIENDS = "friends"
+    const val PEOPLE = "people"
 }

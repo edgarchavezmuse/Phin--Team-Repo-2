@@ -151,7 +151,10 @@ fun RegisterScreen(
                             val userProfile = mapOf(
                                 "uid" to uid,
                                 "name" to name.trim(),
-                                "email" to cleanEmail
+                                "nameLower" to name.trim().lowercase(),
+                                "email" to cleanEmail,
+                                "friends" to emptyList<String>(),
+                                "blocked" to emptyList<String>()
                             )
 
                             db.collection("users")
