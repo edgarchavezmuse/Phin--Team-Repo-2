@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
@@ -132,14 +131,9 @@ fun SideMenu(
                 isSelected = currentRoute == item.route,
                 onItemClick,
                 onClick = {
-                    if (item.route == Routes.HOME) {
-                        navController.popBackStack(Routes.HOME, false)
-                    } else {
-                        navController.navigate(item.route) {
-                            popUpTo(Routes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                    navController.navigate(item.route) {
+                        launchSingleTop = true
+                        restoreState = true
                     }
                     onItemClick()
                 }
@@ -163,7 +157,7 @@ fun MenuRowBuilder(
             .background(
                 if (isSelected) Color.Gray.copy(alpha = 0.2f) else Color.Transparent
             )
-            .clickable{
+            .clickable {
                 onClick()
                 onItemClick()
             }

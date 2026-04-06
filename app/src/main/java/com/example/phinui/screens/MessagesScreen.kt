@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.phinui.components.messages.ChatRepository
-import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.*
 import com.example.phinui.viewmodel.UserListViewModel
 
@@ -42,6 +41,7 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
         }
     }
 
+// from HEAD
     LaunchedEffect(receiverUserID) {
         viewModel.loadSelectedUser(receiverUserID)
     }
@@ -69,19 +69,23 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
                 )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
+        //Row(
+        //    modifier = Modifier.fillMaxWidth(),
+        //    horizontalArrangement = Arrangement.End,
+        //) {
+        //    Spacer(modifier = Modifier.weight(1f))
 
-            Button(onClick = {
-                navController.popBackStack()
-            }
-            ) {
-                Text ("Back to list")
-            }
-        }
+        //    Button(onClick = {
+        //        navController.popBackStack()
+        //    }
+        //    ) {
+        //        Text ("Back to list")
+        //    }
+        //}
+
+// from develop
+//Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
         LazyColumn(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
