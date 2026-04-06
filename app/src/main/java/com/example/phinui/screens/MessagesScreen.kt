@@ -33,7 +33,7 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
     val selectedUser = viewModel.selectedUser
-    val isLoading = viewModel.isLoading
+    val isLoadingStatus = viewModel.isLoading
 
     LaunchedEffect(senderUserID, receiverUserID) {
         chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
@@ -51,7 +51,7 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
         .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (isLoading) {
+        if (isLoadingStatus) {
             CircularProgressIndicator()
         } else {
             Box(

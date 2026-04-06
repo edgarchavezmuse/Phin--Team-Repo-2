@@ -23,7 +23,11 @@ class UserListViewModel : ViewModel() {
     var isLoading by mutableStateOf(true)
         private set
 
-    fun loadAllUsers(currentUserID: String) {
+    private val currentUserID = com.google.firebase.auth
+        .FirebaseAuth.getInstance()
+            .currentUser?.uid ?: ""
+
+    fun loadAllUsers() {
         viewModelScope.launch {
             users = userList.getAllUsers(currentUserID)
             isLoading = false
