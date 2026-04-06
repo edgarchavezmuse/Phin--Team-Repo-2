@@ -1,7 +1,6 @@
 package com.example.phinui
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -66,11 +65,6 @@ fun PhinUIApp() {
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
 
-    val isMessageScreen =
-        currentRoute?.contains("messages")
-
-    Log.d("Nav", "currentRoute = $currentRoute")
-
     LaunchedEffect(currentRoute) {
         drawerState.close()
     }
@@ -114,15 +108,13 @@ fun PhinUIApp() {
                             }
                         },
                         actions = {
-                            if(isMessageScreen == true) {
-                                IconButton(
-                                    onClick = { navController.popBackStack() }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back"
-                                    )
-                                }
+                            IconButton(
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
                             }
                         }
                     )

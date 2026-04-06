@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -72,14 +71,10 @@ fun CustomBottomBar(
                     icon = item.icon,
                     selected = currentRoute == item.route,
                     onClick = {
-                        if (item.route == Routes.HOME) {
-                            navController.popBackStack(Routes.HOME, false)
-                        } else {
                             navController.navigate(item.route) {
-                                popUpTo(Routes.HOME) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
-                            }
+
                         }
                     }
                 )
