@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
@@ -42,6 +44,8 @@ import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.filled.CalendarToday
 
 
 private val PrimaryRed = Color(0xFFE53935)
@@ -191,16 +195,7 @@ fun CalendarScreen(
             onNextWeek = { calendarViewModel.goToNextWeek() }
         )
 
-        Spacer(Modifier.height(12.dp))
-
-        Button(
-            onClick = onAddEventClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Create Event")
-        }
-
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
         // Loading events + error states
         if (isLoadingEvents) {
@@ -217,7 +212,6 @@ fun CalendarScreen(
             Spacer(Modifier.height(12.dp))
         }
 
-        HorizontalDivider()
         Spacer(Modifier.height(14.dp))
 
         // Scrollable Day chips
@@ -229,11 +223,51 @@ fun CalendarScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        //  Selected day title + event list
-        Text(
-            text = selectedDateInWeek.format(selectedDateTitleFormatter),
-            style = MaterialTheme.typography.titleLarge
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+        ) {
+            // Divider (background)
+            HorizontalDivider(
+                modifier = Modifier.align(Alignment.Center)
+            )
+
+            // Button (foreground, centered)
+            Row(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TextButton(
+                    onClick = onAddEventClick,
+                    shape = RoundedCornerShape(22.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            "Create event",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
 
         Spacer(Modifier.height(8.dp))
 
@@ -245,7 +279,7 @@ fun CalendarScreen(
             // When no events print:
             !isGoogleCalendarConnected && eventsForSelectedDate.isEmpty() -> {
                 CalendarEmptyState(
-                    title = "Connect your calendar",
+                    title = "No events",
                     subtitle = "Sign in to see your events."
                 )
             }

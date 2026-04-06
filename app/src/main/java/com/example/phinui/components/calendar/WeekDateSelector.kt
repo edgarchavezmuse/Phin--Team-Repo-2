@@ -36,7 +36,7 @@ fun WeekDateSelector(
 
             Surface(
                 onClick = { onSelect(date) },
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                 } else {
