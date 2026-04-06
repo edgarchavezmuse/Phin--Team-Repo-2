@@ -20,23 +20,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.ui.theme.*
 import com.example.phinui.viewmodel.UserListViewModel
 
 
 @Composable
-fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: NavController, viewModel: UserListViewModel = viewModel()) {
+fun MessagesScreen(
+    senderUserID: String,
+    receiverUserID: String,
+    viewModel: UserListViewModel = viewModel(),
+    setTopBarTitle: (String) -> Unit
+) {
     val chatRepository = remember { ChatRepository() }
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
     val selectedUser = viewModel.selectedUser
     val isLoadingStatus = viewModel.isLoading
 
+    LaunchedEffect(selectedUser) {
+        selectedUser?.name?.let { userName ->
+            setTopBarTitle("Chatting with $userName")}
+    }
+
     LaunchedEffect(senderUserID, receiverUserID) {
         chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
-            newMessages ->
+                newMessages ->
             messages = newMessages
         }
     }
@@ -52,20 +61,6 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
     ) {
         if (isLoadingStatus) {
             CircularProgressIndicator()
-        } else {
-            Box(
-                modifier = Modifier
-                    .padding(4.dp)
-
-            ) {
-                Text(
-                    text = "Chatting with " + (selectedUser?.name ?: "Unknown User"),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
-                    )
-                )
-            }
         }
 
         LazyColumn(
