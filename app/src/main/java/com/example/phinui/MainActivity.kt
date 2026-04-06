@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,6 +16,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
@@ -39,6 +42,13 @@ import com.example.phinui.ui.theme.PhinUITheme
 import kotlinx.coroutines.launch
 import com.example.phinui.ui.navigation.Routes
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,11 +72,19 @@ fun PhinUIApp() {
     val currentBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry.value?.destination?.route
 
+    var topBarTitle by remember { mutableStateOf("") }
+    var isMessagesScreen by remember { mutableStateOf(false) }
+
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
 
     LaunchedEffect(currentRoute) {
         drawerState.close()
+
+        if (currentRoute != Routes.MESSAGES) {
+            topBarTitle = ""
+            isMessagesScreen = false
+        }
     }
 
     NotificationPermissionRequest()
@@ -95,7 +113,18 @@ fun PhinUIApp() {
                 if (!hideNavigationUi) {
                     TopAppBar(
                         title = {
-                            Text("")
+                            Box (
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    topBarTitle,
+                                    fontSize = if (isMessagesScreen) 18.sp
+                                        else MaterialTheme.typography.titleLarge.fontSize,
+                                    fontWeight = if (isMessagesScreen) FontWeight.Bold
+                                        else FontWeight.Normal
+                                )
+                            }
                         },
                         navigationIcon = {
                             IconButton(
@@ -129,7 +158,11 @@ fun PhinUIApp() {
         ) { innerPadding ->
             PhinNavHost(
                 navController = navController,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
+                setTopBarTitle = { title, messagesScreen ->
+                    topBarTitle = title
+                    isMessagesScreen = messagesScreen
+                }
             )
         }
     }

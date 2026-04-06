@@ -57,7 +57,8 @@ import com.example.phinui.ui.screens.PeopleScreen
 @Composable
 fun PhinNavHost(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    setTopBarTitle: (String, Boolean) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
     val context = LocalContext.current
@@ -203,7 +204,7 @@ fun PhinNavHost(
             MessagesScreen(
                 senderUserID = currentUserID,
                 receiverUserID = receiverID,
-                navController = navController
+                setTopBarTitle = { title -> setTopBarTitle(title, true)}
             )
         }
 
