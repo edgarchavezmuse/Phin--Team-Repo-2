@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -47,82 +49,82 @@ fun EventInputRow(
         tonalElevation = 0.dp,
         shadowElevation = 1.dp
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(
-                verticalAlignment = Alignment.Top
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .width(3.dp)
-                        .height(34.dp)
-                        .background(
-                            color = accentRed,
-                            shape = RoundedCornerShape(999.dp)
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = labelColor
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        androidx.compose.foundation.text.BasicTextField(
-                            value = value,
-                            onValueChange = onValueChange,
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = textColor
-                            ),
-                            modifier = Modifier.weight(1f),
-                            decorationBox = { innerTextField ->
-                                if (value.isBlank()) {
-                                    Text(
-                                        text = placeholder,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = placeholderColor
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        )
-
-                        if (trailingIcon != null) {
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Icon(
-                                imageVector = trailingIcon,
-                                contentDescription = null,
-                                tint = accentRed.copy(alpha = 0.9f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
+                    .width(3.dp)
+                    .fillMaxHeight()
                     .background(
-                        color = indicatorColor,
+                        color = accentRed,
                         shape = RoundedCornerShape(999.dp)
                     )
             )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = labelColor
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = textColor
+                        ),
+                        modifier = Modifier.weight(1f),
+                        decorationBox = { innerTextField ->
+                            if (value.isBlank()) {
+                                Text(
+                                    text = placeholder,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = placeholderColor
+                                )
+                            }
+                            innerTextField()
+                        }
+                    )
+
+                    if (trailingIcon != null) {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Icon(
+                            imageVector = trailingIcon,
+                            contentDescription = null,
+                            tint = accentRed.copy(alpha = 0.9f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(
+                            color = indicatorColor,
+                            shape = RoundedCornerShape(999.dp)
+                        )
+                )
+            }
         }
     }
 }
@@ -146,71 +148,77 @@ fun EventPickerRow(
 
     Surface(
         modifier = modifier
+            .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         color = cardColor,
         tonalElevation = 0.dp,
         shadowElevation = 1.dp
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .fillMaxHeight()
+                    .background(
+                        color = accentRed,
+                        shape = RoundedCornerShape(999.dp)
+                    )
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .width(3.dp)
-                        .height(34.dp)
-                        .background(
-                            color = accentRed,
-                            shape = RoundedCornerShape(999.dp)
-                        )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = labelColor
                 )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                Column(
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = labelColor
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
                     Text(
                         text = if (value.isBlank()) placeholder else value,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = if (value.isBlank()) placeholderColor else textColor,
                             fontWeight = if (value.isBlank()) FontWeight.Normal else FontWeight.Medium
-                        )
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accentRed.copy(alpha = 0.85f)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (isActive) accentRed else accentRed.copy(alpha = 0.85f)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(
+                            color = indicatorColor,
+                            shape = RoundedCornerShape(999.dp)
+                        )
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(
-                        color = indicatorColor,
-                        shape = RoundedCornerShape(999.dp)
-                    )
-            )
         }
     }
 }
@@ -238,71 +246,70 @@ fun EventTextArea(
         tonalElevation = 0.dp,
         shadowElevation = 1.dp
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(
-                verticalAlignment = Alignment.Top
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .width(3.dp)
-                        .height(58.dp)
-                        .background(
-                            color = accentRed,
-                            shape = RoundedCornerShape(999.dp)
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = labelColor
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    androidx.compose.foundation.text.BasicTextField(
-                        value = value,
-                        onValueChange = onValueChange,
-                        singleLine = false,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = textColor
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(96.dp),
-                        decorationBox = { innerTextField ->
-                            if (value.isBlank()) {
-                                Text(
-                                    text = placeholder,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = placeholderColor
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
+                    .width(3.dp)
+                    .fillMaxHeight()
                     .background(
-                        color = indicatorColor,
+                        color = accentRed,
                         shape = RoundedCornerShape(999.dp)
                     )
             )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = labelColor
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                androidx.compose.foundation.text.BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = false,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = textColor
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(96.dp),
+                    decorationBox = { innerTextField ->
+                        if (value.isBlank()) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = placeholderColor
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(
+                            color = indicatorColor,
+                            shape = RoundedCornerShape(999.dp)
+                        )
+                )
+            }
         }
     }
 }
