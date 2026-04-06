@@ -41,7 +41,6 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
         }
     }
 
-// from HEAD
     LaunchedEffect(receiverUserID) {
         viewModel.loadSelectedUser(receiverUserID)
     }
@@ -56,35 +55,18 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
         } else {
             Box(
                 modifier = Modifier
-                    .background(color = ReceiverUserColor)
-                    .widthIn(max = 250.dp)
                     .padding(4.dp)
 
             ) {
                 Text(
                     text = "Chatting with " + (selectedUser?.name ?: "Unknown User"),
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
                     )
                 )
             }
         }
-        //Row(
-        //    modifier = Modifier.fillMaxWidth(),
-        //    horizontalArrangement = Arrangement.End,
-        //) {
-        //    Spacer(modifier = Modifier.weight(1f))
-
-        //    Button(onClick = {
-        //        navController.popBackStack()
-        //    }
-        //    ) {
-        //        Text ("Back to list")
-        //    }
-        //}
-
-// from develop
-//Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
 
         LazyColumn(
             modifier = Modifier.weight(1f),

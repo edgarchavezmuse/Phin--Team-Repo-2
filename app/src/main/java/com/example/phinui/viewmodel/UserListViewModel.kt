@@ -17,6 +17,7 @@ class UserListViewModel : ViewModel() {
     var users by mutableStateOf<List<User>>(emptyList())
         private set
 
+    var sortedUsers by mutableStateOf<List<User>>(emptyList())
     var selectedUser by mutableStateOf<User?>(null)
         private set
 
@@ -30,6 +31,7 @@ class UserListViewModel : ViewModel() {
     fun loadAllUsers() {
         viewModelScope.launch {
             users = userList.getAllUsers(currentUserID)
+            sortedUsers = users.sortedWith(compareBy {it.name.lowercase()})
             isLoading = false
         }
     }

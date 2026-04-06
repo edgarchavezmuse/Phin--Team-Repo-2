@@ -26,7 +26,7 @@ import com.example.phinui.viewmodel.UserListViewModel
 
 
 @Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
-    val users = viewModel.users
+    val users = viewModel.sortedUsers
     val isLoadingStatus = viewModel.isLoading
 
     LaunchedEffect(Unit) {
