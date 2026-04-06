@@ -8,33 +8,60 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.ui.theme.*
+import com.example.phinui.viewmodel.UserListViewModel
 
 
 @Composable
-fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: NavController) {
+fun MessagesScreen(
+    senderUserID: String,
+    receiverUserID: String,
+    viewModel: UserListViewModel = viewModel(),
+    setTopBarTitle: (String) -> Unit
+) {
     val chatRepository = remember { ChatRepository() }
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
+    val selectedUser = viewModel.selectedUser
+    val isLoadingStatus = viewModel.isLoading
+
+    LaunchedEffect(selectedUser) {
+        selectedUser?.name?.let { userName ->
+            setTopBarTitle("Chatting with $userName")}
+    }
 
     LaunchedEffect(senderUserID, receiverUserID) {
         chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
-            newMessages ->
+                newMessages ->
             messages = newMessages
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    LaunchedEffect(receiverUserID) {
+        viewModel.loadSelectedUser(receiverUserID)
+    }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (isLoadingStatus) {
+            CircularProgressIndicator()
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f),

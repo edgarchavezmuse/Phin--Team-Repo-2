@@ -15,7 +15,10 @@ class UserListRepository {
 
     suspend fun getAllUsers(currentUserID: String): List<User> {
         return try {
-            val snapshot = usersCollection.get().await()
+            val snapshot = usersCollection
+                .orderBy("name")
+                .get()
+                .await()
             snapshot.documents
                 .mapNotNull { document ->
                     val uid = document.id
@@ -25,6 +28,18 @@ class UserListRepository {
                 }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    suspend fun getUserByID(userID: String): User? {
+        return try{
+            val document = usersCollection.document(userID)
+                .get()
+                .await()
+            val userName = document.getString("name") ?: return null
+            User(userID, userName)
+        } catch (e: Exception) {
+            null
         }
     }
 }

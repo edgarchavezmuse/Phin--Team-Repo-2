@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,30 +19,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
-import androidx.credentials.exceptions.domerrors.InvalidModificationError
-import com.example.phinui.components.messages.UserListRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
+import com.example.phinui.viewmodel.UserListViewModel
 
 
-@Composable fun UserListScreen (navController: NavController) {
-    val currentUserID = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    val userListRepository = remember { UserListRepository() }
-
-    var users by remember { mutableStateOf(listOf<User>()) }
-    var isLoadingStatus by remember { mutableStateOf(true) }
+@Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
+    val users = viewModel.sortedUsers
+    val isLoadingStatus = viewModel.isLoading
 
     LaunchedEffect(Unit) {
-        users = userListRepository.getAllUsers(currentUserID)
-        isLoadingStatus = false
+        viewModel.loadAllUsers()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .padding(top = 24.dp)
-    ) {
+    Box {
         if (isLoadingStatus) {
             Box(
                 modifier = Modifier
