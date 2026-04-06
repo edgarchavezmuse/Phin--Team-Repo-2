@@ -17,10 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
-import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.NavText
 import com.example.phinui.components.messages.ChatRepository
-import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.*
 
 
@@ -38,17 +35,7 @@ fun MessagesScreen(senderUserID: String, receiverUserID: String, navController: 
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            Button(onClick = {
-                navController.popBackStack()
-            }
-            ) {
-                Text ("Back to list")
-            }
-        }
+
         LazyColumn(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
