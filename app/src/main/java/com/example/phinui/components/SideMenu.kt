@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,6 +64,9 @@ fun SideMenu(
     val menuItems = listOf(
         MenuItem("Home", Icons.Default.Home, Routes.HOME),
         MenuItem("Profile", Icons.Default.AccountBox, Routes.PROFILE),
+        MenuItem("People", Icons.Default.PersonAdd, Routes.PEOPLE),
+        MenuItem("Friends", Icons.Default.People, Routes.FRIENDS),
+        //MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
         MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST),
         MenuItem("Events", Icons.Default.Event, Routes.EVENTS),
         MenuItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
@@ -126,14 +131,9 @@ fun SideMenu(
                 isSelected = currentRoute == item.route,
                 onItemClick,
                 onClick = {
-                    if (item.route == Routes.HOME) {
-                        navController.popBackStack(Routes.HOME, false)
-                    } else {
-                        navController.navigate(item.route) {
-                            popUpTo(Routes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                    navController.navigate(item.route) {
+                        launchSingleTop = true
+                        restoreState = true
                     }
                     onItemClick()
                 }
@@ -157,7 +157,7 @@ fun MenuRowBuilder(
             .background(
                 if (isSelected) Color.Gray.copy(alpha = 0.2f) else Color.Transparent
             )
-            .clickable{
+            .clickable {
                 onClick()
                 onItemClick()
             }

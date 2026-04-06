@@ -51,6 +51,8 @@ import com.example.phinui.viewmodel.EventsViewModel
 import com.example.phinui.viewmodel.EventsViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 
+import com.example.phinui.ui.screens.FriendsScreen
+import com.example.phinui.ui.screens.PeopleScreen
 
 @Composable
 fun PhinNavHost(
@@ -200,7 +202,8 @@ fun PhinNavHost(
 
             MessagesScreen(
                 senderUserID = currentUserID,
-                receiverUserID = receiverID
+                receiverUserID = receiverID,
+                navController = navController
             )
         }
 
@@ -210,6 +213,14 @@ fun PhinNavHost(
 
         composable(Routes.PROFILE) {
             ProfileScreen(navController = navController)
+        }
+
+        composable(Routes.PEOPLE) {
+            PeopleScreen()
+        }
+
+        composable(Routes.FRIENDS) {
+            FriendsScreen()
         }
 
         composable(Routes.SCHEDULE) {
