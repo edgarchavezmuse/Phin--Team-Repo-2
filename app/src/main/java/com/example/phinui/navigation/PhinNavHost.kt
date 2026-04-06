@@ -309,6 +309,9 @@ fun PhinNavHost(
                     selectedEvent.value = event
                     showRemoveDialog.value = true
                 },
+                onAddEventClick = {
+                    navController.navigate(Routes.ADD_EVENT)
+                },
                 onConnectClick = {
                     calendarViewModel.setError(null)
                     GoogleAuthManager.startAuthorization(
@@ -361,9 +364,6 @@ fun PhinNavHost(
                                 }
 
                                 is AddEventResult.AddedToGoogle -> {
-                                    if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
-                                        allEvents.add(newEvent)
-                                    }
 
                                     Toast.makeText(
                                         context,
