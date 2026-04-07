@@ -69,7 +69,7 @@ fun MapScreen() {
     }
 
     var campusLocations by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
-    var selectedCategory by remember { mutableStateOf("all") }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
 
     val placesClient = remember { Places.createClient(context) }
 
@@ -312,10 +312,11 @@ fun MapScreen() {
 
 @Composable
 fun CategoryFilterBar(
-    selectedCategory: String,
-    onCategorySelected: (String) -> Unit
+    selectedCategory: String?,
+    onCategorySelected: (String?) -> Unit
 ) {
     val categories = listOf(
+        null to "None",
         "all" to "All",
         "restroom" to "Restrooms",
         "microwave" to "Microwaves",

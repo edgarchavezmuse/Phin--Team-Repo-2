@@ -45,10 +45,18 @@ fun filterCampusLocations(
     locations: List<CampusLocation>,
     selectedCategory: String?
 ): List<CampusLocation> {
-    if (selectedCategory.isNullOrBlank() || selectedCategory == "all") {
+
+
+    if (selectedCategory == null) {
+        return emptyList()
+    }
+
+    // show all
+    if (selectedCategory == "all") {
         return locations
     }
 
+    // filter specific category
     return locations.filter {
         it.category.equals(selectedCategory, ignoreCase = true)
     }
