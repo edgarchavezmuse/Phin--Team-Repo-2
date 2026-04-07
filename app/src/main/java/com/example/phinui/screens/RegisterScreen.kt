@@ -25,6 +25,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 import com.example.phinui.ui.components.AuthHeader
 
 @Composable
@@ -55,12 +57,13 @@ fun RegisterScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 24.dp, vertical = 100.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Register",
                 fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = NavText
             )
 
