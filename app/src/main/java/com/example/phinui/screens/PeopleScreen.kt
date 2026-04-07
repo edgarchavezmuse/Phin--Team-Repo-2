@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.data.friends.FriendRequest
 import com.example.phinui.ui.components.UserAvatar
@@ -85,9 +86,10 @@ fun PeopleScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
-            .padding(20.dp)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("People", fontSize = 28.sp, color = NavText)
+        Text("People", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = NavText)
 
         Spacer(modifier = Modifier.height(16.dp))
 
