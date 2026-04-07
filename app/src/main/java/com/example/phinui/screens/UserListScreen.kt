@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
 import com.example.phinui.viewmodel.UserListViewModel
+import androidx.compose.foundation.shape.CircleShape
 
 
 @Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
@@ -72,6 +73,10 @@ import com.example.phinui.viewmodel.UserListViewModel
 }
 
 @Composable fun UserListItem(user: User, navController: NavController) {
+    val initial = user.name
+        .trim()
+        .firstOrNull()
+        ?.uppercase() ?: "?"
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -89,23 +94,29 @@ import com.example.phinui.viewmodel.UserListViewModel
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+
         ) {
             // User Icons
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(PrimaryRed)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFFEFEF)),
+                contentAlignment = Alignment.Center
             ) {
-                // Placeholder for user icons
+                Text(
+                    text = initial,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFFD32F2F),
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.align(Alignment.CenterVertically)
-            ) {
+            Column {
                 Text(
                     text = user.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
