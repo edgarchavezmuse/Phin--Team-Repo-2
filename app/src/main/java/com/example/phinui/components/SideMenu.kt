@@ -1,8 +1,6 @@
 package com.example.phinui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,9 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.AccountBox
@@ -32,18 +28,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.phinui.R
+import com.example.phinui.ui.components.UserAvatar
 import com.example.phinui.ui.navigation.Routes
-import com.example.phinui.ui.theme.HeaderText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -66,7 +59,6 @@ fun SideMenu(
         MenuItem("Profile", Icons.Default.AccountBox, Routes.PROFILE),
         MenuItem("People", Icons.Default.PersonAdd, Routes.PEOPLE),
         MenuItem("Friends", Icons.Default.People, Routes.FRIENDS),
-        //MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.MESSAGES),
         MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST),
         MenuItem("Events", Icons.Default.Event, Routes.EVENTS),
         MenuItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
@@ -95,21 +87,13 @@ fun SideMenu(
     Column(modifier = Modifier.padding(16.dp)) {
 
         Row() {
-            // make this the user's profile pic in the future?
-            Image(
-                painter = painterResource(id = R.drawable.redphin),
-                contentDescription = "Profile",
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, Color.Gray, CircleShape)
-                    .background(HeaderText)
-            )
+
+            UserAvatar(name = name, size = 35)
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Box(
-                modifier = Modifier.padding(top = 5.dp),
+                modifier = Modifier.padding(top = 7.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
