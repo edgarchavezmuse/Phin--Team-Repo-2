@@ -20,7 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
@@ -55,12 +57,14 @@ fun ProfileScreen(navController: NavHostController) {
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "My Profile",
-            style = MaterialTheme.typography.headlineMedium,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.SemiBold,
+            //style = MaterialTheme.typography.headlineMedium,
             color = NavText
         )
 

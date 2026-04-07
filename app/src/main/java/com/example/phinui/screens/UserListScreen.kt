@@ -46,7 +46,7 @@ import com.example.phinui.viewmodel.UserListViewModel
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
@@ -64,7 +64,7 @@ import com.example.phinui.viewmodel.UserListViewModel
 
                 items(users) { user ->
                     UserListItem(user = user, navController = navController)
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
                 }
             }
         }

@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -112,6 +114,7 @@ fun PhinUIApp() {
             topBar = {
                 if (!hideNavigationUi) {
                     TopAppBar(
+                        modifier = Modifier.height(65.dp),
                         title = {
                             Box (
                                 modifier = Modifier.fillMaxWidth(),
@@ -122,7 +125,8 @@ fun PhinUIApp() {
                                     fontSize = if (isMessagesScreen) 18.sp
                                         else MaterialTheme.typography.titleLarge.fontSize,
                                     fontWeight = if (isMessagesScreen) FontWeight.Bold
-                                        else FontWeight.Normal
+                                        else FontWeight.Normal,
+                                            color = HeaderText
                                 )
                             }
                         },
@@ -132,7 +136,8 @@ fun PhinUIApp() {
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
-                                    contentDescription = "Menu"
+                                    contentDescription = "Menu",
+                                    tint = Background
                                 )
                             }
                         },
@@ -142,10 +147,12 @@ fun PhinUIApp() {
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
+                                    contentDescription = "Back",
+                                    tint = Background
                                 )
                             }
-                        }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = HeaderRed)
                     )
                 }
             },

@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.phinui.data.friends.FriendRepository
@@ -52,11 +53,13 @@ fun FriendsScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
-            .padding(20.dp)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Friends",
             fontSize = 28.sp,
+            fontWeight = FontWeight.SemiBold,
             color = NavText
         )
 
