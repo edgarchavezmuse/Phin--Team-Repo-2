@@ -1,35 +1,36 @@
 package com.example.phinui.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.phinui.R
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.res.painterResource
-import com.example.phinui.R
-
 
 @Composable
-fun TopHeader() {
+fun AuthHeader() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(HeaderRed)
-            .padding(top = 0.dp, bottom = 10.dp),
+            .height(150.dp)
+            .background(HeaderText)
+            .padding(top = 55.dp, bottom = 0.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -37,12 +38,12 @@ fun TopHeader() {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy((-5).dp)
+                horizontalArrangement = Arrangement.spacedBy((-13).dp)
             ) {
                 Text(
                     text = "Ph",
-                    color = HeaderText,
-                    fontSize = 46.sp,
+                    color = HeaderRed,
+                    fontSize = 100.sp,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -52,35 +53,31 @@ fun TopHeader() {
                 ) {
                     Text(
                         text = "ı",
-                        color = HeaderText,
-                        fontSize = 46.sp,
+                        color = HeaderRed,
+                        fontSize = 100.sp,
                         fontWeight = FontWeight.Bold
                     )
 
                     Image(
-                        painter = painterResource(id = R.drawable.whitephin),
+                        painter = painterResource(id = R.drawable.redphin),
                         contentDescription = "Phin logo",
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(50.dp)
                             .align(Alignment.TopCenter)
-                            .offset(x = 7.dp, y = (-1).dp) // x: horizontal adjust y: vertical adjust
+                            .offset(
+                                x = 17.dp,
+                                y = (-8).dp
+                            ) // x: horizontal adjust y: vertical adjust
                     )
                 }
 
                 Text(
                     text = "n",
-                    color = HeaderText,
-                    fontSize = 46.sp,
+                    color = HeaderRed,
+                    fontSize = 100.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-
-            Text(
-                text = "CSUCI",
-                color = HeaderText,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Light
-            )
         }
     }
 }

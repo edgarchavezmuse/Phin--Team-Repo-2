@@ -53,6 +53,10 @@ object GoogleCalendarRepository {
                     connection.errorStream?.bufferedReader()?.readText() ?: ""
                 }
 
+                if (code == 401) {
+                    throw GoogleCalendarUnauthorizedException()
+                }
+
                 // Fail fast if the API returned an error status code
                 if (code !in 200..299) {
                     throw RuntimeException("Calendar API error ($code): $body")
@@ -110,6 +114,10 @@ object GoogleCalendarRepository {
                 connection.errorStream?.bufferedReader()?.readText() ?: ""
             }
 
+            if (code == 401) {
+                throw GoogleCalendarUnauthorizedException()
+            }
+
             if (code !in 200..299) {
                 throw RuntimeException("Calendar insert error ($code): $body")
             }
@@ -154,6 +162,7 @@ object GoogleCalendarRepository {
 
         return JSONObject().apply {
             put("summary", event.title)
+            put("description", event.description)
 
             if (!event.location.isNullOrBlank()) {
                 put("location", event.location)
@@ -209,6 +218,7 @@ object GoogleCalendarRepository {
         }
 
         val location = item.optString("location").ifBlank { null }
+        val description = item.optString("description").ifBlank { null }
 
         return CalendarEvent(
             id = id,
@@ -217,7 +227,8 @@ object GoogleCalendarRepository {
             end = end,
             location = location,
             reminderMinutes = remindersList,
-            source = CalendarSource.GOOGLE
+            source = CalendarSource.GOOGLE,
+            description = description
         )
     }
 
