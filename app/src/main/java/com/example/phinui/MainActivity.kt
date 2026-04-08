@@ -91,11 +91,25 @@ fun PhinUIApp() {
 
     NotificationPermissionRequest()
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = drawerState.isOpen,
-        drawerContent = {
-            if (!hideNavigationUi) {
+    if (hideNavigationUi) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Background
+        ) { innerPadding ->
+            PhinNavHost(
+                navController = navController,
+                modifier = Modifier.padding(innerPadding),
+                setTopBarTitle = { title, messagesScreen ->
+                    topBarTitle = title
+                    isMessagesScreen = messagesScreen
+                }
+            )
+        }
+    } else {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = drawerState.isOpen,
+            drawerContent = {
                 ModalDrawerSheet(
                     drawerShape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
                     drawerContainerColor = HeaderRed,
@@ -107,26 +121,24 @@ fun PhinUIApp() {
                     )
                 }
             }
-        }
-    ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                if (!hideNavigationUi) {
+        ) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
                     TopAppBar(
                         modifier = Modifier.height(65.dp),
                         title = {
-                            Box (
+                            Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     topBarTitle,
                                     fontSize = if (isMessagesScreen) 18.sp
-                                        else MaterialTheme.typography.titleLarge.fontSize,
+                                    else MaterialTheme.typography.titleLarge.fontSize,
                                     fontWeight = if (isMessagesScreen) FontWeight.Bold
-                                        else FontWeight.Normal,
-                                            color = HeaderText
+                                    else FontWeight.Normal,
+                                    color = HeaderText
                                 )
                             }
                         },
@@ -154,23 +166,22 @@ fun PhinUIApp() {
                         },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = HeaderRed)
                     )
-                }
-            },
-            containerColor = Background,
-            bottomBar = {
-                if (!hideNavigationUi) {
+                },
+                containerColor = Background,
+                bottomBar = {
                     CustomBottomBar(navController = navController)
+
                 }
+            ) { innerPadding ->
+                PhinNavHost(
+                    navController = navController,
+                    modifier = Modifier.padding(innerPadding),
+                    setTopBarTitle = { title, messagesScreen ->
+                        topBarTitle = title
+                        isMessagesScreen = messagesScreen
+                    }
+                )
             }
-        ) { innerPadding ->
-            PhinNavHost(
-                navController = navController,
-                modifier = Modifier.padding(innerPadding),
-                setTopBarTitle = { title, messagesScreen ->
-                    topBarTitle = title
-                    isMessagesScreen = messagesScreen
-                }
-            )
         }
     }
 }
