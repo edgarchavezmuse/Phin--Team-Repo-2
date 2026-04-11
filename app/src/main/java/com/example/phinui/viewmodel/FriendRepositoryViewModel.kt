@@ -3,13 +3,11 @@ package com.example.phinui.viewmodel
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.User
 import com.example.phinui.data.friends.FriendRepository
-import kotlinx.coroutines.launch
 
 class FriendRepositoryViewModel (private val friendRepository: FriendRepository) : ViewModel() {
-
+    
     private val _friendsList = mutableStateOf<List<User>>(emptyList())
     val friendsList: State<List<User>> = _friendsList
 
@@ -30,7 +28,7 @@ class FriendRepositoryViewModel (private val friendRepository: FriendRepository)
                         name = it.second["name"] as? String ?: "Unknown"
                     )
                 } .sortedBy { (it.name.lowercase() ) }
-                
+
                 _friendsList.value = alphabetizeFriendsList
 
             },
