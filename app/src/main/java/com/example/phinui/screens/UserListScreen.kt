@@ -24,48 +24,75 @@ import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
 import com.example.phinui.viewmodel.UserListViewModel
 import androidx.compose.foundation.shape.CircleShape
+import kotlinx.coroutines.selects.select
 
 
 @Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
     val users = viewModel.sortedUsers
     val isLoadingStatus = viewModel.isLoading
+    var selectedTab by remember { mutableIntStateOf(value = 0) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAllUsers()
     }
 
-    Box {
-        if (isLoadingStatus) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(Alignment.Center)
-            ) {
-                CircularProgressIndicator()
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(selected = selectedTab == 0,
+                onClick = {selectedTab = 0}) {
+                    Text("Friends")
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                item {
-                    Text(
-                        text = "Users",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = NavText
-                    )
-                }
+            Tab(selected = selectedTab == 1,
+                onClick = {selectedTab = 1}) {
+                    Text("Requests")
+            }
+        }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
+        Spacer(modifier = Modifier.height(16.dp))
 
-                items(users) { user ->
-                    UserListItem(user = user, navController = navController)
-                    Spacer(modifier = Modifier.height(5.dp))
+        when(selectedTab) {
+
+            //Friends tab
+            0 -> {
+                Box {
+                    if (isLoadingStatus) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .wrapContentSize(Alignment.Center)
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            //item {
+                            //    Text(
+                            //        text = "Users",
+                            //        fontSize = 28.sp,
+                            //        fontWeight = FontWeight.SemiBold,
+                            //        color = NavText
+                            //    )
+                            //}
+
+                            //item {
+                            //    Spacer(modifier = Modifier.height(24.dp))
+                            //}
+
+                            items(users) { user ->
+                                UserListItem(user = user, navController = navController)
+                                Spacer(modifier = Modifier.height(5.dp))
+                            }
+                        }
+                    }
                 }
             }
         }
