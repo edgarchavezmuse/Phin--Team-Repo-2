@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
@@ -37,6 +37,8 @@ fun MessagesScreen(
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
     val selectedUser = viewModel.selectedUser
     val isLoadingStatus = viewModel.isLoading
+    val autoScrollState = rememberLazyListState()
+    val initialChatOpen = remember { mutableStateOf(true) }
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -54,11 +56,22 @@ fun MessagesScreen(
         viewModel.loadSelectedUser(receiverUserID)
     }
 
+    if (initialChatOpen.value) {
+        //Automatic scroll effect
+        LaunchedEffect(messages) {
+            if (messages.isNotEmpty()) {
+                autoScrollState.animateScrollToItem(messages.size - 1)
+                initialChatOpen.value = false
+            }
+        }
+    }
+
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         if (isLoadingStatus) {
             CircularProgressIndicator()
         }
@@ -66,6 +79,7 @@ fun MessagesScreen(
         LazyColumn(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
+            state = autoScrollState,
             verticalArrangement = Arrangement.Top
         ) {
             items(messages) { message ->
