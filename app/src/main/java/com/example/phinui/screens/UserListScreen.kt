@@ -69,15 +69,7 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(friendList) { friend ->
-                            val userID = friend.first
-                            val userName = friend.second
-
-                            val user = User(
-                                uid = userID,
-                                name = userName["name"] as? String?: "Unknown"
-                            )
-
-                            UserListItem(user = user, navController = navController)
+                            UserListItem(user = friend, navController = navController)
                             Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
