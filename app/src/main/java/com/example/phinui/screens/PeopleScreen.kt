@@ -6,24 +6,33 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.data.friends.FriendRequest
 import com.example.phinui.ui.components.UserAvatar
 import com.example.phinui.ui.theme.Background
+import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.NavText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.IconButton
 
 @Composable
 fun PeopleScreen() {
@@ -41,7 +50,6 @@ fun PeopleScreen() {
     var message by remember { mutableStateOf<String?>(null) }
     var myName by remember { mutableStateOf("") }
 
-    // load current user's name
     LaunchedEffect(Unit) {
         val uid = auth.currentUser?.uid ?: return@LaunchedEffect
         db.collection("users").document(uid).get()
@@ -50,7 +58,6 @@ fun PeopleScreen() {
             }
     }
 
-    // realtime listeners
     DisposableEffect(Unit) {
         val incomingListener: ListenerRegistration? =
             repo.listenIncomingRequests(
@@ -70,7 +77,6 @@ fun PeopleScreen() {
         }
     }
 
-    // search listener
     DisposableEffect(search) {
         val searchListener =
             repo.listenSearchUsersByNamePrefix(
@@ -79,7 +85,9 @@ fun PeopleScreen() {
                 onError = { message = it.message }
             )
 
-        onDispose { searchListener?.remove() }
+        onDispose {
+            searchListener?.remove()
+        }
     }
 
     Column(
@@ -89,18 +97,20 @@ fun PeopleScreen() {
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("People", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = NavText)
+        Text(
+            text = "People",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = NavText
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         TabRow(selectedTabIndex = selectedTab) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text("People")
+                Text("Discover")
             }
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text("Requests")
-            }
-            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
+            Tab(selected = selectedTab == 2, onClick = { selectedTab = 1 }) {
                 Text("Blocked")
             }
         }
@@ -108,8 +118,6 @@ fun PeopleScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         when (selectedTab) {
-
-            // people tab
             0 -> {
                 OutlinedTextField(
                     value = search,
@@ -148,8 +156,10 @@ fun PeopleScreen() {
                                 Text(name, color = NavText)
                             }
 
-                            Row {
-                                Button(
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
                                     onClick = {
                                         repo.sendFriendRequest(
                                             uid,
@@ -158,11 +168,17 @@ fun PeopleScreen() {
                                             { message = it.message }
                                         )
                                     }
-                                ) { Text("Add") }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Add Friend",
+                                        tint = HeaderRed
+                                    )
+                                }
 
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
 
-                                OutlinedButton(
+                                IconButton(
                                     onClick = {
                                         repo.blockUser(
                                             uid,
@@ -170,64 +186,20 @@ fun PeopleScreen() {
                                             { message = it.message }
                                         )
                                     }
-                                ) { Text("Block") }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Block,
+                                        contentDescription = "Block User",
+                                        tint = HeaderRed
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // requests tab
             1 -> {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(incoming) { (requestId, req) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                UserAvatar(req.fromName, 44)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(req.fromName, color = NavText)
-                            }
-
-                            Row {
-                                Button(
-                                    onClick = {
-                                        repo.acceptFriendRequest(
-                                            requestId,
-                                            req.fromUid,
-                                            { message = "Friend added" },
-                                            { message = it.message }
-                                        )
-                                    }
-                                ) { Text("Accept") }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                OutlinedButton(
-                                    onClick = {
-                                        repo.declineFriendRequest(
-                                            requestId,
-                                            { message = "Declined" },
-                                            { message = it.message }
-                                        )
-                                    }
-                                ) { Text("Decline") }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // blocked tab
-            2 -> {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(blockedUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
@@ -248,7 +220,7 @@ fun PeopleScreen() {
                                 Text(name, color = NavText)
                             }
 
-                            OutlinedButton(
+                            IconButton(
                                 onClick = {
                                     repo.unblockUser(
                                         uid,
@@ -257,7 +229,11 @@ fun PeopleScreen() {
                                     )
                                 }
                             ) {
-                                Text("Unblock")
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Unblock User",
+                                    tint = HeaderRed
+                                )
                             }
                         }
                     }
