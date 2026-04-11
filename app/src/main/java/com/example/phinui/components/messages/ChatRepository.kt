@@ -55,7 +55,6 @@ class ChatRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener {snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                //val messages = snapshot.documents.map {it.data!!}
                 val messages = snapshot?.documents?.mapNotNull {it.data} ?: emptyList()
                 newMessage(messages)
             }
