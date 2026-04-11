@@ -22,19 +22,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
-import com.example.phinui.viewmodel.UserListViewModel
 import androidx.compose.foundation.shape.CircleShape
-import kotlinx.coroutines.selects.select
+import com.example.phinui.data.friends.FriendRepository
+import com.example.phinui.viewmodel.FriendRepositoryViewModel
+import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
 
 
-@Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
-    val users = viewModel.sortedUsers
-    val isLoadingStatus = viewModel.isLoading
+@Composable
+fun UserListScreen (
+    navController: NavController,
+    friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
+        factory = FriendRepositoryViewModelFactory(FriendRepository())
+)) {
+
+    val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadAllUsers()
-    }
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -59,38 +62,23 @@ import kotlinx.coroutines.selects.select
             //Friends tab
             0 -> {
                 Box {
-                    if (isLoadingStatus) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .wrapContentSize(Alignment.Center)
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            //item {
-                            //    Text(
-                            //        text = "Users",
-                            //        fontSize = 28.sp,
-                            //        fontWeight = FontWeight.SemiBold,
-                            //        color = NavText
-                            //    )
-                            //}
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(friendList) { friend ->
+                            val userID = friend.first
+                            val userName = friend.second
 
-                            //item {
-                            //    Spacer(modifier = Modifier.height(24.dp))
-                            //}
+                            val user = User(
+                                uid = userID,
+                                name = userName["name"] as? String?: "Unknown"
+                            )
 
-                            items(users) { user ->
-                                UserListItem(user = user, navController = navController)
-                                Spacer(modifier = Modifier.height(5.dp))
-                            }
+                            UserListItem(user = user, navController = navController)
+                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
