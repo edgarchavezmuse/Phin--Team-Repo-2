@@ -221,7 +221,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.FRIENDS) {
-            FriendsScreen()
+            FriendsScreen(navController = navController)
         }
 
         composable(Routes.SCHEDULE) {
