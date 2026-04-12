@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -85,8 +84,17 @@ fun SideMenu(
 
     Column(modifier = Modifier.padding(16.dp)) {
 
-        Row() {
-
+        Row(
+            modifier = Modifier.clickable(onClick = {
+                if (currentRoute != Routes.PROFILE) {
+                    navController.navigate(Routes.PROFILE) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                onItemClick()
+            })
+        ) {
             UserAvatar(name = name, size = 35)
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -102,7 +110,6 @@ fun SideMenu(
                     fontWeight = FontWeight.Medium
                 )
             }
-
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -112,11 +119,12 @@ fun SideMenu(
                 label = item.label,
                 icon = item.icon,
                 isSelected = currentRoute == item.route,
-                onItemClick,
                 onClick = {
-                    navController.navigate(item.route) {
-                        launchSingleTop = true
-                        restoreState = true
+                    if (currentRoute != item.route) {
+                        navController.navigate(item.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                     onItemClick()
                 }
@@ -130,7 +138,6 @@ fun MenuRowBuilder(
     label: String,
     icon: ImageVector,
     isSelected: Boolean,
-    onItemClick: () -> Unit,
     onClick: () -> Unit
 ) {
     Row(
@@ -142,7 +149,6 @@ fun MenuRowBuilder(
             )
             .clickable {
                 onClick()
-                onItemClick()
             }
             .padding(vertical = 12.dp)
     ) {
