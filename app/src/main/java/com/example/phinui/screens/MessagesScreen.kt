@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.ui.theme.*
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.UserListViewModel
 
 
@@ -29,16 +30,22 @@ import com.example.phinui.viewmodel.UserListViewModel
 fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
-    viewModel: UserListViewModel = viewModel(),
+    userListViewModel: UserListViewModel = viewModel(),
+    chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
     setTopBarTitle: (String) -> Unit
 ) {
     val chatRepository = remember { ChatRepository() }
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-    val selectedUser = viewModel.selectedUser
-    val isLoadingStatus = viewModel.isLoading
+    val selectedUser = userListViewModel.selectedUser
+    val isLoadingStatus = userListViewModel.isLoading
     val autoScrollState = rememberLazyListState()
     val initialChatOpen = remember { mutableStateOf(true) }
+
+    //ADDED 4/11
+    val approvedChats = chatRepositoryViewModel.approvedChats.value
+    val messageRequests = chatRepositoryViewModel.messageRequests.value
+    //END OF ADDED
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -53,7 +60,7 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(receiverUserID) {
-        viewModel.loadSelectedUser(receiverUserID)
+        userListViewModel.loadSelectedUser(receiverUserID)
     }
 
     if (initialChatOpen.value) {

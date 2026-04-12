@@ -26,18 +26,31 @@ import androidx.compose.foundation.shape.CircleShape
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
+import com.example.phinui.viewmodel.UserListViewModel
 
 
 @Composable
 fun UserListScreen (
     navController: NavController,
+    //ADDED 4/11
+    //userListViewModel: UserListViewModel = viewModel(),
+    //END OF ADDED
     friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
         factory = FriendRepositoryViewModelFactory(FriendRepository())
 )) {
 
+    //ADDED 4/11
+    //val users = userListViewModel.sortedUsers
+    //val isLoadingStatus = userListViewModel.isLoading
+    //END OF ADDED
     val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
 
+    //ADDED 4/11
+    //LaunchedEffect(Unit) {
+    //    userListViewModel.loadAllUsers()
+   //}
+    //END OF ADDED
 
     Column(modifier = Modifier
         .fillMaxSize()
