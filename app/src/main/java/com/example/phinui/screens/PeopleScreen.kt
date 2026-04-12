@@ -32,7 +32,10 @@ import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.IconButton
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
 fun PeopleScreen() {
@@ -49,6 +52,7 @@ fun PeopleScreen() {
     var blockedUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var myName by remember { mutableStateOf("") }
+    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
 
     LaunchedEffect(Unit) {
         val uid = auth.currentUser?.uid ?: return@LaunchedEffect
@@ -172,6 +176,26 @@ fun PeopleScreen() {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = "Add Friend",
+                                        tint = HeaderRed
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                IconButton(
+                                    onClick = {
+                                        val senderID = chatRepositoryViewModel.currentUserID ?: return@IconButton
+                                        chatRepositoryViewModel.sendMessageRequest(
+                                            senderID,
+                                            uid,
+                                            //{ message = "Request sent" },
+                                            //{ message = it.message }
+                                        )
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Email,
+                                        contentDescription = "Send Message Request",
                                         tint = HeaderRed
                                     )
                                 }

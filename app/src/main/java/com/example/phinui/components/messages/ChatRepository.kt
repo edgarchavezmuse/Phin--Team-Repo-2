@@ -34,9 +34,7 @@ class ChatRepository {
                 "lastMessage" to messageText,
                 "lastTimestamp" to messageProperties.currentTime,
                 "participants" to listOf(senderUserID, receiverUserID),
-                //ADDED 4/11
                 "messageRequestApproved" to true
-                //END OF ADDED
             )
         //Default info if chat between users doesn't exist yet
         ).addOnFailureListener {
@@ -45,16 +43,13 @@ class ChatRepository {
                     "lastMessage" to messageText,
                     "lastTimestamp" to messageProperties.currentTime,
                     "participants" to listOf(senderUserID, receiverUserID),
-                    //ADDED 4/11
                     "messageRequestApproved" to true
-                    //END OF ADDED
                 )
             )
         }
     }
 
-    //ADDED 4/11
-    fun sendMessageRequest(senderUserID: String, receiverUserID: String, messageText: String) {
+    fun sendMessageRequest(senderUserID: String, receiverUserID: String) {
         val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
 
         messageProperties.chatReference.update(
@@ -85,7 +80,6 @@ class ChatRepository {
         chatsCollection.document(chatID)
             .delete()
     }
-    //END OF ADDED
 
     fun checkForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
         val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
@@ -100,7 +94,6 @@ class ChatRepository {
             }
     }
 
-    //ADDED 4/11
     fun listenMessageRequest(
         userID: String,
         onResult: (List<Map<String, Any>>) -> Unit
@@ -110,7 +103,6 @@ class ChatRepository {
             .whereEqualTo("messageRequestApproved", false)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                //val messageRequest = snapshot.documents.mapNotNull { it.data }
                 val messageRequest = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
                     data + mapOf("chatID" to doc.id)
@@ -128,7 +120,6 @@ class ChatRepository {
             .whereEqualTo("messageRequestApproved", true)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                //val chats = snapshot.documents.mapNotNull { it.data }
                 val chats = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
                     data + mapOf("chatID" to doc.id)
@@ -137,7 +128,6 @@ class ChatRepository {
             }
     }
 
-    //END OF ADDED
     data class MessageInfo(
         val chatID: String,
         val chatReference: DocumentReference,

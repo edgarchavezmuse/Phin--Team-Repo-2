@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.lifecycle.viewModelScope
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
@@ -34,28 +35,15 @@ import com.example.phinui.viewmodel.UserListViewModel
 @Composable
 fun UserListScreen (
     navController: NavController,
-    //ADDED 4/11
-    //userListViewModel: UserListViewModel = viewModel(),
     chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
-    //END OF ADDED
     friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
         factory = FriendRepositoryViewModelFactory(FriendRepository())
-)) {
+    )) {
 
-    //ADDED 4/11
-    //val users = userListViewModel.sortedUsers
-    //val isLoadingStatus = userListViewModel.isLoading
     val messageRequest = chatRepositoryViewModel.messageRequests
     val currentUserID = chatRepositoryViewModel.currentUserID ?: return
-    //END OF ADDED
     val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
-
-    //ADDED 4/11
-    //LaunchedEffect(Unit) {
-    //    userListViewModel.loadAllUsers()
-   //}
-    //END OF ADDED
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -65,7 +53,7 @@ fun UserListScreen (
         TabRow(selectedTabIndex = selectedTab) {
             Tab(selected = selectedTab == 0,
                 onClick = {selectedTab = 0}) {
-                    Text("Friends")
+                Text("Friends")
             }
             Tab(selected = selectedTab == 1,
                 onClick = {selectedTab = 1}) {
@@ -73,7 +61,7 @@ fun UserListScreen (
             }
             Tab(selected = selectedTab == 2,
                 onClick = {selectedTab = 2}) {
-                    Text("Requests")
+                Text("Requests")
             }
         }
 
@@ -91,27 +79,27 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(friendList) { friend ->
-                            //UserListItem(user = friend, navController = navController)
-                            //ADDED 4/11
                             UserListItem(
                                 user = friend,
                                 onClick = {
                                     navController.navigate(Routes.MESSAGES + "/${friend.uid}")
                                 }
                             )
-                            //END OF ADDED
                             Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
             }
 
-            //ADDED 4/11
             //General tab
 
             //Requests tab
             2 -> {
                 Box {
+                    LaunchedEffect(Unit) {
+                        val uid = chatRepositoryViewModel.currentUserID ?: return@LaunchedEffect
+                        chatRepositoryViewModel.loadMessageRequest(uid)
+                    }
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -126,28 +114,25 @@ fun UserListScreen (
                                 .mapNotNull { it as? String }
                                 .firstOrNull{ it != currentUserID } ?:return@items
 
+                            var userName by remember { mutableStateOf("Loading...")}
+
+                            LaunchedEffect(otherUserID) {
+                                chatRepositoryViewModel.userListRepository.getUserNameByID(
+                                    otherUserID,
+                                    onResult = { user ->
+                                        userName = user.name
+                                    },
+                                    onError = {exception ->
+                                        userName = "Unknown User"
+                                    }
+                                )
+                            }
+
                             val user = User(
                                 uid = otherUserID,
-                                name = otherUserID
+                                name = userName
                             )
-//                            Row(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                horizontalArrangement = Arrangement.SpaceBetween
-//                            ) {
-//                                Text("Message Request")
-//                                Row{
-//                                    Button(onClick = {
-//                                        chatRepositoryViewModel.approveRequest(chatID)
-//                                    })
-//                                    Text("Accept")
-//                                }
-//
-//                                Button(onClick = {
-//                                    chatRepositoryViewModel.denyRequest(chatID)
-//                                })
-//                                Text("Decline")
-//                            }
-                            //UserListItem(user = friend, navController = navController)
+
                             UserListItem(
                                 user = user,
                                 trailingContent = {
@@ -167,18 +152,16 @@ fun UserListScreen (
                                         }
                                     }
                                 }
-                                )
+                            )
                             Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
             }
-            //END OF ADDED
         }
     }
 }
 
-//ADDED 4/11
 @Composable fun UserListItem(
     user: User,
     trailingContent: @Composable (() -> Unit)? = null,
@@ -232,77 +215,16 @@ fun UserListScreen (
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                //Column {
-                    Text(
-                        text = user.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 18.sp,
-                            color = TextMuted
-                        )
+                Text(
+                    text = user.name,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = TextMuted
                     )
-                //}
+                )
             }
             trailingContent?.invoke()
         }
     }
 }
-//END OF ADDED
-
-//@Composable fun UserListItem(user: User, navController: NavController) {
-//    val initial = user.name
-//        .trim()
-//        .firstOrNull()
-//        ?.uppercase() ?: "?"
-//    Surface(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(16.dp)
-//            .clickable{
-//                navController.navigate(Routes.MESSAGES + "/${user.uid}")
-//            }
-//            .shadow(
-//                elevation = 4.dp,
-//                shape = RoundedCornerShape(12.dp)
-//            ),
-//        shape = RoundedCornerShape(12.dp),
-//        color = Color.White
-//    ) {
-//        Row(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(16.dp),
-//            verticalAlignment = Alignment.CenterVertically
-//
-//        ) {
-//            // User Icons
-//            Box(
-//                modifier = Modifier
-//                    .size(40.dp)
-//                    .clip(CircleShape)
-//                    .background(Color(0xFFFFEFEF)),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text(
-//                    text = initial,
-//                    style = MaterialTheme.typography.titleMedium,
-//                    color = Color(0xFFD32F2F),
-//                    fontWeight = FontWeight.SemiBold
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.width(16.dp))
-//
-//            Column {
-//                Text(
-//                    text = user.name,
-//                    style = MaterialTheme.typography.bodyLarge.copy(
-//                        fontWeight = FontWeight.SemiBold,
-//                        fontSize = 18.sp,
-//                        color = TextMuted
-//                    )
-//                )
-//            }
-//        }
-//    }
-//}
