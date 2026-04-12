@@ -22,50 +22,57 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
-import com.example.phinui.viewmodel.UserListViewModel
 import androidx.compose.foundation.shape.CircleShape
+import com.example.phinui.data.friends.FriendRepository
+import com.example.phinui.viewmodel.FriendRepositoryViewModel
+import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
 
 
-@Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
-    val users = viewModel.sortedUsers
-    val isLoadingStatus = viewModel.isLoading
+@Composable
+fun UserListScreen (
+    navController: NavController,
+    friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
+        factory = FriendRepositoryViewModelFactory(FriendRepository())
+)) {
 
-    LaunchedEffect(Unit) {
-        viewModel.loadAllUsers()
-    }
+    val friendList = friendRepositoryViewModel.friendsList.value
+    var selectedTab by remember { mutableIntStateOf(value = 0) }
 
-    Box {
-        if (isLoadingStatus) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(Alignment.Center)
-            ) {
-                CircularProgressIndicator()
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(selected = selectedTab == 0,
+                onClick = {selectedTab = 0}) {
+                    Text("Friends")
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                item {
-                    Text(
-                        text = "Users",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = NavText
-                    )
-                }
+            Tab(selected = selectedTab == 1,
+                onClick = {selectedTab = 1}) {
+                    Text("Requests")
+            }
+        }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
+        Spacer(modifier = Modifier.height(16.dp))
 
-                items(users) { user ->
-                    UserListItem(user = user, navController = navController)
-                    Spacer(modifier = Modifier.height(5.dp))
+        when(selectedTab) {
+
+            //Friends tab
+            0 -> {
+                Box {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(friendList) { friend ->
+                            UserListItem(user = friend, navController = navController)
+                            Spacer(modifier = Modifier.height(5.dp))
+                        }
+                    }
                 }
             }
         }
