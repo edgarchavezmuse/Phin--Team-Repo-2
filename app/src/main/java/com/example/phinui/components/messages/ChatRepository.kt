@@ -80,6 +80,11 @@ class ChatRepository {
         chatsCollection.document(chatID)
             .update("messageRequestApproved", true)
     }
+
+    fun denyMessageRequest(chatID: String) {
+        chatsCollection.document(chatID)
+            .delete()
+    }
     //END OF ADDED
 
     fun checkForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
@@ -105,7 +110,11 @@ class ChatRepository {
             .whereEqualTo("messageRequestApproved", false)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                val messageRequest = snapshot.documents.mapNotNull { it.data }
+                //val messageRequest = snapshot.documents.mapNotNull { it.data }
+                val messageRequest = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    data + mapOf("chatID" to doc.id)
+                }
                 onResult(messageRequest)
             }
     }
@@ -119,7 +128,11 @@ class ChatRepository {
             .whereEqualTo("messageRequestApproved", true)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                val chats = snapshot.documents.mapNotNull { it.data }
+                //val chats = snapshot.documents.mapNotNull { it.data }
+                val chats = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    data + mapOf("chatID" to doc.id)
+                }
                 onResult(chats)
             }
     }
