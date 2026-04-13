@@ -50,6 +50,7 @@ fun HomeScreen(
             HomeDashboard(
                 events = events,
                 isLoading = isLoading,
+                classes = classes,
                 onOpenEvents = {
                     navController.navigate(Routes.EVENTS) { launchSingleTop = true }
                 },
@@ -70,11 +71,12 @@ fun HomeScreen(
                 }
             )
         }
+
         if (showAddSheet) {
             AddScheduleSheet(
                 onDismiss = { showAddSheet = false },
-                onSave = { newClass ->
-                    scheduleViewModel.addClass(newClass) {
+                onSave = { scheduleClass ->
+                    scheduleViewModel.addClass(scheduleClass) {
                         showAddSheet = false
                     }
                 }
