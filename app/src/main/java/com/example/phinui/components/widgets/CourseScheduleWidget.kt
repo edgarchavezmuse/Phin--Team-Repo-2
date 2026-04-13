@@ -1,6 +1,7 @@
 package com.example.phinui.ui.components.widgets
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +36,13 @@ fun CourseScheduleWidget(
     onAddClass: () -> Unit,
     onViewSchedule: () -> Unit
 ) {
+    val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
+    var selectedDay by remember { mutableStateOf("Mon") }
+
+    val filteredClasses = classes
+        .filter { scheduleClass -> scheduleClass.days.contains(selectedDay) }
+        .sortedBy { it.startTime }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -100,14 +112,32 @@ fun CourseScheduleWidget(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf("Mon", "Tue", "Wed", "Thu", "Fri").forEach { day ->
-                            Text(
-                                text = day,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        days.forEach { day ->
+                            val isSelected = day == selectedDay
+
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                },
+                                modifier = Modifier.clickable { selectedDay = day }
+                            ) {
+                                Text(
+                                    text = day,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            }
                         }
                     }
 
@@ -128,11 +158,28 @@ fun CourseScheduleWidget(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    } else if (filteredClasses.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No classes on $selectedDay",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     } else {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            classes.take(3).forEach { scheduleClass ->
+                            filteredClasses.take(3).forEach { scheduleClass ->
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
                                     tonalElevation = 2.dp,
@@ -149,7 +196,7 @@ fun CourseScheduleWidget(
                                         )
 
                                         Text(
-                                            text = "${scheduleClass.days.joinToString(", ")} • ${scheduleClass.startTime} - ${scheduleClass.endTime}",
+                                            text = "${scheduleClass.startTime} - ${scheduleClass.endTime}",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
