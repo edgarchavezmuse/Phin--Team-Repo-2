@@ -191,6 +191,10 @@ fun PeopleScreen() {
                                             //{ message = "Request sent" },
                                             //{ message = it.message }
                                         )
+                                        //ADDED 4/13
+                                        chatRepositoryViewModel.loadMessageRequest(senderID)
+                                        chatRepositoryViewModel.loadMessageRequest(uid)
+                                        //END OF ADDE
                                     }
                                 ) {
                                     Icon(

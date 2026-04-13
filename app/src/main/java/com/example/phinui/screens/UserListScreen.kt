@@ -45,6 +45,11 @@ fun UserListScreen (
     val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
 
+    //ADDED 4/13
+    LaunchedEffect(currentUserID){
+        chatRepositoryViewModel.loadMessageRequest(currentUserID)
+    }
+    //END OF ADDED
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(20.dp),
@@ -95,19 +100,30 @@ fun UserListScreen (
 
             //Requests tab
             2 -> {
+                //ADDED 4/13
+                var messageRequestState by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+                LaunchedEffect(currentUserID){
+                    chatRepositoryViewModel.loadMessageRequest(currentUserID)
+                }
+
+                LaunchedEffect(messageRequestState) {
+                    messageRequestState = chatRepositoryViewModel.messageRequests.value
+                }
+                //END OF ADDED
                 Box {
-                    LaunchedEffect(Unit) {
-                        val uid = chatRepositoryViewModel.currentUserID ?: return@LaunchedEffect
-                        chatRepositoryViewModel.loadMessageRequest(uid)
-                    }
+                    //LaunchedEffect(Unit) {
+                    //    val uid = chatRepositoryViewModel.currentUserID ?: return@LaunchedEffect
+                    //    chatRepositoryViewModel.loadMessageRequest(uid)
+                    //}
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(messageRequest.value) { chat ->
-                            val chatID = chat["chatID"] as? String ?: return@items
+                        //items(messageRequest.value) { chat ->
+                        items(messageRequestState) { chat ->
+                        val chatID = chat["chatID"] as? String ?: return@items
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants
