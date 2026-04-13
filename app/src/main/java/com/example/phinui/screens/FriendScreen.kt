@@ -61,7 +61,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 
-
 @Composable
 fun FriendsScreen(
     navController: NavController
