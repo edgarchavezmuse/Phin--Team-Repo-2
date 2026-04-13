@@ -185,14 +185,41 @@ class FriendRepository(
     ) {
         val myUid = currentUid() ?: return
 
-        db.runBatch { batch ->
-            val myUserRef = db.collection("users").document(myUid)
-            val otherUserRef = db.collection("users").document(blockedUid)
+        val myUserRef = db.collection("users").document(myUid)
+        val otherUserRef = db.collection("users").document(blockedUid)
 
-            batch.update(myUserRef, "blocked", FieldValue.arrayUnion(blockedUid))
-            batch.update(myUserRef, "friends", FieldValue.arrayRemove(blockedUid))
-            batch.update(otherUserRef, "friends", FieldValue.arrayRemove(myUid))
-        }.addOnSuccessListener { onSuccess() }
+        db.collection("friend_requests")
+            .whereEqualTo("fromUid", myUid)
+            .whereEqualTo("toUid", blockedUid)
+            .whereEqualTo("status", "pending")
+            .get()
+            .addOnSuccessListener { outgoingSnapshot ->
+
+                db.collection("friend_requests")
+                    .whereEqualTo("fromUid", blockedUid)
+                    .whereEqualTo("toUid", myUid)
+                    .whereEqualTo("status", "pending")
+                    .get()
+                    .addOnSuccessListener { incomingSnapshot ->
+
+                        db.runBatch { batch ->
+                            batch.update(myUserRef, "blocked", FieldValue.arrayUnion(blockedUid))
+                            batch.update(myUserRef, "friends", FieldValue.arrayRemove(blockedUid))
+                            batch.update(otherUserRef, "friends", FieldValue.arrayRemove(myUid))
+
+                            outgoingSnapshot.documents.forEach { doc ->
+                                batch.delete(doc.reference)
+                            }
+
+                            incomingSnapshot.documents.forEach { doc ->
+                                batch.delete(doc.reference)
+                            }
+                        }.addOnSuccessListener {
+                            onSuccess()
+                        }.addOnFailureListener(onError)
+                    }
+                    .addOnFailureListener(onError)
+            }
             .addOnFailureListener(onError)
     }
 
