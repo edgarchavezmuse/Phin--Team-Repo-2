@@ -32,6 +32,7 @@ fun HomeScreen(
     var showAddSheet by remember { mutableStateOf(false) }
     val scheduleViewModel: ScheduleViewModel = viewModel()
     val classes by scheduleViewModel.classes.collectAsState()
+    val catalogCourses by scheduleViewModel.catalogCourses.collectAsState()
 
     Column(
         modifier = Modifier
@@ -74,6 +75,7 @@ fun HomeScreen(
 
         if (showAddSheet) {
             AddScheduleSheet(
+                catalogCourses = catalogCourses,
                 onDismiss = { showAddSheet = false },
                 onSave = { scheduleClass ->
                     scheduleViewModel.addClass(scheduleClass) {

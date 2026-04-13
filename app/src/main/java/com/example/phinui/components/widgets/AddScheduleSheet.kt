@@ -1,6 +1,5 @@
 package com.example.phinui.ui.components.widgets
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,8 +8,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -19,12 +20,15 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -39,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.phinui.components.calendar.event_form.EventInputRow
 import com.example.phinui.components.calendar.event_form.EventPickerRow
+import com.example.phinui.data.schedule.CourseCatalogItem
 import com.example.phinui.data.schedule.ScheduleClass
 import com.example.phinui.ui.components.time_pickers.EventTimePickerDialog
 import com.example.phinui.ui.components.time_pickers.convertTo24Hour
@@ -46,9 +51,11 @@ import com.example.phinui.ui.components.time_pickers.convertTo24Hour
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddScheduleSheet(
+    catalogCourses: List<CourseCatalogItem>,
     onDismiss: () -> Unit,
     onSave: (ScheduleClass) -> Unit
 ) {
+    var courseSearch by rememberSaveable { mutableStateOf("") }
     var courseCode by rememberSaveable { mutableStateOf("") }
     var courseName by rememberSaveable { mutableStateOf("") }
     var startTime by rememberSaveable { mutableStateOf("") }
@@ -68,7 +75,25 @@ fun AddScheduleSheet(
     val selectedChipTextColor = Color.White
     val unselectedChipTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 
+    val filteredCourses = remember(courseSearch, catalogCourses) {
+        val query = courseSearch.trim().lowercase()
+
+        if (query.isBlank()) {
+            emptyList()
+        } else {
+            catalogCourses.filter { course ->
+                course.code.lowercase().contains(query) ||
+                        course.name.lowercase().contains(query)
+            }.take(8)
+        }
+    }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
     ModalBottomSheet(
+        sheetState = sheetState,
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = Color(0xFFFFFAFA)
@@ -92,6 +117,53 @@ fun AddScheduleSheet(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            EventInputRow(
+                label = "Search Course",
+                value = courseSearch,
+                placeholder = "Search by code or name",
+                onValueChange = {
+                    courseSearch = it
+                    errorMessage = null
+                }
+            )
+
+            if (courseSearch.isNotBlank() && filteredCourses.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 220.dp)
+                    ) {
+                        items(filteredCourses) { course ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        courseSearch = "${course.code} - ${course.name}"
+                                        courseCode = course.code
+                                        courseName = course.name
+                                        errorMessage = null
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                            ) {
+                                Text(
+                                    text = course.code,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = course.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             EventInputRow(
                 label = "Course Code",
