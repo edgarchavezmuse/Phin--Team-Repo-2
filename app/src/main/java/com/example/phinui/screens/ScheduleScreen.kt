@@ -30,6 +30,7 @@ import com.example.phinui.data.schedule.ScheduleClass
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.viewmodel.ScheduleViewModel
+import androidx.compose.foundation.layout.PaddingValues
 
 @Composable
 fun ScheduleScreen() {
@@ -50,7 +51,8 @@ fun ScheduleScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = PaddingValues(bottom = 96.dp)
         ) {
             item {
                 Column(
