@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,9 +27,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.phinui.data.schedule.ScheduleClass
+
+private val SoftChip = Color(0xFFF4ECEC)
+private val SoftCard = Color(0xFFFBEAEA)
+private val TextDark = Color(0xFF1E1E1E)
+private val TextMuted = Color(0xFF6F6F6F)
+private val BrandRed = Color(0xFFFF1F1F)
 
 @Composable
 fun CourseScheduleWidget(
@@ -40,16 +48,16 @@ fun CourseScheduleWidget(
     var selectedDay by remember { mutableStateOf("Mon") }
 
     val filteredClasses = classes
-        .filter { scheduleClass -> scheduleClass.days.contains(selectedDay) }
+        .filter { it.days.contains(selectedDay) }
         .sortedBy { it.startTime }
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+
+
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
@@ -59,7 +67,8 @@ fun CourseScheduleWidget(
                 Text(
                     text = "Course Schedule Builder",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -67,7 +76,7 @@ fun CourseScheduleWidget(
                 Text(
                     text = "Build and manage your class schedule",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextMuted
                 )
             }
 
@@ -78,11 +87,13 @@ fun CourseScheduleWidget(
                 OutlinedButton(
                     onClick = onAddClass,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BrandRed)
                 ) {
                     Text(
                         text = "+ Add Class",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = BrandRed
                     )
                 }
 
@@ -91,7 +102,8 @@ fun CourseScheduleWidget(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = BrandRed,
+                        contentColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
                     Text(
@@ -102,34 +114,36 @@ fun CourseScheduleWidget(
             }
 
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                tonalElevation = 1.dp,
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFFFEAEA),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        days.forEach { day ->
-                            val isSelected = day == selectedDay
+                    days.forEach { day ->
+                        val isSelected = day == selectedDay
 
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                },
-                                modifier = Modifier.clickable { selectedDay = day }
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                            modifier = Modifier.clickable { selectedDay = day }
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = day,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                    style = MaterialTheme.typography.labelLarge,
+                                    style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (isSelected) {
                                         MaterialTheme.colorScheme.onPrimary
@@ -140,74 +154,94 @@ fun CourseScheduleWidget(
                             }
                         }
                     }
+                }
+            }
 
-                    if (classes.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(12.dp)
-                                ),
-                            contentAlignment = Alignment.Center
+            if (classes.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(14.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No classes added yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted
+                    )
+                }
+            } else if (filteredClasses.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(14.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No classes added yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted
+                    )
+                }
+            } else {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    filteredClasses.take(3).forEach { scheduleClass ->
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = "No classes added yet",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else if (filteredClasses.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(12.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No classes on $selectedDay",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            filteredClasses.take(3).forEach { scheduleClass ->
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    tonalElevation = 2.dp,
-                                    modifier = Modifier.fillMaxWidth()
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = 10.dp)
+                                        .width(5.dp)
+                                        .height(72.dp)
+                                        .background(
+                                            color = BrandRed,
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                )
+
+                                Column(
+                                    modifier = Modifier
+                                        .padding(14.dp)
+                                        .weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Column(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Text(
-                                            text = "${scheduleClass.courseCode} • ${scheduleClass.courseName}",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                                    Text(
+                                        text = "${scheduleClass.courseCode} • ${scheduleClass.courseName}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = TextDark
+                                    )
 
-                                        Text(
-                                            text = "${scheduleClass.startTime} - ${scheduleClass.endTime}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                    Text(
+                                        text = "${scheduleClass.startTime} - ${scheduleClass.endTime}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextMuted
+                                    )
 
-                                        if (scheduleClass.location.isNotBlank()) {
-                                            Text(
-                                                text = scheduleClass.location,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
+                                    if (scheduleClass.location.isNotBlank()) {
+                                        Text(
+                                            text = scheduleClass.location,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = TextMuted
+                                        )
                                     }
                                 }
                             }
