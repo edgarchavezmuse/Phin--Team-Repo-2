@@ -17,8 +17,10 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -128,6 +130,31 @@ fun SideMenu(
                     }
                     onItemClick()
                 }
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Row(
+            modifier = Modifier
+                .clickable(
+                    onClick = {
+                        auth.signOut()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.HOME) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Logout,
+                contentDescription = "Log out"
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Log Out",
+                style = MaterialTheme.typography.titleMedium
             )
         }
     }
