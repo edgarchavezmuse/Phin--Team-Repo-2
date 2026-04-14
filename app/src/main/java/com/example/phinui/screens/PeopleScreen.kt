@@ -285,8 +285,8 @@ fun PeopleScreen() {
                                                 senderID,
                                                 uid,
                                             )
-                                            chatRepositoryViewModel.loadMessageRequest(senderID)
-                                            chatRepositoryViewModel.loadMessageRequest(uid)
+                                            //chatRepositoryViewModel.loadMessageRequest(senderID)
+                                            //chatRepositoryViewModel.loadMessageRequest(uid)
                                             showMenu = false
                                         }
                                     )
