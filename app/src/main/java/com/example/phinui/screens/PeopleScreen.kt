@@ -273,10 +273,10 @@ fun PeopleScreen() {
                                                 Icon(
                                                     imageVector = Icons.Default.Email,
                                                     contentDescription = "Send Message Request",
-                                                    tint = HeaderRed
+                                                    tint = NavText
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Send Message Request", color = HeaderRed)
+                                                Text("Send Message Request", color = NavText)
                                             }
                                         },
                                         onClick = {
@@ -285,8 +285,6 @@ fun PeopleScreen() {
                                                 senderID,
                                                 uid,
                                             )
-                                            //chatRepositoryViewModel.loadMessageRequest(senderID)
-                                            //chatRepositoryViewModel.loadMessageRequest(uid)
                                             showMenu = false
                                         }
                                     )
