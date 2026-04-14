@@ -58,6 +58,13 @@ import com.example.phinui.ui.theme.TextMuted
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material3.IconButton
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
 fun PeopleScreen() {
@@ -73,6 +80,7 @@ fun PeopleScreen() {
     var blockedUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var myName by remember { mutableStateOf("") }
+    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
     var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
 
@@ -256,6 +264,30 @@ fun PeopleScreen() {
                                             } else {
                                                 userToAdd = uid to name
                                             }
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Email,
+                                                    contentDescription = "Send Message Request",
+                                                    tint = HeaderRed
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Send Message Request", color = HeaderRed)
+                                            }
+                                        },
+                                        onClick = {
+                                            val senderID = chatRepositoryViewModel.currentUserID ?: return@DropdownMenuItem
+                                            chatRepositoryViewModel.sendMessageRequest(
+                                                senderID,
+                                                uid,
+                                            )
+                                            //chatRepositoryViewModel.loadMessageRequest(senderID)
+                                            //chatRepositoryViewModel.loadMessageRequest(uid)
+                                            showMenu = false
                                         }
                                     )
 
