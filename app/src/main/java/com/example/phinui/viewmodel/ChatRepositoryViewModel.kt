@@ -1,11 +1,13 @@
 package com.example.phinui.viewmodel
 
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.components.messages.User
 import com.example.phinui.components.messages.UserListRepository
+import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -13,6 +15,7 @@ import kotlinx.coroutines.tasks.await
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
+    //private val friendRepository: FriendRepository = FriendRepository(),
     val userListRepository: UserListRepository = UserListRepository()
 ) : ViewModel() {
 
@@ -22,6 +25,31 @@ class ChatRepositoryViewModel (
     //val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
     val approvedChats = mutableStateOf<List<Map<String, Any>>>(emptyList())
     val messageRequests = mutableStateOf<List<Map<String, Any>>>(emptyList())
+
+    // FOR FILTERING FRIENDS FROM GENERAL
+//    val friendsList = mutableStateOf<List<User>>(emptyList())
+//
+//    init {
+//        friendRepository.listenFriends(
+//            onResult = { friends ->
+//                friendsList.value = friends.map {
+//                    User(
+//                        uid = it.first,
+//                        name = it.second["name"] as? String ?: "Unknown"
+//                    )
+//                }
+//            }, onError = { Exception -> Unit }
+//        )
+//    }
+//
+//    fun getGeneralChats(): List<Map<String, Any>> {
+//        val friendIDs = friendsList.value.map { it.uid }.toSet()
+//
+//        return approvedChats.value.filter{ chat ->
+//            val otherUserID = chat["otherUserID"] as? String
+//            otherUserID!= null && otherUserID !in friendIDs
+//        }
+//    }
 
     fun loadApprovedChats(userID: String) {
         chatRepository.listenChats(userID) {

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.data.friends.FriendRepository
@@ -54,9 +55,9 @@ fun UserListScreen (
         chatRepositoryViewModel.loadMessageRequest(currentUserID)
     }
 
-    //LaunchedEffect(currentUserID){
-    //    chatRepositoryViewModel.loadApprovedChats(currentUserID)
-    //}
+    LaunchedEffect(currentUserID){
+        chatRepositoryViewModel.loadApprovedChats(currentUserID)
+    }
     //END OF ADDED
     Column(modifier = Modifier
         .fillMaxSize()
@@ -105,6 +106,102 @@ fun UserListScreen (
             }
 
             //General tab
+            1 -> {
+                val approvedChatsState = chatRepositoryViewModel.approvedChats.value
+                //val approvedChatsState = chatRepositoryViewModel.getGeneralChats()
+                Box {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(approvedChatsState) { chat ->
+                            val chatID = chat["chatID"] as? String ?: return@items
+                            val participants = chat["participants"] as? List<*> ?: return@items
+
+                            val otherUserID = participants
+                                .mapNotNull { it as? String }
+                                .firstOrNull{ it != currentUserID } ?:return@items
+
+                            var userName by remember { mutableStateOf("Loading...")}
+
+                            LaunchedEffect(otherUserID) {
+                                chatRepositoryViewModel.userListRepository.getUserNameByID(
+                                    otherUserID,
+                                    onResult = { user ->
+                                        userName = user.name
+                                    },
+                                    onError = {exception ->
+                                        userName = "Unknown User"
+                                    }
+                                )
+                            }
+
+                            val user = User(
+                                uid = otherUserID,
+                                name = userName
+                            )
+
+                            UserListItem(
+                                user = user,
+                                trailingContent = {
+                                    var showMenu by remember { mutableStateOf(false) }
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMenu = !showMenu }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "Options",
+                                                tint = NavText
+                                            )
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false },
+                                            containerColor = Background
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", tint = NavText)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Add Friend", color = NavText)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    //chatRepositoryViewModel.approveRequest(chatID)
+                                                }
+                                            )
+
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Delete", color = HeaderRed)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    //chatRepositoryViewModel.denyRequest(chatID)
+                                                }
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    navController.navigate(Routes.MESSAGES + "/${user.uid}")
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(5.dp))
+                        }
+                    }
+                }
+            }
 
             //Requests tab
             2 -> {
