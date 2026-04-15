@@ -83,6 +83,7 @@ fun PeopleScreen() {
     val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
     var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
+    var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -93,6 +94,23 @@ fun PeopleScreen() {
         db.collection("users").document(uid).get()
             .addOnSuccessListener {
                 myName = it.getString("name") ?: ""
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val currentUid = auth.currentUser?.uid
+
+                allUsers = snapshot.documents.mapNotNull { doc ->
+                    val uid = doc.id
+                    val data = doc.data
+
+                    if (uid != currentUid && data != null) {
+                        uid to data
+                    } else null
+                }
             }
     }
 
@@ -184,6 +202,13 @@ fun PeopleScreen() {
                     (uid, _) -> blockedUsers.none {
                         (blockedUid, _) -> blockedUid == uid
                     }
+                }
+
+                val usersToDisplay =
+                    if (search.isBlank()) allUsers else searchResults
+
+                val visibleUsers = usersToDisplay.filter { (uid, _) ->
+                    blockedUsers.none { (blockedUid, _) -> blockedUid == uid }
                 }
 
                 LazyColumn(
