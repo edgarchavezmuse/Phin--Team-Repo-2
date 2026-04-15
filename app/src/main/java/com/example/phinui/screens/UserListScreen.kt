@@ -88,7 +88,7 @@ fun UserListScreen (
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp),
+                            .padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(friendList) { friend ->
@@ -116,7 +116,6 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(approvedChatsState) { chat ->
-                            //val chatID = chat["chatID"] as? String ?: return@items
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants

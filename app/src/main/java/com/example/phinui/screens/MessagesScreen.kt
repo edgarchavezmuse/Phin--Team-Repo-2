@@ -31,7 +31,7 @@ fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
     userListViewModel: UserListViewModel = viewModel(),
-    chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
+    //chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
     setTopBarTitle: (String) -> Unit
 ) {
     val chatRepository = remember { ChatRepository() }
@@ -41,11 +41,6 @@ fun MessagesScreen(
     val isLoadingStatus = userListViewModel.isLoading
     val autoScrollState = rememberLazyListState()
     val initialChatOpen = remember { mutableStateOf(true) }
-
-    //ADDED 4/11
-    val approvedChats = chatRepositoryViewModel.approvedChats.value
-    val messageRequests = chatRepositoryViewModel.messageRequests.value
-    //END OF ADDED
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->

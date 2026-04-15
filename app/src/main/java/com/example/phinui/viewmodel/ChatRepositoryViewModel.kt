@@ -1,6 +1,7 @@
 package com.example.phinui.viewmodel
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -27,6 +28,11 @@ class ChatRepositoryViewModel (
     val approvedChats = mutableStateOf<List<Map<String, Any>>>(emptyList())
     val messageRequests = mutableStateOf<List<Map<String, Any>>>(emptyList())
 
+    val showMessageApprovedDialog = mutableStateOf(false)
+    var activeChatUserName = mutableStateOf<String?>(null)
+
+    val confirmSendMessageRequest = mutableStateOf<String?>(null)
+
     // FOR FILTERING FRIENDS FROM GENERAL
     val friendsList = mutableStateOf<List<User>>(emptyList())
 
@@ -41,6 +47,12 @@ class ChatRepositoryViewModel (
                 }
             }, onError = { exception -> Log.e("Friends", "Error", exception) }
         )
+    }
+
+    fun startListening(userID: String) {
+        chatRepository.listenChats(userID) { chats ->
+            approvedChats.value = chats
+        }
     }
 
     val getGeneralChats = derivedStateOf {
@@ -69,8 +81,27 @@ class ChatRepositoryViewModel (
         }
     }
 
-    fun sendMessageRequest(senderUserID: String, receiverUserID: String) {
-        chatRepository.sendMessageRequest(senderUserID, receiverUserID)
+    fun sendMessageRequest(senderUserID: String, receiverUserID: String, receiverUserName: String?) {
+        val checkChat = approvedChats.value.firstOrNull{ chat ->
+            val participants = chat["participants"] as? List<*>
+            val userIDs = participants?.mapNotNull { it as? String} ?: emptyList()
+
+            senderUserID in userIDs && receiverUserID in userIDs
+        }
+
+        val isMessageRequestApproved = checkChat?.get("messageRequestApproved") as? Boolean ?: false
+        if (isMessageRequestApproved) {
+            showMessageApprovedDialog.value = true
+            activeChatUserName.value = receiverUserName
+        }
+        else {
+            try {
+                chatRepository.sendMessageRequest(senderUserID, receiverUserID)
+                confirmSendMessageRequest.value = "Message request sent"
+            } catch (e: Exception) {
+                confirmSendMessageRequest.value = e.message ?: "Failed to send request."
+            }
+        }
     }
 
     fun approveRequest(chatID: String) {
