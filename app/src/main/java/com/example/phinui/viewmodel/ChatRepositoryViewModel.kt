@@ -1,5 +1,6 @@
 package com.example.phinui.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -15,7 +16,7 @@ import kotlinx.coroutines.tasks.await
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
-    //private val friendRepository: FriendRepository = FriendRepository(),
+    private val friendRepository: FriendRepository = FriendRepository(),
     val userListRepository: UserListRepository = UserListRepository()
 ) : ViewModel() {
 
@@ -27,29 +28,34 @@ class ChatRepositoryViewModel (
     val messageRequests = mutableStateOf<List<Map<String, Any>>>(emptyList())
 
     // FOR FILTERING FRIENDS FROM GENERAL
-//    val friendsList = mutableStateOf<List<User>>(emptyList())
-//
-//    init {
-//        friendRepository.listenFriends(
-//            onResult = { friends ->
-//                friendsList.value = friends.map {
-//                    User(
-//                        uid = it.first,
-//                        name = it.second["name"] as? String ?: "Unknown"
-//                    )
-//                }
-//            }, onError = { Exception -> Unit }
-//        )
-//    }
-//
-//    fun getGeneralChats(): List<Map<String, Any>> {
-//        val friendIDs = friendsList.value.map { it.uid }.toSet()
-//
-//        return approvedChats.value.filter{ chat ->
-//            val otherUserID = chat["otherUserID"] as? String
-//            otherUserID!= null && otherUserID !in friendIDs
-//        }
-//    }
+    val friendsList = mutableStateOf<List<User>>(emptyList())
+
+    init {
+        friendRepository.listenFriends(
+            onResult = { friends ->
+                friendsList.value = friends.map {
+                    User(
+                        uid = it.first,
+                        name = it.second["name"] as? String ?: "Unknown"
+                    )
+                }
+            }, onError = { exception -> Log.e("Friends", "Error", exception) }
+        )
+    }
+
+    val getGeneralChats = derivedStateOf {
+        val friendIDs = friendsList.value.map { it.uid }.toSet()
+
+        approvedChats.value.filter{ chat ->
+            val participants = chat["participants"] as? List<*> ?: return@filter false
+
+            val otherUserID = participants
+                .mapNotNull { it as? String }
+                .firstOrNull{ it != currentUserID }
+
+            otherUserID!= null && otherUserID !in friendIDs
+        }
+    }
 
     fun loadApprovedChats(userID: String) {
         chatRepository.listenChats(userID) {

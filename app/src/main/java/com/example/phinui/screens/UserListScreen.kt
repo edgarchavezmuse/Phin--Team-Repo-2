@@ -50,7 +50,6 @@ fun UserListScreen (
     val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
 
-    //ADDED 4/13
     LaunchedEffect(currentUserID){
         chatRepositoryViewModel.loadMessageRequest(currentUserID)
     }
@@ -58,7 +57,7 @@ fun UserListScreen (
     LaunchedEffect(currentUserID){
         chatRepositoryViewModel.loadApprovedChats(currentUserID)
     }
-    //END OF ADDED
+
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(20.dp),
@@ -107,8 +106,8 @@ fun UserListScreen (
 
             //General tab
             1 -> {
-                val approvedChatsState = chatRepositoryViewModel.approvedChats.value
-                //val approvedChatsState = chatRepositoryViewModel.getGeneralChats()
+                val approvedChatsState = chatRepositoryViewModel.getGeneralChats.value
+
                 Box {
                     LazyColumn(
                         modifier = Modifier
@@ -117,7 +116,7 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(approvedChatsState) { chat ->
-                            val chatID = chat["chatID"] as? String ?: return@items
+                            //val chatID = chat["chatID"] as? String ?: return@items
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants
@@ -145,54 +144,54 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
-                                trailingContent = {
-                                    var showMenu by remember { mutableStateOf(false) }
-                                    Box {
-                                        IconButton(
-                                            onClick = { showMenu = !showMenu }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.MoreVert,
-                                                contentDescription = "Options",
-                                                tint = NavText
-                                            )
-                                        }
-
-                                        DropdownMenu(
-                                            expanded = showMenu,
-                                            onDismissRequest = { showMenu = false },
-                                            containerColor = Background
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", tint = NavText)
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Add Friend", color = NavText)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    showMenu = false
-                                                    //chatRepositoryViewModel.approveRequest(chatID)
-                                                }
-                                            )
-
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Delete", color = HeaderRed)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    showMenu = false
-                                                    //chatRepositoryViewModel.denyRequest(chatID)
-                                                }
-                                            )
-                                        }
-                                    }
-                                },
+//                                trailingContent = {
+//                                    var showMenu by remember { mutableStateOf(false) }
+//                                    Box {
+//                                        IconButton(
+//                                            onClick = { showMenu = !showMenu }
+//                                        ) {
+//                                            Icon(
+//                                                imageVector = Icons.Default.MoreVert,
+//                                                contentDescription = "Options",
+//                                                tint = NavText
+//                                            )
+//                                        }
+//
+//                                        DropdownMenu(
+//                                            expanded = showMenu,
+//                                            onDismissRequest = { showMenu = false },
+//                                            containerColor = Background
+//                                        ) {
+//                                            DropdownMenuItem(
+//                                                text = {
+//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                                                        Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", tint = NavText)
+//                                                        Spacer(modifier = Modifier.width(8.dp))
+//                                                        Text("Add Friend", color = NavText)
+//                                                    }
+//                                                },
+//                                                onClick = {
+//                                                    showMenu = false
+//                                                    //chatRepositoryViewModel.approveRequest(chatID)
+//                                                }
+//                                            )
+//
+//                                            DropdownMenuItem(
+//                                                text = {
+//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
+//                                                        Spacer(modifier = Modifier.width(8.dp))
+//                                                        Text("Delete", color = HeaderRed)
+//                                                    }
+//                                                },
+//                                                onClick = {
+//                                                    showMenu = false
+//                                                    //chatRepositoryViewModel.denyRequest(chatID)
+//                                                }
+//                                            )
+//                                        }
+//                                    }
+//                                },
                                 onClick = {
                                     navController.navigate(Routes.MESSAGES + "/${user.uid}")
                                 }
