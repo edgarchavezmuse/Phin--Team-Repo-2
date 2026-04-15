@@ -24,6 +24,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
@@ -40,16 +46,18 @@ fun UserListScreen (
         factory = FriendRepositoryViewModelFactory(FriendRepository())
     )) {
 
-    val messageRequest = chatRepositoryViewModel.messageRequests
     val currentUserID = chatRepositoryViewModel.currentUserID ?: return
     val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
 
-    //ADDED 4/13
     LaunchedEffect(currentUserID){
         chatRepositoryViewModel.loadMessageRequest(currentUserID)
     }
-    //END OF ADDED
+
+    LaunchedEffect(currentUserID){
+        chatRepositoryViewModel.loadApprovedChats(currentUserID)
+    }
+
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(20.dp),
@@ -80,7 +88,7 @@ fun UserListScreen (
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp),
+                            .padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(friendList) { friend ->
@@ -97,33 +105,114 @@ fun UserListScreen (
             }
 
             //General tab
+            1 -> {
+                val approvedChatsState = chatRepositoryViewModel.getGeneralChats.value
 
-            //Requests tab
-            2 -> {
-                //ADDED 4/13
-                var messageRequestState by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
-                LaunchedEffect(currentUserID){
-                    chatRepositoryViewModel.loadMessageRequest(currentUserID)
-                }
-
-                LaunchedEffect(messageRequestState) {
-                    messageRequestState = chatRepositoryViewModel.messageRequests.value
-                }
-                //END OF ADDED
                 Box {
-                    //LaunchedEffect(Unit) {
-                    //    val uid = chatRepositoryViewModel.currentUserID ?: return@LaunchedEffect
-                    //    chatRepositoryViewModel.loadMessageRequest(uid)
-                    //}
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp),
+                            .padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        //items(messageRequest.value) { chat ->
+                        items(approvedChatsState) { chat ->
+                            val participants = chat["participants"] as? List<*> ?: return@items
+
+                            val otherUserID = participants
+                                .mapNotNull { it as? String }
+                                .firstOrNull{ it != currentUserID } ?:return@items
+
+                            var userName by remember { mutableStateOf("Loading...")}
+
+                            LaunchedEffect(otherUserID) {
+                                chatRepositoryViewModel.userListRepository.getUserNameByID(
+                                    otherUserID,
+                                    onResult = { user ->
+                                        userName = user.name
+                                    },
+                                    onError = {exception ->
+                                        userName = "Unknown User"
+                                    }
+                                )
+                            }
+
+                            val user = User(
+                                uid = otherUserID,
+                                name = userName
+                            )
+
+                            UserListItem(
+                                user = user,
+//                                trailingContent = {
+//                                    var showMenu by remember { mutableStateOf(false) }
+//                                    Box {
+//                                        IconButton(
+//                                            onClick = { showMenu = !showMenu }
+//                                        ) {
+//                                            Icon(
+//                                                imageVector = Icons.Default.MoreVert,
+//                                                contentDescription = "Options",
+//                                                tint = NavText
+//                                            )
+//                                        }
+//
+//                                        DropdownMenu(
+//                                            expanded = showMenu,
+//                                            onDismissRequest = { showMenu = false },
+//                                            containerColor = Background
+//                                        ) {
+//                                            DropdownMenuItem(
+//                                                text = {
+//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                                                        Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", tint = NavText)
+//                                                        Spacer(modifier = Modifier.width(8.dp))
+//                                                        Text("Add Friend", color = NavText)
+//                                                    }
+//                                                },
+//                                                onClick = {
+//                                                    showMenu = false
+//                                                    //chatRepositoryViewModel.approveRequest(chatID)
+//                                                }
+//                                            )
+//
+//                                            DropdownMenuItem(
+//                                                text = {
+//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
+//                                                        Spacer(modifier = Modifier.width(8.dp))
+//                                                        Text("Delete", color = HeaderRed)
+//                                                    }
+//                                                },
+//                                                onClick = {
+//                                                    showMenu = false
+//                                                    //chatRepositoryViewModel.denyRequest(chatID)
+//                                                }
+//                                            )
+//                                        }
+//                                    }
+//                                },
+                                onClick = {
+                                    navController.navigate(Routes.MESSAGES + "/${user.uid}")
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(5.dp))
+                        }
+                    }
+                }
+            }
+
+            //Requests tab
+            2 -> {
+                val messageRequestState = chatRepositoryViewModel.messageRequests.value
+                Box {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         items(messageRequestState) { chat ->
-                        val chatID = chat["chatID"] as? String ?: return@items
+                            val chatID = chat["chatID"] as? String ?: return@items
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants
@@ -152,19 +241,50 @@ fun UserListScreen (
                             UserListItem(
                                 user = user,
                                 trailingContent = {
-                                    Row{
-                                        Button(onClick = {
-                                            chatRepositoryViewModel.approveRequest(chatID)
-                                        }) {
-                                            Text("Accept")
+                                    var showMenu by remember { mutableStateOf(false) }
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMenu = !showMenu }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "Options",
+                                                tint = NavText
+                                            )
                                         }
 
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false },
+                                            containerColor = Background
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Check, contentDescription = "Accept", tint = NavText)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Accept", color = NavText)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    chatRepositoryViewModel.approveRequest(chatID)
+                                                }
+                                            )
 
-                                        Button(onClick = {
-                                            chatRepositoryViewModel.denyRequest(chatID)
-                                        }) {
-                                            Text("Decline")
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Delete, contentDescription = "Decline", tint = HeaderRed)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Decline", color = HeaderRed)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    chatRepositoryViewModel.denyRequest(chatID)
+                                                }
+                                            )
                                         }
                                     }
                                 }
