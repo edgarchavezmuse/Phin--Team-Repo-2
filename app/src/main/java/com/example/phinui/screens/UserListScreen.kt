@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -22,57 +23,166 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
-import com.example.phinui.viewmodel.UserListViewModel
 import androidx.compose.foundation.shape.CircleShape
+import androidx.lifecycle.viewModelScope
+import com.example.phinui.data.friends.FriendRepository
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
+import com.example.phinui.viewmodel.FriendRepositoryViewModel
+import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
+import com.example.phinui.viewmodel.UserListViewModel
 
 
-@Composable fun UserListScreen (navController: NavController, viewModel: UserListViewModel = viewModel()) {
-    val users = viewModel.sortedUsers
-    val isLoadingStatus = viewModel.isLoading
+@Composable
+fun UserListScreen (
+    navController: NavController,
+    chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
+    friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
+        factory = FriendRepositoryViewModelFactory(FriendRepository())
+    )) {
 
-    LaunchedEffect(Unit) {
-        viewModel.loadAllUsers()
+    val messageRequest = chatRepositoryViewModel.messageRequests
+    val currentUserID = chatRepositoryViewModel.currentUserID ?: return
+    val friendList = friendRepositoryViewModel.friendsList.value
+    var selectedTab by remember { mutableIntStateOf(value = 0) }
+
+    //ADDED 4/13
+    LaunchedEffect(currentUserID){
+        chatRepositoryViewModel.loadMessageRequest(currentUserID)
     }
-
-    Box {
-        if (isLoadingStatus) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(Alignment.Center)
-            ) {
-                CircularProgressIndicator()
+    //END OF ADDED
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(selected = selectedTab == 0,
+                onClick = {selectedTab = 0}) {
+                Text("Friends")
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                item {
-                    Text(
-                        text = "Users",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = NavText
-                    )
+            Tab(selected = selectedTab == 1,
+                onClick = {selectedTab = 1}) {
+                Text("General")
+            }
+            Tab(selected = selectedTab == 2,
+                onClick = {selectedTab = 2}) {
+                Text("Requests")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when(selectedTab) {
+
+            //Friends tab
+            0 -> {
+                Box {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(friendList) { friend ->
+                            UserListItem(
+                                user = friend,
+                                onClick = {
+                                    navController.navigate(Routes.MESSAGES + "/${friend.uid}")
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(5.dp))
+                        }
+                    }
+                }
+            }
+
+            //General tab
+
+            //Requests tab
+            2 -> {
+                //ADDED 4/13
+                var messageRequestState by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+                LaunchedEffect(currentUserID){
+                    chatRepositoryViewModel.loadMessageRequest(currentUserID)
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                LaunchedEffect(messageRequestState) {
+                    messageRequestState = chatRepositoryViewModel.messageRequests.value
                 }
+                //END OF ADDED
+                Box {
+                    //LaunchedEffect(Unit) {
+                    //    val uid = chatRepositoryViewModel.currentUserID ?: return@LaunchedEffect
+                    //    chatRepositoryViewModel.loadMessageRequest(uid)
+                    //}
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        //items(messageRequest.value) { chat ->
+                        items(messageRequestState) { chat ->
+                        val chatID = chat["chatID"] as? String ?: return@items
+                            val participants = chat["participants"] as? List<*> ?: return@items
 
-                items(users) { user ->
-                    UserListItem(user = user, navController = navController)
-                    Spacer(modifier = Modifier.height(5.dp))
+                            val otherUserID = participants
+                                .mapNotNull { it as? String }
+                                .firstOrNull{ it != currentUserID } ?:return@items
+
+                            var userName by remember { mutableStateOf("Loading...")}
+
+                            LaunchedEffect(otherUserID) {
+                                chatRepositoryViewModel.userListRepository.getUserNameByID(
+                                    otherUserID,
+                                    onResult = { user ->
+                                        userName = user.name
+                                    },
+                                    onError = {exception ->
+                                        userName = "Unknown User"
+                                    }
+                                )
+                            }
+
+                            val user = User(
+                                uid = otherUserID,
+                                name = userName
+                            )
+
+                            UserListItem(
+                                user = user,
+                                trailingContent = {
+                                    Row{
+                                        Button(onClick = {
+                                            chatRepositoryViewModel.approveRequest(chatID)
+                                        }) {
+                                            Text("Accept")
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Button(onClick = {
+                                            chatRepositoryViewModel.denyRequest(chatID)
+                                        }) {
+                                            Text("Decline")
+                                        }
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(5.dp))
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-@Composable fun UserListItem(user: User, navController: NavController) {
+@Composable fun UserListItem(
+    user: User,
+    trailingContent: @Composable (() -> Unit)? = null,
+    onClick:(() -> Unit)? = null
+) {
     val initial = user.name
         .trim()
         .firstOrNull()
@@ -81,9 +191,12 @@ import androidx.compose.foundation.shape.CircleShape
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .clickable{
-                navController.navigate(Routes.MESSAGES + "/${user.uid}")
-            }
+            .then(
+                if (onClick != null) Modifier.clickable {
+                    onClick()
+                }
+                else Modifier
+            )
             .shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(12.dp)
@@ -95,28 +208,29 @@ import androidx.compose.foundation.shape.CircleShape
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
 
         ) {
             // User Icons
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFFEFEF)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFFD32F2F),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFFEFEF)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initial,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFFD32F2F),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-            Column {
                 Text(
                     text = user.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
@@ -126,6 +240,7 @@ import androidx.compose.foundation.shape.CircleShape
                     )
                 )
             }
+            trailingContent?.invoke()
         }
     }
 }

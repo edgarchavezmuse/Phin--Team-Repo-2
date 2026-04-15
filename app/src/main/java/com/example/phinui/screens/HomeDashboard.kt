@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.data.schedule.ScheduleClass
 import com.example.phinui.ui.components.widgets.CampusEventsWidget
+import com.example.phinui.ui.components.widgets.CourseScheduleWidget
+
 @Composable
 fun HomeDashboard(
     // makes the xx icons clickable
@@ -13,8 +16,10 @@ fun HomeDashboard(
     onOpenEvents: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenMap: () -> Unit,
-    onOpenSchedule: () -> Unit,
+    onAddClass: () -> Unit,
+    onViewSchedule: () -> Unit,
     onOpenMessages: () -> Unit,
+    classes: List<ScheduleClass>,
     isLoading: Boolean
 ) {
     Column(
@@ -24,6 +29,11 @@ fun HomeDashboard(
             events = events,
             isLoading = isLoading,
             onViewAllClick = onOpenEvents
+        )
+        CourseScheduleWidget(
+            classes = classes,
+            onAddClass = onAddClass,
+            onViewSchedule = onViewSchedule
         )
     }
 }
