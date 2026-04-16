@@ -4,6 +4,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.os.registerForAllProfilingResults
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
@@ -24,7 +25,6 @@ class ChatRepositoryViewModel (
     val firebaseAuthenticated = FirebaseAuth.getInstance()
     val firebaseFirestoreAuthenticated = FirebaseFirestore.getInstance()
     val currentUserID = firebaseAuthenticated.currentUser?.uid
-    //val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
     val approvedChats = mutableStateOf<List<Map<String, Any>>>(emptyList())
     val messageRequests = mutableStateOf<List<Map<String, Any>>>(emptyList())
 
@@ -82,24 +82,73 @@ class ChatRepositoryViewModel (
     }
 
     fun sendMessageRequest(senderUserID: String, receiverUserID: String, receiverUserName: String?) {
-        val checkChat = approvedChats.value.firstOrNull{ chat ->
-            val participants = chat["participants"] as? List<*>
-            val userIDs = participants?.mapNotNull { it as? String} ?: emptyList()
+        val currentUserDocument = firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(senderUserID)
 
-            senderUserID in userIDs && receiverUserID in userIDs
-        }
+        val targetUserDocument = firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(receiverUserID)
 
-        val isMessageRequestApproved = checkChat?.get("messageRequestApproved") as? Boolean ?: false
-        if (isMessageRequestApproved) {
-            showMessageApprovedDialog.value = true
-            activeChatUserName.value = receiverUserName
+        firebaseFirestoreAuthenticated.runTransaction { transaction ->
+            val currentUserDocumentSnapshot = transaction.get(currentUserDocument)
+            val targetUserDocumentSnapshot = transaction.get(targetUserDocument)
+            val currentUserBlockedList =
+                (currentUserDocumentSnapshot.get("blocked") as? List<*> ?: emptyList<Any>())
+                    .mapNotNull { it as? String }
+            val targetUserBlockedList =
+                (targetUserDocumentSnapshot.get("blocked") as? List<*> ?: emptyList<Any>())
+                    .mapNotNull { it as? String }
+
+            if (currentUserBlockedList.contains(receiverUserID)) {
+                // exit function
+                throw Exception("CURRENT_USER_BLOCKED_TARGET_USER")
+            }
+
+            if (targetUserBlockedList.contains(senderUserID)) {
+                // exit function
+                throw Exception("TARGET_USER_BLOCKED_CURRENT_USER")
+            }
+
+            val checkChat = approvedChats.value.firstOrNull { chat ->
+                val participants = chat["participants"] as? List<*>
+                val userIDs = participants?.mapNotNull { it as? String } ?: emptyList()
+
+                senderUserID in userIDs && receiverUserID in userIDs
+            }
+
+            val isMessageRequestApproved =
+                checkChat?.get("messageRequestApproved") as? Boolean ?: false
+            if (isMessageRequestApproved) {
+                return@runTransaction "CHAT_EXISTS"
+            }
+
+            return@runTransaction "SEND_REQUEST"
         }
-        else {
-            try {
-                chatRepository.sendMessageRequest(senderUserID, receiverUserID)
-                confirmSendMessageRequest.value = "Message request sent"
-            } catch (e: Exception) {
-                confirmSendMessageRequest.value = e.message ?: "Failed to send request."
+            .addOnSuccessListener { result ->
+                when (result) {
+                    "CHAT_EXISTS" -> {
+                        showMessageApprovedDialog.value = true
+                        activeChatUserName.value = receiverUserName
+                    }
+                    "SEND_REQUEST" -> {
+                        chatRepository.sendMessageRequest(senderUserID, receiverUserID)
+                        confirmSendMessageRequest.value = "Message request sent"
+                    }
+                }
+            }
+
+            .addOnFailureListener { error ->
+            when (error.message) {
+                "CURRENT_USER_BLOCKED_TARGET_USER" -> {
+                    confirmSendMessageRequest.value = "Unable to send request"
+                }
+                "TARGET_USER_BLOCKED_CURRENT_USER" -> {
+                    confirmSendMessageRequest.value = "Unable to send request"
+                }
+                else -> {
+                    confirmSendMessageRequest.value = "Failed to send request"
+                }
             }
         }
     }

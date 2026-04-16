@@ -1,6 +1,7 @@
 package com.example.phinui.components.messages
 
 import androidx.compose.animation.core.snap
+import androidx.compose.runtime.mutableStateOf
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -12,6 +13,10 @@ data class User(
 class UserListRepository {
     private val database = FirebaseFirestore.getInstance()
     private val usersCollection = database.collection("users")
+
+    val currentUserBlockedList = mutableStateOf<Set<String>>(emptySet())
+    val blockedByOtherUsersList = mutableStateOf<Set<String>>(emptySet())
+
 
     suspend fun getAllUsers(currentUserID: String): List<User> {
         return try {
@@ -64,4 +69,29 @@ class UserListRepository {
             onError(exception)
             }
     }
+
+    fun loadCurrentUserBlockedListListener(currentUserID: String) {
+        usersCollection
+            .document(currentUserID)
+            .addSnapshotListener { snapshot, error ->
+                if (error !=null || snapshot == null) return@addSnapshotListener
+                val blockedList = (snapshot.get("blocked") as? List<*> ?: emptyList<Any>())
+                    .mapNotNull { it as? String }
+                    .toSet()
+                currentUserBlockedList.value = blockedList
+            }
+    }
+
+    fun loadBlockedByOtherUsersListListener(currentUserID: String) {
+        usersCollection
+            .whereArrayContains("blocked", currentUserID)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+                val blockedList = snapshot.documents
+                    .map { it.id }
+                    .toSet()
+                blockedByOtherUsersList.value = blockedList
+            }
+    }
+
 }

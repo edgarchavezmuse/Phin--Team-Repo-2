@@ -58,6 +58,16 @@ fun UserListScreen (
         chatRepositoryViewModel.loadApprovedChats(currentUserID)
     }
 
+    LaunchedEffect(currentUserID) {
+        chatRepositoryViewModel.userListRepository.loadCurrentUserBlockedListListener(currentUserID)
+        chatRepositoryViewModel.userListRepository.loadBlockedByOtherUsersListListener(currentUserID)
+    }
+
+    val currentUserBlockedList = chatRepositoryViewModel.userListRepository.currentUserBlockedList.value
+    val blockedByOtherUsersList = chatRepositoryViewModel.userListRepository.blockedByOtherUsersList.value
+    val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
+
+
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(20.dp),
@@ -92,6 +102,7 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(friendList) { friend ->
+                            if(friend.uid in hideBlockedUsers) return@items
                             UserListItem(
                                 user = friend,
                                 onClick = {
@@ -121,6 +132,8 @@ fun UserListScreen (
                             val otherUserID = participants
                                 .mapNotNull { it as? String }
                                 .firstOrNull{ it != currentUserID } ?:return@items
+
+                            if(otherUserID in hideBlockedUsers) return@items
 
                             var userName by remember { mutableStateOf("Loading...")}
 
