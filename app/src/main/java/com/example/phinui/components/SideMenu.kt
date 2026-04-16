@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
@@ -40,6 +43,7 @@ import com.example.phinui.ui.components.UserAvatar
 import com.example.phinui.ui.navigation.Routes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.material.icons.filled.MenuBook
 
 data class MenuItem (
     val label: String,
@@ -62,7 +66,8 @@ fun SideMenu(
         MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST),
         MenuItem("Events", Icons.Default.Event, Routes.EVENTS),
         MenuItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
-        MenuItem("Map", Icons.Default.LocationOn, Routes.MAP)
+        MenuItem("Map", Icons.Default.LocationOn, Routes.MAP),
+        MenuItem("Schedule", Icons.Default.MenuBook, Routes.SCHEDULE)
     )
 
     val auth = FirebaseAuth.getInstance()
