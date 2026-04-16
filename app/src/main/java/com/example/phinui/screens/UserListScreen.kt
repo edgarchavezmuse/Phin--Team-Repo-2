@@ -102,6 +102,7 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(friendList) { friend ->
+                            if(friend.uid in hideBlockedUsers) return@items
                             UserListItem(
                                 user = friend,
                                 onClick = {
