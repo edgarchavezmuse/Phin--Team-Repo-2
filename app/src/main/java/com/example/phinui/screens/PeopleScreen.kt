@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
@@ -41,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -50,19 +52,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.ui.components.UserAvatar
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.TextMuted
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
 fun PeopleScreen() {
@@ -70,6 +70,8 @@ fun PeopleScreen() {
     val db = remember { FirebaseFirestore.getInstance() }
     val auth = remember { FirebaseAuth.getInstance() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
+    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -78,7 +80,6 @@ fun PeopleScreen() {
     var blockedUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var myName by remember { mutableStateOf("") }
-    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
     var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
     var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
@@ -101,14 +102,18 @@ fun PeopleScreen() {
             .addOnSuccessListener { snapshot ->
                 val currentUid = auth.currentUser?.uid
 
-                allUsers = snapshot.documents.mapNotNull { doc ->
-                    val uid = doc.id
-                    val data = doc.data
+                allUsers = snapshot.documents
+                    .mapNotNull { doc ->
+                        val uid = doc.id
+                        val data = doc.data
 
-                    if (uid != currentUid && data != null) {
-                        uid to data
-                    } else null
-                }
+                        if (uid != currentUid && data != null) {
+                            uid to data
+                        } else null
+                    }
+                    .sortedBy { (_, data) ->
+                        (data["name"] as? String)?.trim()?.lowercase() ?: ""
+                    }
             }
     }
 
@@ -140,7 +145,11 @@ fun PeopleScreen() {
         val searchListener =
             repo.listenSearchUsersByNamePrefix(
                 query = search,
-                onResult = { searchResults = it },
+                onResult = {
+                    searchResults = it.sortedBy { (_, data) ->
+                        (data["name"] as? String)?.trim()?.lowercase() ?: ""
+                    }
+                },
                 onError = { message = it.message }
             )
 
@@ -201,12 +210,6 @@ fun PeopleScreen() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val visibleSearchResults = searchResults.filter {
-                    (uid, _) -> blockedUsers.none {
-                        (blockedUid, _) -> blockedUid == uid
-                    }
-                }
-
                 val usersToDisplay =
                     if (search.isBlank()) allUsers else searchResults
 
@@ -217,7 +220,7 @@ fun PeopleScreen() {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(visibleSearchResults) { (uid, user) ->
+                    items(visibleUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
 
@@ -285,7 +288,9 @@ fun PeopleScreen() {
                                         onClick = {
                                             showMenu = false
 
-                                            val isFriend = friends.any { (friendUid, _) -> friendUid == uid }
+                                            val isFriend = friends.any { (friendUid, _) ->
+                                                friendUid == uid
+                                            }
 
                                             if (isFriend) {
                                                 alreadyFriendUser = name
@@ -308,7 +313,8 @@ fun PeopleScreen() {
                                             }
                                         },
                                         onClick = {
-                                            val senderID = chatRepositoryViewModel.currentUserID ?: return@DropdownMenuItem
+                                            val senderID = chatRepositoryViewModel.currentUserID
+                                                ?: return@DropdownMenuItem
                                             chatRepositoryViewModel.sendMessageRequest(
                                                 senderID,
                                                 uid,
@@ -596,7 +602,6 @@ fun PeopleScreen() {
         )
     }
 
-    val context = LocalContext.current
     chatRepositoryViewModel.confirmSendMessageRequest.value?.let { confirmSendMessageRequest ->
         Toast.makeText(
             context,
