@@ -76,13 +76,14 @@ fun PeopleScreen() {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     var search by remember { mutableStateOf("") }
+    var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var searchResults by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var blockedUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+    var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+
     var message by remember { mutableStateOf<String?>(null) }
     var myName by remember { mutableStateOf("") }
-    var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
-    var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -90,26 +91,21 @@ fun PeopleScreen() {
 
     LaunchedEffect(Unit) {
         val uid = auth.currentUser?.uid ?: return@LaunchedEffect
-        db.collection("users").document(uid).get()
+
+        db.collection("users")
+            .document(uid)
+            .get()
             .addOnSuccessListener {
                 myName = it.getString("name") ?: ""
             }
-    }
 
-    LaunchedEffect(Unit) {
         db.collection("users")
             .get()
             .addOnSuccessListener { snapshot ->
-                val currentUid = auth.currentUser?.uid
-
                 allUsers = snapshot.documents
                     .mapNotNull { doc ->
-                        val uid = doc.id
                         val data = doc.data
-
-                        if (uid != currentUid && data != null) {
-                            uid to data
-                        } else null
+                        if (doc.id != uid && data != null) doc.id to data else null
                     }
                     .sortedBy { (_, data) ->
                         (data["name"] as? String)?.trim()?.lowercase() ?: ""
@@ -313,8 +309,9 @@ fun PeopleScreen() {
                                             }
                                         },
                                         onClick = {
-                                            val senderID = chatRepositoryViewModel.currentUserID
-                                                ?: return@DropdownMenuItem
+                                            val senderID =
+                                                chatRepositoryViewModel.currentUserID
+                                                    ?: return@DropdownMenuItem
                                             chatRepositoryViewModel.sendMessageRequest(
                                                 senderID,
                                                 uid,
