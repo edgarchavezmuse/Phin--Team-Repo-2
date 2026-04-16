@@ -20,7 +20,8 @@ fun HomeDashboard(
     onViewSchedule: () -> Unit,
     onOpenMessages: () -> Unit,
     classes: List<ScheduleClass>,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onDeleteClass: (ScheduleClass) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -33,7 +34,8 @@ fun HomeDashboard(
         CourseScheduleWidget(
             classes = classes,
             onAddClass = onAddClass,
-            onViewSchedule = onViewSchedule
+            onViewSchedule = onViewSchedule,
+            onDeleteClass = onDeleteClass
         )
     }
 }

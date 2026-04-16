@@ -91,4 +91,21 @@ class ScheduleViewModel(
             }
             .take(15)
     }
+
+    fun deleteClass(scheduleClass: ScheduleClass, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            _error.value = null
+
+            try {
+                repository.deleteClass(scheduleClass)
+                _classes.value = repository.getClasses()
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isSaving.value = false
+            }
+        }
+    }
 }

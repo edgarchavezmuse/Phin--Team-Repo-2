@@ -34,4 +34,20 @@ class ScheduleRepository(
             doc.toObject(ScheduleClass::class.java)?.copy(id = doc.id)
         }
     }
+
+    suspend fun deleteClass(scheduleClass: ScheduleClass) {
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User is not logged in")
+
+        if (scheduleClass.id.isBlank()) {
+            throw IllegalStateException("Class ID is missing")
+        }
+
+        db.collection("users")
+            .document(uid)
+            .collection("schedule")
+            .document(scheduleClass.id)
+            .delete()
+            .await()
+    }
 }

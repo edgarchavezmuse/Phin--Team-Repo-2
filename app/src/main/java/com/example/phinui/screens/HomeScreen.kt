@@ -69,6 +69,9 @@ fun HomeScreen(
                 },
                 onOpenMessages = {
                     navController.navigate(Routes.USERLIST)
+                },
+                onDeleteClass = { scheduleClass ->
+                    scheduleViewModel.deleteClass(scheduleClass)
                 }
             )
         }
