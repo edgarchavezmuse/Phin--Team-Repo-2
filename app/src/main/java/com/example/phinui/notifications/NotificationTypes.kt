@@ -6,17 +6,31 @@ enum class NotificationType(
     val channelId: String,
     val channelName: String,
     val importance: Int,
+    val title: String,
+    val message: String
 ) {
 
-    CALENDAR(
-        "calendar_reminders",
-        "Calendar Reminders V2",
-        NotificationManager.IMPORTANCE_HIGH
+    SCHEDULE(
+        "schedule",
+        "Schedule",
+        NotificationManager.IMPORTANCE_HIGH,
+        "Schedule Reminder",
+        "Your class will start soon!"
     ),
 
-    FRIEND_REQUESTS(
-        "friend_request_channel",
-        "Friend Requests V2",
-        NotificationManager.IMPORTANCE_HIGH
+    ASSIGNMENT(
+        "assignment",
+        "Assignment",
+        NotificationManager.IMPORTANCE_HIGH,
+        "Assignment Due",
+        "You have an assignment due soon!"
+    ),
+
+    EVENT(
+        "event",
+        "Event",
+        NotificationManager.IMPORTANCE_HIGH,
+        "Event Reminder",
+        "There is an event coming up!"
     )
 }

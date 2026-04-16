@@ -42,26 +42,4 @@ class UserListRepository {
             null
         }
     }
-
-    fun getUserNameByID(
-        userID: String,
-        onResult: (User) -> Unit,
-        onError: (Exception) -> Unit
-    ) {
-
-        database.collection("users")
-            .document(userID)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val userName = document.getString("name") ?: "Unknown User"
-                    val user = User(uid = userID, name = userName)
-                    onResult(user)
-            } else {
-                onError(Exception("User not found"))
-                }
-        }.addOnFailureListener { exception ->
-            onError(exception)
-            }
-    }
 }

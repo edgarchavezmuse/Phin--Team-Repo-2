@@ -26,7 +26,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
-import com.example.phinui.notifications.FCMTokenManager
 import com.example.phinui.ui.components.AuthHeader
 
 @Composable
@@ -115,7 +114,6 @@ fun LoginScreen(
                         .addOnCompleteListener { task ->
                             loading = false
                             if (task.isSuccessful) {
-                                FCMTokenManager.registerToken()
                                 onLoginSuccess()
                             } else {
                                 errorMessage = "Incorrect Email or Password."

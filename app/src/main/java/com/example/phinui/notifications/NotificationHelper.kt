@@ -24,10 +24,34 @@ object NotificationHelper {
         eventId: String,
     ) {
 
+        // need to make sure to update this whenever editing notification build
+        val channelId = "reminders_v3"
+
+        val manager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+
+            manager.createNotificationChannel(channel)
+        }
+
         val intent =
             Intent(Intent.ACTION_VIEW, Uri.parse("phin://calendar")).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
+
+        // changed Intent(context, MainActivity::class.java) to intent
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val contentTitle =
             if (title == null) {
@@ -36,15 +60,31 @@ object NotificationHelper {
                 "Upcoming Event"
             }
 
-        showNotification(
-            context = context,
-            type = NotificationType.CALENDAR,
-            title = contentTitle,
-            body = title,
-            intent = intent,
-            requestCode = eventId.hashCode()
-        )
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setContentTitle(contentTitle)
+            .setContentText(title)
+            .setSmallIcon(R.drawable.redphin)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d("NotifDebug", "Permission not granted to send notifications")
+            return
+        }
+
+        NotificationManagerCompat.from(context)
+            .notify(eventId.hashCode(), notification)
+
     }
+
+    // functions for potential future use of other notification types
 
     fun createNotificationChannels(context: Context) {
         val manager =
@@ -65,29 +105,33 @@ object NotificationHelper {
         }
     }
 
-    fun showNotification(
+    fun sendNotification(
         context: Context,
         type: NotificationType,
-        title: String?,
-        body: String?,
-        intent: Intent,
-        requestCode: Int = 0
+        customTitle: String? = null,
+        customMessage: String? = null
     ) {
+
+        val title = customTitle ?: type.title
+        val message = customMessage ?: type.message
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("notificationType", type.name)
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             context,
-            requestCode,
+            type.ordinal,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, type.channelId)
-            .setContentTitle(title ?: type.channelName)
-            .setContentText(body)
-            .setSmallIcon(R.drawable.redphin)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+        val builder = NotificationCompat.Builder(context, type.channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(message)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(
@@ -95,11 +139,11 @@ object NotificationHelper {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.d("NotifDebug", "Notification permission not granted")
+            Log.d("NotifDebug", "Permission not granted to send notifications")
             return
         }
 
         NotificationManagerCompat.from(context)
-            .notify(requestCode, notification)
+            .notify(type.ordinal, builder.build())
     }
 }

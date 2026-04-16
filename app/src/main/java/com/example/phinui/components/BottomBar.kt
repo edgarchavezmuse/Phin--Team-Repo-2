@@ -32,7 +32,6 @@ import com.example.phinui.ui.theme.Background
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Message
-import androidx.compose.material.icons.filled.Home
 
 data class BottomNavItem(
     val label: String,
@@ -48,10 +47,10 @@ fun CustomBottomBar(
     val currentRoute = navBackStackEntry.value?.destination?.route
 
     val bottomItems = listOf(
-        BottomNavItem("Home", Icons.Default.Home, Routes.HOME),
         BottomNavItem("Map", Icons.Default.LocationOn, Routes.MAP),
         BottomNavItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
-        BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST)
+        BottomNavItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST),
+        BottomNavItem("Profile", Icons.Default.AccountBox, Routes.PROFILE)
     )
 
     Surface(
