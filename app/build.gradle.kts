@@ -106,4 +106,7 @@ dependencies {
     //course catalog
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jsoup:jsoup:1.17.2")
+
+    // fcm
+    implementation("com.google.firebase:firebase-messaging:25.0.1")
 }
