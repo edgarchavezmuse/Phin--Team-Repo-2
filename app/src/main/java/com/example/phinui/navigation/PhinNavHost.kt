@@ -41,6 +41,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.authorization.GoogleAuthManager
+import com.example.phinui.notifications.NotificationHelper.createNotificationChannels
 import com.example.phinui.screens.UserListScreen
 
 //firebase
@@ -68,6 +69,8 @@ fun PhinNavHost(
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { FirebaseAuth.getInstance() }
     val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
+
+    createNotificationChannels(context)
 
     LaunchedEffect(Unit) {
         val loaded = storeEvent.loadEvents()
@@ -220,8 +223,15 @@ fun PhinNavHost(
             PeopleScreen()
         }
 
-        composable(Routes.FRIENDS) {
-            FriendsScreen()
+        composable(
+            Routes.FRIENDS,
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "phin://friends"
+                }
+            )
+        ) {
+            FriendsScreen(navController = navController)
         }
 
         composable(Routes.SCHEDULE) {

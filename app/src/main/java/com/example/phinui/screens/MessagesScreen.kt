@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.ui.theme.*
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.UserListViewModel
 
 
@@ -29,14 +30,17 @@ import com.example.phinui.viewmodel.UserListViewModel
 fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
-    viewModel: UserListViewModel = viewModel(),
+    userListViewModel: UserListViewModel = viewModel(),
+    //chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
     setTopBarTitle: (String) -> Unit
 ) {
     val chatRepository = remember { ChatRepository() }
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-    val selectedUser = viewModel.selectedUser
-    val isLoadingStatus = viewModel.isLoading
+    val selectedUser = userListViewModel.selectedUser
+    val isLoadingStatus = userListViewModel.isLoading
+    val autoScrollState = rememberLazyListState()
+    val initialChatOpen = remember { mutableStateOf(true) }
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -51,7 +55,17 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(receiverUserID) {
-        viewModel.loadSelectedUser(receiverUserID)
+        userListViewModel.loadSelectedUser(receiverUserID)
+    }
+
+    if (initialChatOpen.value) {
+        //Automatic scroll effect
+        LaunchedEffect(messages) {
+            if (messages.isNotEmpty()) {
+                autoScrollState.animateScrollToItem(messages.size - 1)
+                initialChatOpen.value = false
+            }
+        }
     }
 
     Column(modifier = Modifier
@@ -59,6 +73,7 @@ fun MessagesScreen(
         .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         if (isLoadingStatus) {
             CircularProgressIndicator()
         }
@@ -66,6 +81,7 @@ fun MessagesScreen(
         LazyColumn(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
+            state = autoScrollState,
             verticalArrangement = Arrangement.Top
         ) {
             items(messages) { message ->

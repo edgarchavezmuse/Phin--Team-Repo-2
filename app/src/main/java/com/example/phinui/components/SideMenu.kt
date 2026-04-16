@@ -11,15 +11,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +43,7 @@ import com.example.phinui.ui.components.UserAvatar
 import com.example.phinui.ui.navigation.Routes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.material.icons.filled.MenuBook
 
 data class MenuItem (
     val label: String,
@@ -57,12 +62,12 @@ fun SideMenu(
     val menuItems = listOf(
         MenuItem("Home", Icons.Default.Home, Routes.HOME),
         MenuItem("Profile", Icons.Default.AccountBox, Routes.PROFILE),
-        MenuItem("People", Icons.Default.PersonAdd, Routes.PEOPLE),
         MenuItem("Friends", Icons.Default.People, Routes.FRIENDS),
         MenuItem("Messages", Icons.AutoMirrored.Filled.Message, Routes.USERLIST),
         MenuItem("Events", Icons.Default.Event, Routes.EVENTS),
         MenuItem("Calendar", Icons.Default.DateRange, Routes.CALENDAR),
-        MenuItem("Map", Icons.Default.LocationOn, Routes.MAP)
+        MenuItem("Map", Icons.Default.LocationOn, Routes.MAP),
+        MenuItem("Schedule", Icons.Default.MenuBook, Routes.SCHEDULE)
     )
 
     val auth = FirebaseAuth.getInstance()
@@ -86,8 +91,17 @@ fun SideMenu(
 
     Column(modifier = Modifier.padding(16.dp)) {
 
-        Row() {
-
+        Row(
+            modifier = Modifier.clickable(onClick = {
+                if (currentRoute != Routes.PROFILE) {
+                    navController.navigate(Routes.PROFILE) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                onItemClick()
+            })
+        ) {
             UserAvatar(name = name, size = 35)
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -103,7 +117,6 @@ fun SideMenu(
                     fontWeight = FontWeight.Medium
                 )
             }
-
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -113,14 +126,40 @@ fun SideMenu(
                 label = item.label,
                 icon = item.icon,
                 isSelected = currentRoute == item.route,
-                onItemClick,
                 onClick = {
-                    navController.navigate(item.route) {
-                        launchSingleTop = true
-                        restoreState = true
+                    if (currentRoute != item.route) {
+                        navController.navigate(item.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                     onItemClick()
                 }
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Row(
+            modifier = Modifier
+                .clickable(
+                    onClick = {
+                        auth.signOut()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.HOME) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Logout,
+                contentDescription = "Log out"
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Log Out",
+                style = MaterialTheme.typography.titleMedium
             )
         }
     }
@@ -131,7 +170,6 @@ fun MenuRowBuilder(
     label: String,
     icon: ImageVector,
     isSelected: Boolean,
-    onItemClick: () -> Unit,
     onClick: () -> Unit
 ) {
     Row(
@@ -143,7 +181,6 @@ fun MenuRowBuilder(
             )
             .clickable {
                 onClick()
-                onItemClick()
             }
             .padding(vertical = 12.dp)
     ) {

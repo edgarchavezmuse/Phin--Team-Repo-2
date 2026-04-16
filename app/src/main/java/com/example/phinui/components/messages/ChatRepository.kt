@@ -33,7 +33,8 @@ class ChatRepository {
             mapOf(
                 "lastMessage" to messageText,
                 "lastTimestamp" to messageProperties.currentTime,
-                "participants" to listOf(senderUserID, receiverUserID)
+                "participants" to listOf(senderUserID, receiverUserID),
+                "messageRequestApproved" to true
             )
         //Default info if chat between users doesn't exist yet
         ).addOnFailureListener {
@@ -41,10 +42,43 @@ class ChatRepository {
                 mapOf(
                     "lastMessage" to messageText,
                     "lastTimestamp" to messageProperties.currentTime,
-                    "participants" to listOf(senderUserID, receiverUserID)
+                    "participants" to listOf(senderUserID, receiverUserID),
+                    "messageRequestApproved" to true
                 )
             )
         }
+    }
+
+    fun sendMessageRequest(senderUserID: String, receiverUserID: String) {
+        val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
+
+        messageProperties.chatReference.update(
+            mapOf(
+                "lastMessage" to "",
+                "lastTimestamp" to messageProperties.currentTime,
+                "participants" to listOf(senderUserID, receiverUserID),
+                "messageRequestApproved" to false
+            )
+        ).addOnFailureListener {
+            messageProperties.chatReference.set(
+                mapOf(
+                    "lastMessage" to "",
+                    "lastTimestamp" to messageProperties.currentTime,
+                    "participants" to listOf(senderUserID, receiverUserID),
+                    "messageRequestApproved" to false
+                )
+            )
+        }
+    }
+
+    fun approveMessageRequest(chatID: String) {
+        chatsCollection.document(chatID)
+            .update("messageRequestApproved", true)
+    }
+
+    fun denyMessageRequest(chatID: String) {
+        chatsCollection.document(chatID)
+            .delete()
     }
 
     fun checkForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
@@ -55,9 +89,42 @@ class ChatRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener {snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                //val messages = snapshot.documents.map {it.data!!}
                 val messages = snapshot?.documents?.mapNotNull {it.data} ?: emptyList()
                 newMessage(messages)
+            }
+    }
+
+    fun listenMessageRequest(
+        userID: String,
+        onResult: (List<Map<String, Any>>) -> Unit
+    ) {
+        chatsCollection
+            .whereArrayContains("participants", userID)
+            .whereEqualTo("messageRequestApproved", false)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+                val messageRequest = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    data + mapOf("chatID" to doc.id)
+                }
+                onResult(messageRequest)
+            }
+    }
+
+    fun listenChats(
+        userID: String,
+        onResult: (List<Map<String, Any>>) -> Unit
+    ) {
+        chatsCollection
+            .whereArrayContains("participants", userID)
+            .whereEqualTo("messageRequestApproved", true)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+                val chats = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    data + mapOf("chatID" to doc.id)
+                }
+                onResult(chats)
             }
     }
 

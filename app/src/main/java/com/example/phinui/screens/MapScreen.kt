@@ -213,7 +213,10 @@ fun MapScreen() {
                             position = LatLng(location.latitude, location.longitude)
                         ),
                         title = location.name,
-                        snippet = location.description
+                        snippet = location.description,
+                        icon = BitmapDescriptorFactory.defaultMarker(
+                            markerHueForCategory(location.category)
+                        )
                     )
                 }
             }
@@ -339,5 +342,14 @@ fun CategoryFilterBar(
                 colors = FilterChipDefaults.filterChipColors()
             )
         }
+    }
+}
+private fun markerHueForCategory(category: String?): Float {
+    return when (category?.lowercase()) {
+        "restroom" -> BitmapDescriptorFactory.HUE_AZURE
+        "microwave" -> BitmapDescriptorFactory.HUE_ORANGE
+        "vending" -> BitmapDescriptorFactory.HUE_GREEN
+        "printer" -> BitmapDescriptorFactory.HUE_VIOLET
+        else -> BitmapDescriptorFactory.HUE_RED
     }
 }
