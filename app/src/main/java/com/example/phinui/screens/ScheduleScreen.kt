@@ -59,10 +59,13 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import android.widget.Toast
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenuItem
 import android.graphics.Color as AndroidColor
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.ui.unit.DpOffset
 
 @Composable
 fun ScheduleScreen() {
@@ -390,10 +393,37 @@ private fun ScheduleClassCard(
 
                 DropdownMenu(
                     expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
+                    onDismissRequest = { menuExpanded = false },
+                    offset = DpOffset(x = (-8).dp, y = 4.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = Color.White,
+                    tonalElevation = 2.dp,
+                    shadowElevation = 8.dp
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Edit") },
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Edit,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+
+                                androidx.compose.foundation.layout.Spacer(
+                                    modifier = Modifier.width(10.dp)
+                                )
+
+                                Text(
+                                    text = "Edit",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        },
                         onClick = {
                             menuExpanded = false
                             onEdit()
@@ -401,7 +431,29 @@ private fun ScheduleClassCard(
                     )
 
                     DropdownMenuItem(
-                        text = { Text("Delete") },
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = null,
+                                    tint = accentRed,
+                                    modifier = Modifier.size(18.dp)
+                                )
+
+                                androidx.compose.foundation.layout.Spacer(
+                                    modifier = Modifier.width(10.dp)
+                                )
+
+                                Text(
+                                    text = "Delete",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = accentRed
+                                )
+                            }
+                        },
                         onClick = {
                             menuExpanded = false
                             onDelete()

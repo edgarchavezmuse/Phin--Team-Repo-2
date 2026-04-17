@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -48,6 +49,8 @@ import android.graphics.Color as AndroidColor
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.material.icons.outlined.Edit
 
 private val TextDark = Color(0xFF1E1E1E)
 private val TextMuted = Color(0xFF6F6F6F)
@@ -340,10 +343,35 @@ fun CourseScheduleWidget(
 
                                     DropdownMenu(
                                         expanded = menuExpanded,
-                                        onDismissRequest = { menuExpanded = false }
+                                        onDismissRequest = { menuExpanded = false },
+                                        offset = DpOffset(x = (-8).dp, y = 4.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        containerColor = Color.White,
+                                        tonalElevation = 2.dp,
+                                        shadowElevation = 8.dp
                                     ) {
                                         DropdownMenuItem(
-                                            text = { Text("Edit") },
+                                            text = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.Edit,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+
+                                                    Spacer(modifier = Modifier.width(10.dp))
+
+                                                    Text(
+                                                        text = "Edit",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                            },
                                             onClick = {
                                                 menuExpanded = false
                                                 onEditClass(scheduleClass)
@@ -351,7 +379,27 @@ fun CourseScheduleWidget(
                                         )
 
                                         DropdownMenuItem(
-                                            text = { Text("Delete") },
+                                            text = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.Delete,
+                                                        contentDescription = null,
+                                                        tint = BrandRed,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+
+                                                    Spacer(modifier = Modifier.width(10.dp))
+
+                                                    Text(
+                                                        text = "Delete",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = BrandRed
+                                                    )
+                                                }
+                                            },
                                             onClick = {
                                                 menuExpanded = false
                                                 classToDelete = scheduleClass
