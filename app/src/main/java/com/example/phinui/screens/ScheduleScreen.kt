@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import android.widget.Toast
 
 @Composable
 fun ScheduleScreen() {
@@ -66,7 +67,7 @@ fun ScheduleScreen() {
     val catalogCourses by scheduleViewModel.catalogCourses.collectAsState()
     var showAddSheet by remember { mutableStateOf(false) }
     var classToDelete by remember { mutableStateOf<ScheduleClass?>(null) }
-
+    val context = androidx.compose.ui.platform.LocalContext.current
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
     val accentRed = Color(0xFFFF1F1F)
 
@@ -204,6 +205,12 @@ fun ScheduleScreen() {
                 onSave = { scheduleClass ->
                     scheduleViewModel.addClass(scheduleClass) {
                         showAddSheet = false
+
+                        Toast.makeText(
+                            context,
+                            "${scheduleClass.courseCode} added to schedule",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             )
