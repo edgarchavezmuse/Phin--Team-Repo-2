@@ -30,11 +30,17 @@ class PhinFirebaseMessagingService : FirebaseMessagingService() {
         val title = remoteMessage.data["title"] ?: "Notification"
         val body = remoteMessage.data["body"] ?: ""
         val type = remoteMessage.data["type"]
+        val uri = remoteMessage.data["uri"]
 
         val launchIntent = when (type) {
 
             "FRIEND_REQUEST" ->
-                Intent(Intent.ACTION_VIEW, Uri.parse("phin://friends")).apply {
+                Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+
+            "FRIEND_ACCEPTED" ->
+                Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
 
