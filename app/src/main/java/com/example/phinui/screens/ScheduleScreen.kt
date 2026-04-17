@@ -263,7 +263,15 @@ fun ScheduleScreen() {
 
                             TextButton(
                                 onClick = {
-                                    classToDelete?.let { scheduleViewModel.deleteClass(it) }
+                                    classToDelete?.let {
+                                        scheduleViewModel.deleteClass(it)
+
+                                        Toast.makeText(
+                                            context,
+                                            "${it.courseCode} removed from schedule",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                     classToDelete = null
                                 }
                             ) {

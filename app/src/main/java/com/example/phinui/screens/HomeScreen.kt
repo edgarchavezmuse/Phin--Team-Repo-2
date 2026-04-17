@@ -73,7 +73,13 @@ fun HomeScreen(
                     navController.navigate(Routes.USERLIST)
                 },
                 onDeleteClass = { scheduleClass ->
-                    scheduleViewModel.deleteClass(scheduleClass)
+                    scheduleViewModel.deleteClass(scheduleClass) {
+                        Toast.makeText(
+                            context,
+                            "${scheduleClass.courseCode} removed from schedule",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             )
         }
