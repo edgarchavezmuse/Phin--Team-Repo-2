@@ -267,7 +267,7 @@ fun CourseScheduleWidget(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    filteredClasses.take(3).forEach { scheduleClass ->
+                    filteredClasses.forEach { scheduleClass ->
                         var menuExpanded by remember(scheduleClass.id) { mutableStateOf(false) }
                         Surface(
                             shape = RoundedCornerShape(16.dp),
