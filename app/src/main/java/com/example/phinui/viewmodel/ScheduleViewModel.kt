@@ -1,6 +1,7 @@
 package com.example.phinui.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.data.schedule.CourseCatalogItem
 import com.example.phinui.data.schedule.CourseCatalogRepository
@@ -12,9 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ScheduleViewModel(
-    private val repository: ScheduleRepository = ScheduleRepository(),
-    private val courseCatalogRepository: CourseCatalogRepository = CourseCatalogRepository(),
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
+
+    private val repository = ScheduleRepository()
+    private val courseCatalogRepository = CourseCatalogRepository()
 
     private val _classes = MutableStateFlow<List<ScheduleClass>>(emptyList())
     val classes: StateFlow<List<ScheduleClass>> = _classes.asStateFlow()
@@ -30,8 +33,6 @@ class ScheduleViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
-
-
 
     init {
         loadClasses()
@@ -51,9 +52,11 @@ class ScheduleViewModel(
     fun loadCourseCatalog() {
         viewModelScope.launch {
             _isCatalogLoading.value = true
+            _error.value = null
 
             try {
-                _catalogCourses.value = courseCatalogRepository.fetchCourseCatalog()
+                _catalogCourses.value =
+                    courseCatalogRepository.fetchCourseCatalog(getApplication())
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {
