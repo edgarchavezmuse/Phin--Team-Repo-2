@@ -1,5 +1,6 @@
 package com.example.phinui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.*
@@ -31,11 +32,15 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.lifecycle.viewModelScope
+import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
 import com.example.phinui.viewmodel.UserListViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 
 @Composable
@@ -118,7 +123,15 @@ fun UserListScreen (
             //General tab
             1 -> {
                 val approvedChatsState = chatRepositoryViewModel.getGeneralChats.value
+                //Log.d("approvedChatsState", "This is approvedChatsState: $approvedChatsState")
+                val userNameCache = remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
+                val alphabetizedChats = getSortedChats(
+                    approvedChatsState = approvedChatsState,
+                    chatRepositoryViewModel = chatRepositoryViewModel,
+                    userNameCache = userNameCache,
+                    currentUserID = currentUserID
+                )
                 Box {
                     LazyColumn(
                         modifier = Modifier
@@ -126,7 +139,7 @@ fun UserListScreen (
                             .padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(approvedChatsState) { chat ->
+                        items(alphabetizedChats) { chat ->
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants
@@ -135,19 +148,7 @@ fun UserListScreen (
 
                             if(otherUserID in hideBlockedUsers) return@items
 
-                            var userName by remember { mutableStateOf("Loading...")}
-
-                            LaunchedEffect(otherUserID) {
-                                chatRepositoryViewModel.userListRepository.getUserNameByID(
-                                    otherUserID,
-                                    onResult = { user ->
-                                        userName = user.name
-                                    },
-                                    onError = {exception ->
-                                        userName = "Unknown User"
-                                    }
-                                )
-                            }
+                            val userName = userNameCache.value[otherUserID] ?: "Loading Chat..."
 
                             val user = User(
                                 uid = otherUserID,
@@ -236,13 +237,13 @@ fun UserListScreen (
 
                             LaunchedEffect(otherUserID) {
                                 chatRepositoryViewModel.userListRepository.getUserNameByID(
-                                    otherUserID,
-                                    onResult = { user ->
-                                        userName = user.name
-                                    },
-                                    onError = {exception ->
-                                        userName = "Unknown User"
-                                    }
+                                    otherUserID
+//                                    onResult = { user ->
+//                                        userName = user.name
+//                                    },
+//                                    onError = {exception ->
+//                                        userName = "Unknown User"
+//                                    }
                                 )
                             }
 
@@ -376,4 +377,58 @@ fun UserListScreen (
             trailingContent?.invoke()
         }
     }
+}
+
+@Composable fun getSortedChats(
+    approvedChatsState: List<Map<String, Any>>,
+    chatRepositoryViewModel: ChatRepositoryViewModel,
+    userNameCache: MutableState<Map<String, String>>,
+    currentUserID: String
+): List<Map<String,Any>> {
+    Log.d("getSortedChats", "Approved chats before sorting: $approvedChatsState")
+    LaunchedEffect(approvedChatsState) {
+        val allUserIds = approvedChatsState.flatMap { chat ->
+            val participants = chat["participants"] as? List<*> ?: return@flatMap emptyList<String>()
+            participants.mapNotNull { it as? String }
+        }.distinct()
+
+        Log.d("approvedChatsState", "This is allUserIDs: $allUserIds")
+
+        val userNamesMap = mutableMapOf<String, String>()
+        val deferredResults = allUserIds.map { otherUserID ->
+            async{
+                try{
+                    val userName = chatRepositoryViewModel.userListRepository.getUserNameByID(otherUserID)
+                    userNamesMap[otherUserID] = userName
+                    Log.d("approvedChatState", "Fetched name for user ID $otherUserID: ${userName}")
+
+                } catch (e: Exception) {
+                    userNamesMap[otherUserID] = "Unknown User"
+                    Log.d("approvedChatState", "Catch: Failed to fetch name for user ID $otherUserID: Unknown User")
+
+                }
+            }
+        }
+        coroutineScope {
+            deferredResults.awaitAll()
+        }
+//        Log.d("approvedChatsState", "This is userNamesMap after all fetches: $userNamesMap")
+//        Log.d("approvedChatsState", "This is userNamesMap: $userNamesMap")
+        userNameCache.value = userNamesMap
+    }
+//    Log.d("getSortedChats", "User names in cache before sorting: ${userNameCache.value}")
+
+    val sortedChats = approvedChatsState.sortedWith (compareBy<Map<String, Any>> { chat ->
+        val filteredParticipants = chat["participants"] as? List<*> ?: return@compareBy ""
+        val filteredOtherUserID = filteredParticipants
+            .mapNotNull { it as? String }
+            .firstOrNull{ it != currentUserID }
+        val userName = userNameCache.value[filteredOtherUserID] ?: "Unknown User"
+        Log.d("getSortedChats", "Sorting chat with userName: $userName (ID: $filteredOtherUserID)")
+        userName.lowercase()
+    }.thenBy { chat ->
+        chat["chatID"] as? String ?: ""
+    })
+    Log.d("getSortedChats", "Alphabetized chats: $sortedChats")
+    return sortedChats
 }

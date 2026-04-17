@@ -58,7 +58,7 @@ class ChatRepositoryViewModel (
     val getGeneralChats = derivedStateOf {
         val friendIDs = friendsList.value.map { it.uid }.toSet()
 
-        approvedChats.value.filter{ chat ->
+        val filterOutFriends = approvedChats.value.filter{ chat ->
             val participants = chat["participants"] as? List<*> ?: return@filter false
 
             val otherUserID = participants
@@ -66,6 +66,20 @@ class ChatRepositoryViewModel (
                 .firstOrNull{ it != currentUserID }
 
             otherUserID!= null && otherUserID !in friendIDs
+        }
+
+        filterOutFriends.sortedBy { chat ->
+            val filteredParticipants = chat["participants"] as? List<*> ?: return@sortedBy ""
+            val filteredOtherUserID = filteredParticipants
+                .mapNotNull { it as? String }
+                .firstOrNull{ it != currentUserID }
+
+//            val otherUserName = filteredOtherUserID?.let { uid ->
+//                friendsList.value.firstOrNull{ it.uid == uid }?.name ?: "Unknown"
+//            } ?: "Unknown"
+//
+//            otherUserName.lowercase()
+            filteredOtherUserID?.lowercase() ?: ""
         }
     }
 
