@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,31 +55,47 @@ import com.example.phinui.ui.components.time_pickers.convertTo24Hour
 @Composable
 fun AddScheduleSheet(
     catalogCourses: List<CourseCatalogItem>,
+    editingClass: ScheduleClass? = null,
     onDismiss: () -> Unit,
     onSave: (ScheduleClass) -> Unit
 ) {
-    var courseSearch by rememberSaveable { mutableStateOf("") }
-    var courseCode by rememberSaveable { mutableStateOf("") }
-    var courseName by rememberSaveable { mutableStateOf("") }
-    var startTime by rememberSaveable { mutableStateOf("") }
-    var endTime by rememberSaveable { mutableStateOf("") }
-    var location by rememberSaveable { mutableStateOf("") }
-    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedColorHex by rememberSaveable { mutableStateOf("#FF1F1F") }
-    var showColorPicker by rememberSaveable { mutableStateOf(false) }
+    val isEditMode = editingClass != null
+
+    var courseSearch by rememberSaveable(editingClass?.id) { mutableStateOf("") }
+    var courseCode by rememberSaveable(editingClass?.id) { mutableStateOf(editingClass?.courseCode ?: "") }
+    var courseName by rememberSaveable(editingClass?.id) { mutableStateOf(editingClass?.courseName ?: "") }
+    var startTime by rememberSaveable(editingClass?.id) { mutableStateOf(editingClass?.startTime ?: "") }
+    var endTime by rememberSaveable(editingClass?.id) { mutableStateOf(editingClass?.endTime ?: "") }
+    var location by rememberSaveable(editingClass?.id) { mutableStateOf(editingClass?.location ?: "") }
+    var errorMessage by rememberSaveable(editingClass?.id) { mutableStateOf<String?>(null) }
+    var selectedColorHex by rememberSaveable(editingClass?.id) {
+        mutableStateOf(editingClass?.colorHex ?: "#FF1F1F")
+    }
+    var showColorPicker by rememberSaveable(editingClass?.id) { mutableStateOf(false) }
 
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
 
-    val selectedDays = remember { mutableStateListOf<String>() }
+    val selectedDays = remember(editingClass?.id) { mutableStateListOf<String>() }
+
+    LaunchedEffect(editingClass?.id) {
+        selectedDays.clear()
+        selectedDays.addAll(editingClass?.days ?: emptyList())
+        courseSearch = if (editingClass != null) {
+            "${editingClass.courseCode} - ${editingClass.courseName}"
+        } else {
+            ""
+        }
+    }
+
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
     val presetColors = listOf(
-        "#FF1F1F", // red
-        "#FF9800", // orange
-        "#4CAF50", // green
-        "#2196F3", // blue
-        "#9C27B0", // purple
-        "#FF69B4" // pink
+        "#FF1F1F",
+        "#FF9800",
+        "#4CAF50",
+        "#2196F3",
+        "#9C27B0",
+        "#FF69B4"
     )
 
     val accentRed = Color(0xFFFF1F1F)
@@ -118,14 +135,18 @@ fun AddScheduleSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Add Class",
+                text = if (isEditMode) "Edit Class" else "Add Class",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
-                text = "Quickly add a course to your schedule",
+                text = if (isEditMode) {
+                    "Update the details for this class"
+                } else {
+                    "Quickly add a course to your schedule"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -456,6 +477,7 @@ fun AddScheduleSheet(
                                 } else {
                                     onSave(
                                         ScheduleClass(
+                                            id = editingClass?.id ?: "",
                                             courseCode = trimmedCourseCode,
                                             courseName = trimmedCourseName,
                                             days = selectedDays.toList(),
@@ -476,7 +498,7 @@ fun AddScheduleSheet(
                         contentColor = Color.White
                     )
                 ) {
-                    Text("Save Class")
+                    Text(if (isEditMode) "Update Class" else "Save Class")
                 }
             }
 

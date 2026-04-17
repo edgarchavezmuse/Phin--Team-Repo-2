@@ -34,6 +34,9 @@ class ScheduleViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _editingClass = MutableStateFlow<ScheduleClass?>(null)
+    val editingClass: StateFlow<ScheduleClass?> = _editingClass.asStateFlow()
+
     init {
         loadClasses()
         loadCourseCatalog()
@@ -65,14 +68,20 @@ class ScheduleViewModel(
         }
     }
 
-    fun addClass(scheduleClass: ScheduleClass, onSuccess: () -> Unit = {}) {
+    fun saveClass(scheduleClass: ScheduleClass, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _isSaving.value = true
             _error.value = null
 
             try {
-                repository.addClass(scheduleClass)
+                if (scheduleClass.id.isBlank()) {
+                    repository.addClass(scheduleClass)
+                } else {
+                    repository.updateClass(scheduleClass)
+                }
+
                 _classes.value = repository.getClasses()
+                stopEditing()
                 onSuccess()
             } catch (e: Exception) {
                 _error.value = e.message
@@ -110,5 +119,13 @@ class ScheduleViewModel(
                 _isSaving.value = false
             }
         }
+    }
+
+    fun startEditing(scheduleClass: ScheduleClass) {
+        _editingClass.value = scheduleClass
+    }
+
+    fun stopEditing() {
+        _editingClass.value = null
     }
 }

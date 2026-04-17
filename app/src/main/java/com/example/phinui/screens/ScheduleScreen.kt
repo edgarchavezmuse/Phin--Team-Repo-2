@@ -59,7 +59,10 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import android.widget.Toast
+import androidx.compose.material3.DropdownMenuItem
 import android.graphics.Color as AndroidColor
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.DropdownMenu
 
 @Composable
 fun ScheduleScreen() {
@@ -71,6 +74,7 @@ fun ScheduleScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
     val accentRed = Color(0xFFFF1F1F)
+    val editingClass by scheduleViewModel.editingClass.collectAsState()
 
     Box(
         modifier = Modifier
@@ -111,7 +115,10 @@ fun ScheduleScreen() {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { showAddSheet = true },
+                        onClick = {
+                            scheduleViewModel.stopEditing()
+                            showAddSheet = true
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, accentRed)
@@ -191,6 +198,10 @@ fun ScheduleScreen() {
                                 accentRed = accentRed,
                                 onRequestDelete = {
                                     classToDelete = scheduleClass
+                                },
+                                onEdit = {
+                                    scheduleViewModel.startEditing(scheduleClass)
+                                    showAddSheet = true
                                 }
                             )
                         }
@@ -202,14 +213,24 @@ fun ScheduleScreen() {
         if (showAddSheet) {
             AddScheduleSheet(
                 catalogCourses = catalogCourses,
-                onDismiss = { showAddSheet = false },
+                editingClass = editingClass,
+                onDismiss = {
+                    showAddSheet = false
+                    scheduleViewModel.stopEditing()
+                },
                 onSave = { scheduleClass ->
-                    scheduleViewModel.addClass(scheduleClass) {
+                    val isEditing = scheduleClass.id.isNotBlank()
+
+                    scheduleViewModel.saveClass(scheduleClass) {
                         showAddSheet = false
 
                         Toast.makeText(
                             context,
-                            "${scheduleClass.courseCode} added to schedule",
+                            if (isEditing) {
+                                "${scheduleClass.courseCode} updated"
+                            } else {
+                                "${scheduleClass.courseCode} added to schedule"
+                            },
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -265,13 +286,13 @@ fun ScheduleScreen() {
                             TextButton(
                                 onClick = {
                                     classToDelete?.let {
-                                        scheduleViewModel.deleteClass(it)
-
-                                        Toast.makeText(
-                                            context,
-                                            "${it.courseCode} removed from schedule",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        scheduleViewModel.deleteClass(it) {
+                                            Toast.makeText(
+                                                context,
+                                                "${it.courseCode} removed from schedule",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                     classToDelete = null
                                 }
@@ -289,13 +310,18 @@ fun ScheduleScreen() {
 @Composable
 private fun ScheduleClassCard(
     scheduleClass: ScheduleClass,
-    accentRed: Color
+    accentRed: Color,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val accentColor = try {
         Color(AndroidColor.parseColor(scheduleClass.colorHex))
     } catch (_: Exception) {
         accentRed
     }
+
+    var menuExpanded by remember(scheduleClass.id) { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -305,7 +331,8 @@ private fun ScheduleClassCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
@@ -319,7 +346,9 @@ private fun ScheduleClassCard(
             )
 
             Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 14.dp, top = 14.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
@@ -345,6 +374,41 @@ private fun ScheduleClassCard(
                     )
                 }
             }
+
+            Box(
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                IconButton(
+                    onClick = { menuExpanded = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.MoreVert,
+                        contentDescription = "Class options",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            menuExpanded = false
+                            onEdit()
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -353,7 +417,8 @@ private fun ScheduleClassCard(
 private fun SwipeToDeleteScheduleCard(
     scheduleClass: ScheduleClass,
     accentRed: Color,
-    onRequestDelete: () -> Unit
+    onRequestDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val actionWidth = 72.dp
     val density = LocalDensity.current
@@ -371,10 +436,8 @@ private fun SwipeToDeleteScheduleCard(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
     ) {
-        // Background action
         Box(
-            modifier = Modifier
-                .matchParentSize(),
+            modifier = Modifier.matchParentSize(),
             contentAlignment = Alignment.CenterEnd
         ) {
             Surface(
@@ -399,7 +462,6 @@ private fun SwipeToDeleteScheduleCard(
             }
         }
 
-        // Foreground card
         Box(
             modifier = Modifier
                 .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
@@ -407,9 +469,7 @@ private fun SwipeToDeleteScheduleCard(
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-
-                            offsetX = (offsetX + dragAmount)
-                                .coerceIn(-actionWidthPx, 0f)
+                            offsetX = (offsetX + dragAmount).coerceIn(-actionWidthPx, 0f)
                         },
                         onDragEnd = {
                             offsetX = if (abs(offsetX) > actionWidthPx / 2f) {
@@ -423,7 +483,15 @@ private fun SwipeToDeleteScheduleCard(
         ) {
             ScheduleClassCard(
                 scheduleClass = scheduleClass,
-                accentRed = accentRed
+                accentRed = accentRed,
+                onEdit = {
+                    offsetX = 0f
+                    onEdit()
+                },
+                onDelete = {
+                    offsetX = 0f
+                    onRequestDelete()
+                }
             )
         }
     }

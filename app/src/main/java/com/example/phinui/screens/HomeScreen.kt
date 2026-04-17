@@ -35,6 +35,7 @@ fun HomeScreen(
     val classes by scheduleViewModel.classes.collectAsState()
     val catalogCourses by scheduleViewModel.catalogCourses.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val editingClass by scheduleViewModel.editingClass.collectAsState()
 
     Column(
         modifier = Modifier
@@ -64,6 +65,11 @@ fun HomeScreen(
                     navController.navigate(Routes.MAP)
                 },
                 onAddClass = {
+                    scheduleViewModel.stopEditing()
+                    showAddSheet = true
+                },
+                onEditClass = { scheduleClass ->
+                    scheduleViewModel.startEditing(scheduleClass)
                     showAddSheet = true
                 },
                 onViewSchedule = {
@@ -87,14 +93,24 @@ fun HomeScreen(
         if (showAddSheet) {
             AddScheduleSheet(
                 catalogCourses = catalogCourses,
-                onDismiss = { showAddSheet = false },
+                editingClass = editingClass,
+                onDismiss = {
+                    showAddSheet = false
+                    scheduleViewModel.stopEditing()
+                },
                 onSave = { scheduleClass ->
-                    scheduleViewModel.addClass(scheduleClass) {
+                    val isEditing = scheduleClass.id.isNotBlank()
+
+                    scheduleViewModel.saveClass(scheduleClass) {
                         showAddSheet = false
 
                         Toast.makeText(
                             context,
-                            "${scheduleClass.courseCode} added to schedule",
+                            if (isEditing) {
+                                "${scheduleClass.courseCode} updated"
+                            } else {
+                                "${scheduleClass.courseCode} added to schedule"
+                            },
                             Toast.LENGTH_SHORT
                         ).show()
                     }

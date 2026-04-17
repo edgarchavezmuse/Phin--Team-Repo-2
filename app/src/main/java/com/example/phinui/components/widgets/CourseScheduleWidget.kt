@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.phinui.data.schedule.ScheduleClass
 import android.graphics.Color as AndroidColor
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 private val TextDark = Color(0xFF1E1E1E)
 private val TextMuted = Color(0xFF6F6F6F)
@@ -55,12 +58,12 @@ fun CourseScheduleWidget(
     classes: List<ScheduleClass>,
     onAddClass: () -> Unit,
     onViewSchedule: () -> Unit,
-    onDeleteClass: (ScheduleClass) -> Unit
+    onDeleteClass: (ScheduleClass) -> Unit,
+    onEditClass: (ScheduleClass) -> Unit
 ) {
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
     var selectedDay by remember { mutableStateOf("Mon") }
     var classToDelete by remember { mutableStateOf<ScheduleClass?>(null) }
-
     val filteredClasses = classes
         .filter { it.days.contains(selectedDay) }
         .sortedBy { it.startTime }
@@ -262,6 +265,7 @@ fun CourseScheduleWidget(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     filteredClasses.take(3).forEach { scheduleClass ->
+                        var menuExpanded by remember(scheduleClass.id) { mutableStateOf(false) }
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surface,
@@ -321,15 +325,39 @@ fun CourseScheduleWidget(
                                     }
                                 }
 
-                                IconButton(
-                                    onClick = { classToDelete = scheduleClass },
+                                Box(
                                     modifier = Modifier.padding(end = 8.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = "Delete class",
-                                        tint = BrandRed.copy(alpha = 0.85f)
-                                    )
+                                    IconButton(
+                                        onClick = { menuExpanded = true }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.MoreVert,
+                                            contentDescription = "Class options",
+                                            tint = TextMuted
+                                        )
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = menuExpanded,
+                                        onDismissRequest = { menuExpanded = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Edit") },
+                                            onClick = {
+                                                menuExpanded = false
+                                                onEditClass(scheduleClass)
+                                            }
+                                        )
+
+                                        DropdownMenuItem(
+                                            text = { Text("Delete") },
+                                            onClick = {
+                                                menuExpanded = false
+                                                classToDelete = scheduleClass
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }

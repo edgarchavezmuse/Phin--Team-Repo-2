@@ -21,7 +21,8 @@ fun HomeDashboard(
     onOpenMessages: () -> Unit,
     classes: List<ScheduleClass>,
     isLoading: Boolean,
-    onDeleteClass: (ScheduleClass) -> Unit
+    onDeleteClass: (ScheduleClass) -> Unit,
+    onEditClass: (ScheduleClass) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -35,7 +36,8 @@ fun HomeDashboard(
             classes = classes,
             onAddClass = onAddClass,
             onViewSchedule = onViewSchedule,
-            onDeleteClass = onDeleteClass
+            onDeleteClass = onDeleteClass,
+            onEditClass = onEditClass
         )
     }
 }
