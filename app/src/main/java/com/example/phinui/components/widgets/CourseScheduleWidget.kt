@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,6 +44,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.phinui.data.schedule.ScheduleClass
+import android.graphics.Color as AndroidColor
 
 private val TextDark = Color(0xFF1E1E1E)
 private val TextMuted = Color(0xFF6F6F6F)
@@ -266,16 +269,22 @@ fun CourseScheduleWidget(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .padding(start = 10.dp)
+                                        .padding(start = 10.dp, top = 12.dp, bottom = 12.dp)
                                         .width(5.dp)
-                                        .height(72.dp)
+                                        .fillMaxHeight()
                                         .background(
-                                            color = BrandRed,
+                                            color = try {
+                                                Color(AndroidColor.parseColor(scheduleClass.colorHex))
+                                            } catch (_: Exception) {
+                                                BrandRed
+                                            },
                                             shape = RoundedCornerShape(12.dp)
                                         )
                                 )

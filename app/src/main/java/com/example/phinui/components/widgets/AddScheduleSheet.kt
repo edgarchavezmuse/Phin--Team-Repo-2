@@ -1,5 +1,6 @@
 package com.example.phinui.ui.components.widgets
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -62,12 +64,22 @@ fun AddScheduleSheet(
     var endTime by rememberSaveable { mutableStateOf("") }
     var location by rememberSaveable { mutableStateOf("") }
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedColorHex by rememberSaveable { mutableStateOf("#FF1F1F") }
+    var showColorPicker by rememberSaveable { mutableStateOf(false) }
 
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
 
     val selectedDays = remember { mutableStateListOf<String>() }
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
+    val presetColors = listOf(
+        "#FF1F1F", // red
+        "#FF9800", // orange
+        "#4CAF50", // green
+        "#2196F3", // blue
+        "#9C27B0", // purple
+        "#FF69B4" // pink
+    )
 
     val accentRed = Color(0xFFFF1F1F)
     val chipBarColor = Color(0xFFFFEAEA)
@@ -290,6 +302,100 @@ fun AddScheduleSheet(
                 trailingIcon = Icons.Default.LocationOn
             )
 
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Accent Color",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showColorPicker = !showColorPicker
+                        },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    tonalElevation = 1.dp,
+                    shadowElevation = 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .width(22.dp)
+                                    .height(22.dp),
+                                shape = RoundedCornerShape(999.dp),
+                                color = Color(android.graphics.Color.parseColor(selectedColorHex))
+                            ) {}
+
+                            Text(
+                                text = "Tap to choose a color",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Text(
+                            text = if (showColorPicker) "Hide" else "Choose",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = accentRed,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                if (showColorPicker) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFFDF4F4),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            presetColors.forEach { colorHex ->
+                                val swatchColor = Color(android.graphics.Color.parseColor(colorHex))
+                                val isSelected = selectedColorHex == colorHex
+
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                        .clickable {
+                                            selectedColorHex = colorHex
+                                            showColorPicker = false
+                                        },
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = swatchColor,
+                                    tonalElevation = if (isSelected) 4.dp else 0.dp,
+                                    shadowElevation = if (isSelected) 4.dp else 0.dp,
+                                    border = if (isSelected) {
+                                        BorderStroke(2.dp, Color.Black)
+                                    } else null
+                                ) {}
+                            }
+                        }
+                    }
+                }
+            }
+
             if (errorMessage != null) {
                 Text(
                     text = errorMessage!!,
@@ -355,7 +461,8 @@ fun AddScheduleSheet(
                                             days = selectedDays.toList(),
                                             startTime = trimmedStartTime,
                                             endTime = trimmedEndTime,
-                                            location = trimmedLocation
+                                            location = trimmedLocation,
+                                            colorHex = selectedColorHex
                                         )
                                     )
                                 }

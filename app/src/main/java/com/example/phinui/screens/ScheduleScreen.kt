@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import android.widget.Toast
+import android.graphics.Color as AndroidColor
 
 @Composable
 fun ScheduleScreen() {
@@ -290,13 +291,18 @@ private fun ScheduleClassCard(
     scheduleClass: ScheduleClass,
     accentRed: Color
 ) {
+    val accentColor = try {
+        Color(AndroidColor.parseColor(scheduleClass.colorHex))
+    } catch (_: Exception) {
+        accentRed
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         color = Color.White,
         shadowElevation = 4.dp
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
@@ -307,7 +313,7 @@ private fun ScheduleClassCard(
                     .width(5.dp)
                     .fillMaxHeight()
                     .background(
-                        color = accentRed,
+                        color = accentColor,
                         shape = RoundedCornerShape(999.dp)
                     )
             )
