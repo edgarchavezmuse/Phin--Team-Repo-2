@@ -241,7 +241,7 @@ fun UserListScreen (
                                 .mapNotNull { it as? String }
                                 .firstOrNull{ it != currentUserID } ?:return@items
 
-                            val userName = userNameCache.value[otherUserID] ?: "Loading Chat..."
+                            val userName = userNameCache.value[otherUserID] ?: "Loading Request..."
 
                             val user = User(
                                 uid = otherUserID,
