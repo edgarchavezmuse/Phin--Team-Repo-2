@@ -1,5 +1,6 @@
 package com.example.phinui.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +34,8 @@ fun HomeScreen(
     val scheduleViewModel: ScheduleViewModel = viewModel()
     val classes by scheduleViewModel.classes.collectAsState()
     val catalogCourses by scheduleViewModel.catalogCourses.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val editingClass by scheduleViewModel.editingClass.collectAsState()
 
     Column(
         modifier = Modifier
@@ -62,6 +65,11 @@ fun HomeScreen(
                     navController.navigate(Routes.MAP)
                 },
                 onAddClass = {
+                    scheduleViewModel.stopEditing()
+                    showAddSheet = true
+                },
+                onEditClass = { scheduleClass ->
+                    scheduleViewModel.startEditing(scheduleClass)
                     showAddSheet = true
                 },
                 onViewSchedule = {
@@ -69,6 +77,15 @@ fun HomeScreen(
                 },
                 onOpenMessages = {
                     navController.navigate(Routes.USERLIST)
+                },
+                onDeleteClass = { scheduleClass ->
+                    scheduleViewModel.deleteClass(scheduleClass) {
+                        Toast.makeText(
+                            context,
+                            "${scheduleClass.courseCode} removed from schedule",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             )
         }
@@ -76,10 +93,26 @@ fun HomeScreen(
         if (showAddSheet) {
             AddScheduleSheet(
                 catalogCourses = catalogCourses,
-                onDismiss = { showAddSheet = false },
+                editingClass = editingClass,
+                onDismiss = {
+                    showAddSheet = false
+                    scheduleViewModel.stopEditing()
+                },
                 onSave = { scheduleClass ->
-                    scheduleViewModel.addClass(scheduleClass) {
+                    val isEditing = scheduleClass.id.isNotBlank()
+
+                    scheduleViewModel.saveClass(scheduleClass) {
                         showAddSheet = false
+
+                        Toast.makeText(
+                            context,
+                            if (isEditing) {
+                                "${scheduleClass.courseCode} updated"
+                            } else {
+                                "${scheduleClass.courseCode} added to schedule"
+                            },
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             )

@@ -7,5 +7,6 @@ data class ScheduleClass(
     val days: List<String> = emptyList(),
     val startTime: String = "",
     val endTime: String = "",
-    val location: String = ""
+    val location: String = "",
+    val colorHex: String = "#FF1F1F"
 )
