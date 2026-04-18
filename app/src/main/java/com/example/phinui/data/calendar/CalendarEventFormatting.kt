@@ -138,11 +138,18 @@ fun formatReminderText(reminders: List<Int>): String? {
         .sorted()
         .joinToString(", ") { minutes ->
             when {
-                minutes < 60 -> "$minutes min before"
-                minutes % 60 == 0 && minutes < 1440 -> "${minutes / 60} hr before"
+                minutes == 0 -> "At time of event"
+                minutes < 60 -> if (minutes == 1) "1 minute before" else "$minutes minutes before"
+                minutes % 60 == 0 && minutes < 1440 -> {
+                    val hours = minutes / 60
+                    if (hours == 1) "1 hour before" else "$hours hours before"
+                }
                 minutes == 1440 -> "1 day before"
-                minutes % 1440 == 0 -> "${minutes / 1440} days before"
-                else -> "$minutes min before"
+                minutes % 1440 == 0 -> {
+                    val days = minutes / 1440
+                    if (days == 1) "1 day before" else "$days days before"
+                }
+                else -> if (minutes == 1) "1 minute before" else "$minutes minutes before"
             }
         }
 }
