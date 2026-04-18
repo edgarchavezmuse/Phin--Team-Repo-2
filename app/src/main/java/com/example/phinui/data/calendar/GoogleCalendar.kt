@@ -164,6 +164,8 @@ object GoogleCalendarRepository {
         return JSONObject().apply {
             put("summary", event.title)
 
+            put("colorId", mapHexToGoogleColorId(event.colorHex))
+
             if (!event.description.isNullOrBlank()) {
                 put("description", event.description)
             }
@@ -265,6 +267,7 @@ object GoogleCalendarRepository {
 
         val location = item.optString("location").ifBlank { null }
         val description = item.optString("description").ifBlank { null }
+        val colorId = item.optString("colorId").ifBlank { null }
 
         return CalendarEvent(
             id = id,
@@ -275,7 +278,8 @@ object GoogleCalendarRepository {
             reminderMinutes = remindersList,
             source = CalendarSource.GOOGLE,
             description = description,
-            isAllDay = isAllDay
+            isAllDay = isAllDay,
+            colorHex = mapGoogleColorIdToHex(colorId)
         )
     }
 
@@ -318,5 +322,35 @@ object GoogleCalendarRepository {
         } finally {
             connection.disconnect()
         }
+    }
+}
+
+private fun mapHexToGoogleColorId(hex: String?): String {
+    return when (hex?.trim()?.uppercase()) {
+        "#7986CB" -> "1"
+        "#33B679" -> "2"
+        "#8E24AA" -> "3"
+        "#E67C73" -> "4"
+        "#F6BF26" -> "5"
+        "#F4511E" -> "6"
+        "#039BE5" -> "7"
+        "#616161" -> "8"
+        "#3F51B5" -> "9"
+        else -> "4"
+    }
+}
+
+private fun mapGoogleColorIdToHex(colorId: String?): String {
+    return when (colorId) {
+        "1" -> "#7986CB"
+        "2" -> "#33B679"
+        "3" -> "#8E24AA"
+        "4" -> "#E67C73"
+        "5" -> "#F6BF26"
+        "6" -> "#F4511E"
+        "7" -> "#039BE5"
+        "8" -> "#616161"
+        "9" -> "#3F51B5"
+        else -> "#FF1F1F"
     }
 }

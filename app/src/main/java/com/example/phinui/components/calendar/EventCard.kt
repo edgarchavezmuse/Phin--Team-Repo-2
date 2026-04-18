@@ -1,5 +1,6 @@
 package com.example.phinui.ui.components.calendar
 
+import android.graphics.Color.parseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,6 +30,8 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.ui.graphics.Color
+import android.graphics.Color as AndroidColor
 
 private val eventDateFormatter = DateTimeFormatter.ofPattern("MMM d")
 
@@ -40,9 +43,12 @@ fun EventCard(
     onClick: () -> Unit,
     showDate: Boolean = false
 ) {
-    val isGoogleEvent = event.source == CalendarSource.GOOGLE
 
-    val accentColor = MaterialTheme.colorScheme.primary
+    val accentColor = try {
+        Color(parseColor(event.colorHex))
+    } catch (_: Exception) {
+        MaterialTheme.colorScheme.primary
+    }
 
 
     ElevatedCard(

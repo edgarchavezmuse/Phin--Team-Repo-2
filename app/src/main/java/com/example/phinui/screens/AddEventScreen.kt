@@ -1,5 +1,6 @@
 package com.example.phinui.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -102,7 +103,17 @@ fun AddEventScreen(
     var customReminderUnit by rememberSaveable { mutableStateOf("Minutes") }
     var showCustomReminderUnitMenu by remember { mutableStateOf(false) }
     var customReminderError by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedColorHex by rememberSaveable { mutableStateOf("#FF1F1F") }
+    var showColorPicker by rememberSaveable { mutableStateOf(false) }
 
+    val presetColors = listOf(
+        "#E67C73", //(red)
+        "#F4511E", // (orange)
+        "#33B679", // (green)
+        "#039BE5", // (blue)
+        "#8E24AA", // (purple)
+        "#D81B60"  // (pink)
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -332,6 +343,101 @@ fun AddEventScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Accent Color",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF111111)
+            )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showColorPicker = !showColorPicker },
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                tonalElevation = 0.dp,
+                shadowElevation = 2.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(22.dp)
+                                .height(22.dp)
+                                .background(
+                                    color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                    shape = RoundedCornerShape(999.dp)
+                                )
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Text(
+                            text = "Tap to choose a color",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF6F6A64)
+                        )
+                    }
+
+                    Text(
+                        text = if (showColorPicker) "Hide" else "Choose",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color(0xFFFF1F1F)
+                    )
+                }
+            }
+
+            if (showColorPicker) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color(0xFFF7F5F2),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        presetColors.forEach { colorHex ->
+                            val swatchColor = Color(android.graphics.Color.parseColor(colorHex))
+                            val isSelected = selectedColorHex == colorHex
+
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .clickable {
+                                        selectedColorHex = colorHex
+                                        showColorPicker = false
+                                    },
+                                shape = RoundedCornerShape(14.dp),
+                                color = swatchColor,
+                                tonalElevation = if (isSelected) 4.dp else 0.dp,
+                                shadowElevation = if (isSelected) 4.dp else 0.dp,
+                                border = if (isSelected) {
+                                    BorderStroke(2.dp, Color.Black)
+                                } else null
+                            ) {}
+                        }
+                    }
+                }
+            }
+        }
+
         if (errorMessage != null) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -374,7 +480,8 @@ fun AddEventScreen(
                                     ?: emptyList(),
                                 source = CalendarSource.LOCAL,
                                 description = trimmedDescription.ifBlank { null },
-                                isAllDay = true
+                                isAllDay = true,
+                                colorHex = selectedColorHex
                             )
                         } else {
                             val start24 = convertTo24Hour(trimmedStartTime)
@@ -395,7 +502,8 @@ fun AddEventScreen(
                                     ?: emptyList(),
                                 source = CalendarSource.LOCAL,
                                 description = trimmedDescription.ifBlank { null },
-                                isAllDay = false
+                                isAllDay = false,
+                                colorHex = selectedColorHex
                             )
                         }
 

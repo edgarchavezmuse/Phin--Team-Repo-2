@@ -55,7 +55,8 @@ class CalendarStorage(private val context: Context) {
                                 }
                             },
                             source = CalendarSource.LOCAL,
-                            isAllDay = obj.optBoolean("isAllDay", false)
+                            isAllDay = obj.optBoolean("isAllDay", false),
+                            colorHex = obj.optString("colorHex", "#FF1F1F")
                         )
                     )
                 }
@@ -89,6 +90,7 @@ class CalendarStorage(private val context: Context) {
                 put("description", event.description ?: "")
                 put("isAllDay", event.isAllDay)
                 put("reminderMinutes", reminderArray)
+                put("colorHex", event.colorHex)
             }
 
             jsonArray.put(obj)

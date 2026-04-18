@@ -16,5 +16,6 @@ data class CalendarEvent(
     val reminderMinutes: List<Int> = emptyList(),
     val source: CalendarSource,
     val description: String? = null,
-    val isAllDay: Boolean = false
+    val isAllDay: Boolean = false,
+    val colorHex: String = "#FF1F1F"
 )
