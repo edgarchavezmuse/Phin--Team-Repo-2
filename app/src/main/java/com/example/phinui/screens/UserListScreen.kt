@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
+import com.example.phinui.components.people.BlockUserDialog
+import com.example.phinui.components.people.SendFriendRequestDialog
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
@@ -53,6 +55,22 @@ fun UserListScreen (
     val currentUserID = chatRepositoryViewModel.currentUserID ?: return
     val friendList = friendRepositoryViewModel.friendsList.value
     var selectedTab by remember { mutableIntStateOf(value = 0) }
+
+    var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    val friendRepository = remember { FriendRepository() }
+    var myName by remember { mutableStateOf("") }
+    val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
+    var message by remember { mutableStateOf<String?>(null) }
+    val generalBlock = false
+
+    LaunchedEffect(Unit) {
+        usersDataBase.collection("users").document(currentUserID).get()
+            .addOnSuccessListener {
+                myName = it.getString("name") ?: ""
+            }
+    }
 
     LaunchedEffect(currentUserID){
         chatRepositoryViewModel.loadMessageRequest(currentUserID)
@@ -155,38 +173,60 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
-//                                trailingContent = {
-//                                    var showMenu by remember { mutableStateOf(false) }
-//                                    Box {
-//                                        IconButton(
-//                                            onClick = { showMenu = !showMenu }
-//                                        ) {
-//                                            Icon(
-//                                                imageVector = Icons.Default.MoreVert,
-//                                                contentDescription = "Options",
-//                                                tint = NavText
-//                                            )
-//                                        }
-//
-//                                        DropdownMenu(
-//                                            expanded = showMenu,
-//                                            onDismissRequest = { showMenu = false },
-//                                            containerColor = Background
-//                                        ) {
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", tint = NavText)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Add Friend", color = NavText)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    //chatRepositoryViewModel.approveRequest(chatID)
-//                                                }
-//                                            )
-//
+                                trailingContent = {
+                                    var showMenu by remember { mutableStateOf(false) }
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMenu = !showMenu }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "Options",
+                                                tint = NavText
+                                            )
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false },
+                                            containerColor = Background
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.PersonAdd,
+                                                            contentDescription = "Add Friend",
+                                                            tint = NavText
+                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Add Friend", color = NavText)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    userToAdd = otherUserID to userName
+                                                }
+                                            )
+
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Delete,
+                                                            contentDescription = "Block User",
+                                                            tint = HeaderRed
+                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Block User", color = HeaderRed)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    userToBlock = otherUserID to userName
+                                                }
+                                            )
+
 //                                            DropdownMenuItem(
 //                                                text = {
 //                                                    Row(verticalAlignment = Alignment.CenterVertically) {
@@ -200,9 +240,9 @@ fun UserListScreen (
 //                                                    //chatRepositoryViewModel.denyRequest(chatID)
 //                                                }
 //                                            )
-//                                        }
-//                                    }
-//                                },
+                                        }
+                                    }
+                                },
                                 onClick = {
                                     navController.navigate(Routes.MESSAGES + "/${user.uid}")
                                 }
@@ -305,6 +345,46 @@ fun UserListScreen (
                 }
             }
         }
+    }
+
+    userToAdd?.let { (uid, name) ->
+        SendFriendRequestDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.sendFriendRequest(
+                    uid,
+                    myName,
+                    {
+                        userToAdd = null
+                    },
+                    {
+                        message = it.message
+                        userToAdd = null
+                    }
+                )
+            },
+            onDismiss = { userToAdd = null }
+        )
+    }
+
+    userToBlock?.let { (uid, name) ->
+        BlockUserDialog(
+            name = name,
+            isFriend = generalBlock,
+            onConfirm = {
+                friendRepository.blockUser(
+                    uid,
+                    {
+                        userToBlock = null
+                    },
+                    {
+                        message = it.message
+                        userToBlock = null
+                    }
+                )
+            },
+            onDismiss = { userToBlock = null }
+        )
     }
 }
 

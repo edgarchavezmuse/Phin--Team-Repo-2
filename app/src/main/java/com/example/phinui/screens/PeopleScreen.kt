@@ -62,6 +62,10 @@ import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.components.people.AlreadyFriendDialog
+import com.example.phinui.components.people.BlockUserDialog
+import com.example.phinui.components.people.SendFriendRequestDialog
+import com.example.phinui.components.people.UnblockUserDialog
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
@@ -375,175 +379,70 @@ fun PeopleScreen() {
     }
 
     userToAdd?.let { (uid, name) ->
-        AlertDialog(
-            onDismissRequest = { userToAdd = null },
-            containerColor = Background,
-            title = {
-                Text("Send friend request?")
-            },
-            text = {
-                Text(
-                    buildAnnotatedString {
-                        append("Do you want to send a friend request to ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(name)
-                        }
-                        append("?")
+        SendFriendRequestDialog(
+            name = name,
+            onConfirm = {
+                repo.sendFriendRequest(
+                    uid,
+                    myName,
+                    {
+                        userToAdd = null
+                    },
+                    {
+                        message = it.message
+                        userToAdd = null
                     }
                 )
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        repo.sendFriendRequest(
-                            uid,
-                            myName,
-                            {
-                                userToAdd = null
-                            },
-                            {
-                                message = it.message
-                                userToAdd = null
-                            }
-                        )
-                    }
-                ) {
-                    Text("Send", color = HeaderRed)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { userToAdd = null }
-                ) {
-                    Text("Cancel", color = NavText)
-                }
-            }
+            onDismiss = { userToAdd = null }
         )
     }
 
     alreadyFriendUser?.let { name ->
-        AlertDialog(
-            onDismissRequest = { alreadyFriendUser = null },
-            containerColor = Background,
-            title = {
-                Text("Already friends")
-            },
-            text = {
-                Text(
-                    buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(name)
-                        }
-                        append(" is already your friend.")
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { alreadyFriendUser = null }
-                ) {
-                    Text("OK", color = HeaderRed)
-                }
-            }
+        AlreadyFriendDialog(
+            name = name,
+            onDismiss = { alreadyFriendUser = null}
         )
+
     }
 
     userToBlock?.let { (uid, name) ->
         val isFriend = friends.any { (friendUid, _) -> friendUid == uid }
-
-        AlertDialog(
-            onDismissRequest = { userToBlock = null },
-            containerColor = Background,
-            title = {
-                Text("Block user?")
-            },
-            text = {
-                Text(
-                    buildAnnotatedString {
-                        append("Are you sure you want to block ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(name)
-                        }
-
-                        if (isFriend) {
-                            append("? This will also remove them from your friends.")
-                        } else {
-                            append("?")
-                        }
+        BlockUserDialog(
+            name = name,
+            isFriend = isFriend,
+            onConfirm = {
+                repo.blockUser(
+                    uid,
+                    {
+                        userToBlock = null
+                    },
+                    {
+                        message = it.message
+                        userToBlock = null
                     }
                 )
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        repo.blockUser(
-                            uid,
-                            {
-                                userToBlock = null
-                            },
-                            {
-                                message = it.message
-                                userToBlock = null
-                            }
-                        )
-                    }
-                ) {
-                    Text("Block", color = HeaderRed)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { userToBlock = null }
-                ) {
-                    Text("Cancel", color = NavText)
-                }
-            }
+            onDismiss = { userToBlock = null }
         )
     }
 
     userToUnblock?.let { (uid, name) ->
-        AlertDialog(
-            onDismissRequest = { userToUnblock = null },
-            containerColor = Background,
-            title = {
-                Text("Unblock user?")
-            },
-            text = {
-                Text(
-                    buildAnnotatedString {
-                        append("Are you sure you want to unblock ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(name)
-                        }
-                        append("?")
+        UnblockUserDialog(
+            name = name,
+            onConfirm = {
+                repo.unblockUser(
+                    uid,
+                    {
+                        userToUnblock = null
+                    },
+                    {
+                        message = it.message
+                        userToUnblock = null
                     }
                 )
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        repo.unblockUser(
-                            uid,
-                            {
-                                userToUnblock = null
-                            },
-                            {
-                                message = it.message
-                                userToUnblock = null
-                            }
-                        )
-                    }
-                ) {
-                    Text("Unblock", color = HeaderRed)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { userToUnblock = null }
-                ) {
-                    Text("Cancel", color = NavText)
-                }
-            }
+            onDismiss = { userToUnblock = null }
         )
     }
 
