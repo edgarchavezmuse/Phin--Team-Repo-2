@@ -30,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +63,7 @@ import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import androidx.compose.material3.*
 
 @Composable
 fun PeopleScreen() {
@@ -491,7 +493,7 @@ fun PeopleScreen() {
 
     val receiverUserName = chatRepositoryViewModel.activeChatUserName.value ?: "Unknown"
     if (chatRepositoryViewModel.showMessageApprovedDialog.value) {
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = {
                 chatRepositoryViewModel.showMessageApprovedDialog.value = false
             },
@@ -502,7 +504,7 @@ fun PeopleScreen() {
                 Text("You already have an active chat with $receiverUserName")
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = {
                         chatRepositoryViewModel.showMessageApprovedDialog.value = false
                     }
