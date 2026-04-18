@@ -3,6 +3,7 @@ package com.example.phinui.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,22 +12,32 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,29 +47,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.example.phinui.components.calendar.event_form.EventInputRow
+import com.example.phinui.components.calendar.event_form.EventPickerRow
+import com.example.phinui.components.calendar.event_form.EventTextArea
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.graphics.Color
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.LocationOn
-import com.example.phinui.components.calendar.event_form.EventInputRow
-import com.example.phinui.components.calendar.event_form.EventPickerRow
-import com.example.phinui.components.calendar.event_form.EventTextArea
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -73,11 +76,25 @@ fun AddEventScreen(
     var eventStartTime by rememberSaveable { mutableStateOf("") }
     var eventEndTime by rememberSaveable { mutableStateOf("") }
 
+    var isAllDay by rememberSaveable { mutableStateOf(false) }
+    var selectedReminder by rememberSaveable { mutableStateOf<Int?>(null) }
+
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showReminderMenu by remember { mutableStateOf(false) }
+
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
-    var showDatePicker by remember { mutableStateOf(false) }
+    val reminderOptions = listOf(
+        "None" to null,
+        "At time of event" to 0,
+        "5 minutes before" to 5,
+        "10 minutes before" to 10,
+        "30 minutes before" to 30,
+        "1 hour before" to 60,
+        "1 day before" to 1440
+    )
 
     Column(
         modifier = Modifier
@@ -95,8 +112,6 @@ fun AddEventScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        var eventNameFocused by remember { mutableStateOf(false) }
-
         EventInputRow(
             label = "Event Name",
             value = eventName,
@@ -105,7 +120,7 @@ fun AddEventScreen(
                 eventName = it
                 errorMessage = null
             },
-            isActive = eventNameFocused,
+            isActive = false,
             modifier = Modifier
         )
 
@@ -123,47 +138,70 @@ fun AddEventScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isAllDay = !isAllDay }
+                .padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            EventPickerRow(
-                label = "Start",
-                value = eventStartTime,
-                placeholder = "Start",
-                icon = Icons.Default.Schedule,
-                isActive = showStartPicker,
-                onClick = {
-                    errorMessage = null
-                    showStartPicker = true
-                },
-                modifier = Modifier.weight(1f)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
             Text(
-                text = "to",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF7A766F)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            EventPickerRow(
-                label = "End",
-                value = eventEndTime,
-                placeholder = "End",
-                icon = Icons.Default.Schedule,
-                isActive = showEndPicker,
-                onClick = {
-                    errorMessage = null
-                    showEndPicker = true
-                },
+                text = "All-day",
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f)
             )
+
+            Switch(
+                checked = isAllDay,
+                onCheckedChange = { isAllDay = it }
+            )
+        }
+
+        if (!isAllDay) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                EventPickerRow(
+                    label = "Start",
+                    value = eventStartTime,
+                    placeholder = "Start",
+                    icon = Icons.Default.Schedule,
+                    isActive = showStartPicker,
+                    onClick = {
+                        errorMessage = null
+                        showStartPicker = true
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "to",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF7A766F)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                EventPickerRow(
+                    label = "End",
+                    value = eventEndTime,
+                    placeholder = "End",
+                    icon = Icons.Default.Schedule,
+                    isActive = showEndPicker,
+                    onClick = {
+                        errorMessage = null
+                        showEndPicker = true
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -184,6 +222,48 @@ fun AddEventScreen(
             placeholder = "Add notes about the event",
             onValueChange = { eventDescription = it }
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Reminder",
+            style = MaterialTheme.typography.bodyMedium,
+            color = NavText
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showReminderMenu = true },
+                shape = RoundedCornerShape(12.dp),
+                tonalElevation = 1.dp,
+                color = Color.White
+            ) {
+                Text(
+                    text = reminderOptions.firstOrNull { it.second == selectedReminder }?.first ?: "None",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            DropdownMenu(
+                expanded = showReminderMenu,
+                onDismissRequest = { showReminderMenu = false }
+            ) {
+                reminderOptions.forEach { (label, value) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            selectedReminder = value
+                            showReminderMenu = false
+                        }
+                    )
+                }
+            }
+        }
 
         if (errorMessage != null) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -208,29 +288,45 @@ fun AddEventScreen(
                 when {
                     trimmedName.isBlank() -> errorMessage = "Please enter an event name."
                     trimmedDate.isBlank() -> errorMessage = "Please enter a date."
-                    trimmedStartTime.isBlank() -> errorMessage = "Please select a start time."
-                    trimmedEndTime.isBlank() -> errorMessage = "Please select an end time."
                     !isValidDate(trimmedDate) -> errorMessage = "Date must be in YYYY-MM-DD format."
+                    !isAllDay && trimmedStartTime.isBlank() -> errorMessage = "Please select a start time."
+                    !isAllDay && trimmedEndTime.isBlank() -> errorMessage = "Please select an end time."
                     else -> {
-                        val start24 = convertTo24Hour(trimmedStartTime)
-                        val end24 = convertTo24Hour(trimmedEndTime)
-
-                        if (end24 <= start24) {
-                            errorMessage = "End time must be after start time."
+                        val newEvent = if (isAllDay) {
+                            CalendarEvent(
+                                id = System.currentTimeMillis().toString(),
+                                title = trimmedName,
+                                start = trimmedDate,
+                                end = trimmedDate,
+                                location = trimmedLocation.ifBlank { null },
+                                reminderMinutes = selectedReminder?.let { listOf(it) } ?: emptyList(),
+                                source = CalendarSource.LOCAL,
+                                description = trimmedDescription.ifBlank { null },
+                                isAllDay = true
+                            )
                         } else {
-                            val newEvent = CalendarEvent(
+                            val start24 = convertTo24Hour(trimmedStartTime)
+                            val end24 = convertTo24Hour(trimmedEndTime)
+
+                            if (end24 <= start24) {
+                                errorMessage = "End time must be after start time."
+                                return@Button
+                            }
+
+                            CalendarEvent(
                                 id = System.currentTimeMillis().toString(),
                                 title = trimmedName,
                                 start = "${trimmedDate}T$start24",
                                 end = "${trimmedDate}T$end24",
                                 location = trimmedLocation.ifBlank { null },
-                                reminderMinutes = emptyList(),
+                                reminderMinutes = selectedReminder?.let { listOf(it) } ?: emptyList(),
                                 source = CalendarSource.LOCAL,
-                                description = trimmedDescription.ifBlank { null }
+                                description = trimmedDescription.ifBlank { null },
+                                isAllDay = false
                             )
-
-                            onSaveEvent(newEvent)
                         }
+
+                        onSaveEvent(newEvent)
                     }
                 }
             }
@@ -284,44 +380,6 @@ fun AddEventScreen(
     }
 }
 
-@Composable
-private fun TimeField(
-    label: String,
-    value: String,
-    onClick: () -> Unit
-) {
-    val accentRed = androidx.compose.ui.graphics.Color(0xFFFF1F1F)
-    val textDark = androidx.compose.ui.graphics.Color(0xFF111111)
-    val hintGray = androidx.compose.ui.graphics.Color(0xFF777777)
-
-    OutlinedTextField(
-        value = formatDisplayDate(value),
-        onValueChange = {},
-        readOnly = true,
-        enabled = false,
-        label = { Text(label) },
-        placeholder = { Text("Select time") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        singleLine = true,
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Default.Schedule,
-                contentDescription = null,
-                tint = accentRed
-            )
-        },
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledBorderColor = hintGray,
-            disabledLabelColor = hintGray,
-            disabledTextColor = textDark,
-            disabledTrailingIconColor = accentRed
-        )
-    )
-}
-
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun EventTimePickerDialog(
@@ -345,10 +403,10 @@ private fun EventTimePickerDialog(
 
     var showDial by rememberSaveable { mutableStateOf(false) }
 
-    val accentRed = androidx.compose.ui.graphics.Color(0xFFFF1F1F)
-    val cardColor = androidx.compose.ui.graphics.Color(0xFFF7F5F2)
-    val titleColor = androidx.compose.ui.graphics.Color(0xFF111111)
-    val bodyColor = androidx.compose.ui.graphics.Color(0xFF444444)
+    val accentRed = Color(0xFFFF1F1F)
+    val cardColor = Color(0xFFF7F5F2)
+    val titleColor = Color(0xFF111111)
+    val bodyColor = Color(0xFF444444)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -397,7 +455,7 @@ private fun EventTimePickerDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                androidx.compose.foundation.layout.Box(
+                Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -430,9 +488,9 @@ private fun EventTimePickerDialog(
                                 )
                             )
                         },
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        colors = ButtonDefaults.buttonColors(
                             containerColor = accentRed,
-                            contentColor = androidx.compose.ui.graphics.Color.White
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(14.dp)
                     ) {
@@ -476,46 +534,6 @@ private fun isValidDate(date: String): Boolean {
     return regex.matches(date)
 }
 
-@Composable
-private fun DateField(
-    label: String,
-    value: String,
-    onClick: () -> Unit
-) {
-    val accentRed = androidx.compose.ui.graphics.Color(0xFFFF1F1F)
-    val textDark = androidx.compose.ui.graphics.Color(0xFF111111)
-    val hintGray = androidx.compose.ui.graphics.Color(0xFF777777)
-
-    val displayValue = if (value.isBlank()) "" else formatDisplayDate(value)
-
-    OutlinedTextField(
-        value = displayValue,
-        onValueChange = {},
-        readOnly = true,
-        enabled = false,
-        label = { Text(label) },
-        placeholder = { Text("Select date") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        singleLine = true,
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Default.DateRange,
-                contentDescription = null,
-                tint = accentRed
-            )
-        },
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledBorderColor = hintGray,
-            disabledLabelColor = hintGray,
-            disabledTextColor = textDark,
-            disabledTrailingIconColor = accentRed
-        )
-    )
-}
-
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun EventDatePickerDialog(
@@ -524,13 +542,12 @@ private fun EventDatePickerDialog(
     onConfirm: (String) -> Unit
 ) {
     val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFF7F5F2)
 
     val initialMillis = remember(initialDate) {
         parseIsoDateToMillis(initialDate)
     }
 
-    val datePickerState = androidx.compose.material3.rememberDatePickerState(
+    val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialMillis
     )
 
@@ -560,28 +577,24 @@ private fun EventDatePickerDialog(
             }
         },
         colors = DatePickerDefaults.colors(
-            containerColor = Color.White, // 👈 THIS fixes purple background
+            containerColor = Color.White
         )
     ) {
         DatePicker(
             state = datePickerState,
             showModeToggle = true,
             colors = DatePickerDefaults.colors(
-                containerColor = Color.White, // 👈 important
+                containerColor = Color.White,
                 titleContentColor = Color.Black,
                 headlineContentColor = Color.Black,
                 weekdayContentColor = Color.DarkGray,
                 subheadContentColor = Color.DarkGray,
-
                 selectedDayContainerColor = accentRed,
                 selectedDayContentColor = Color.White,
-
                 todayDateBorderColor = accentRed,
                 todayContentColor = accentRed,
-
                 selectedYearContainerColor = accentRed,
                 selectedYearContentColor = Color.White,
-
                 dayContentColor = Color.Black,
                 disabledDayContentColor = Color.LightGray
             )

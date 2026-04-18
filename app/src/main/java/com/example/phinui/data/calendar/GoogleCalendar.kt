@@ -3,6 +3,7 @@ package com.example.phinui.data.calendar
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -162,25 +163,63 @@ object GoogleCalendarRepository {
 
         return JSONObject().apply {
             put("summary", event.title)
-            put("description", event.description)
+
+            if (!event.description.isNullOrBlank()) {
+                put("description", event.description)
+            }
 
             if (!event.location.isNullOrBlank()) {
                 put("location", event.location)
             }
 
-            put(
-                "start",
-                JSONObject().apply {
-                    put("dateTime", normalizeDateTime(event.start))
-                    put("timeZone", timeZoneId)
-                }
-            )
+            if (event.isAllDay) {
+                put(
+                    "start",
+                    JSONObject().apply {
+                        put("date", event.start)
+                    }
+                )
+
+                put(
+                    "end",
+                    JSONObject().apply {
+                        put("date", getNextDate(event.end))
+                    }
+                )
+            } else {
+                put(
+                    "start",
+                    JSONObject().apply {
+                        put("dateTime", normalizeDateTime(event.start))
+                        put("timeZone", timeZoneId)
+                    }
+                )
+
+                put(
+                    "end",
+                    JSONObject().apply {
+                        put("dateTime", normalizeDateTime(event.end))
+                        put("timeZone", timeZoneId)
+                    }
+                )
+            }
 
             put(
-                "end",
+                "reminders",
                 JSONObject().apply {
-                    put("dateTime", normalizeDateTime(event.end))
-                    put("timeZone", timeZoneId)
+                    put("useDefault", false)
+
+                    val overrides = JSONArray()
+                    event.reminderMinutes.distinct().forEach { minutes ->
+                        overrides.put(
+                            JSONObject().apply {
+                                put("method", "popup")
+                                put("minutes", minutes)
+                            }
+                        )
+                    }
+
+                    put("overrides", overrides)
                 }
             )
         }
@@ -194,13 +233,20 @@ object GoogleCalendarRepository {
         val startObj = item.optJSONObject("start")
         val endObj = item.optJSONObject("end")
 
-        val start = startObj?.optString("dateTime")?.ifBlank { null }
-            ?: startObj?.optString("date")?.ifBlank { null }
-            ?: ""
+        val startDateTime = startObj?.optString("dateTime")?.ifBlank { null }
+        val endDateTime = endObj?.optString("dateTime")?.ifBlank { null }
+        val startDate = startObj?.optString("date")?.ifBlank { null }
+        val endDate = endObj?.optString("date")?.ifBlank { null }
 
-        val end = endObj?.optString("dateTime")?.ifBlank { null }
-            ?: endObj?.optString("date")?.ifBlank { null }
-            ?: ""
+        val isAllDay = startDate != null
+
+        val start = startDateTime ?: startDate ?: ""
+        val end = if (isAllDay) {
+            // Google returns all-day end dates as exclusive, so shift back by 1 day
+            endDate?.let { getPreviousDate(it) } ?: ""
+        } else {
+            endDateTime ?: endDate ?: ""
+        }
 
         val remindersList = mutableListOf<Int>()
         val remindersObj = item.optJSONObject("reminders")
@@ -228,7 +274,8 @@ object GoogleCalendarRepository {
             location = location,
             reminderMinutes = remindersList,
             source = CalendarSource.GOOGLE,
-            description = description
+            description = description,
+            isAllDay = isAllDay
         )
     }
 
@@ -238,6 +285,13 @@ object GoogleCalendarRepository {
             dateTime.length == 16 && dateTime.contains('T') -> "$dateTime:00"
             else -> dateTime
         }
+    }
+    private fun getNextDate(date: String): String {
+        return LocalDate.parse(date).plusDays(1).toString()
+    }
+
+    private fun getPreviousDate(date: String): String {
+        return LocalDate.parse(date).minusDays(1).toString()
     }
 
     // Deletes events

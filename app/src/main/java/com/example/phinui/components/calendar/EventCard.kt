@@ -121,22 +121,20 @@ fun EventCard(
                     text = formatEventTimeLine(event)
                 )
 
-                if (isGoogleEvent) {
-                    val reminderText = formatReminderText(event.reminderMinutes)
-                    if (reminderText != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        InfoRow(
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = "Reminder",
-                                    tint = accentColor,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            },
-                            text = "Reminder: $reminderText"
-                        )
-                    }
+                val reminderText = formatReminderText(event.reminderMinutes)
+                if (reminderText != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    InfoRow(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Reminder",
+                                tint = accentColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        text = "Reminder: $reminderText"
+                    )
                 }
 
                 event.location?.takeIf { it.isNotBlank() }?.let { location ->

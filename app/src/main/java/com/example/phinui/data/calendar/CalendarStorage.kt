@@ -48,8 +48,14 @@ class CalendarStorage(private val context: Context) {
                             end = obj.optString("end"),
                             location = obj.optString("location").ifBlank { null },
                             description = obj.optString("description").ifBlank { null },
-                            reminderMinutes = emptyList(),
-                            source = CalendarSource.LOCAL
+                            reminderMinutes = buildList {
+                                val remindersJson = obj.optJSONArray("reminderMinutes") ?: JSONArray()
+                                for (j in 0 until remindersJson.length()) {
+                                    add(remindersJson.optInt(j))
+                                }
+                            },
+                            source = CalendarSource.LOCAL,
+                            isAllDay = obj.optBoolean("isAllDay", false)
                         )
                     )
                 }
@@ -69,19 +75,27 @@ class CalendarStorage(private val context: Context) {
         val jsonArray = JSONArray()
 
         events.forEach { event ->
+            val reminderArray = JSONArray()
+            event.reminderMinutes.forEach { minutes ->
+                reminderArray.put(minutes)
+            }
+
             val obj = JSONObject().apply {
                 put("id", event.id)
-            put("title", event.title)
-            put("start", event.start)
-            put("end", event.end)
-            put("location", event.location ?: "")
-            put("description", event.description ?: "")
-        }
-        jsonArray.put(obj)
-    }
+                put("title", event.title)
+                put("start", event.start)
+                put("end", event.end)
+                put("location", event.location ?: "")
+                put("description", event.description ?: "")
+                put("isAllDay", event.isAllDay)
+                put("reminderMinutes", reminderArray)
+            }
 
-    context.dataStore.edit { prefs ->
-        prefs[EVENTS_KEY] = jsonArray.toString()
+            jsonArray.put(obj)
+        }
+
+        context.dataStore.edit { prefs ->
+            prefs[EVENTS_KEY] = jsonArray.toString()
         }
     }
 }
