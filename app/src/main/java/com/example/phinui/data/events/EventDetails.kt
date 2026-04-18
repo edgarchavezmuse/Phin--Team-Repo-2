@@ -68,7 +68,6 @@ fun EventDetails(event: CalendarEvent) {
                 text = formatEventTimeLine(event),
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextDark
-                //fontWeight = FontWeight.SemiBold
             )
         }
 
