@@ -73,12 +73,6 @@ class ChatRepositoryViewModel (
             val filteredOtherUserID = filteredParticipants
                 .mapNotNull { it as? String }
                 .firstOrNull{ it != currentUserID }
-
-//            val otherUserName = filteredOtherUserID?.let { uid ->
-//                friendsList.value.firstOrNull{ it.uid == uid }?.name ?: "Unknown"
-//            } ?: "Unknown"
-//
-//            otherUserName.lowercase()
             filteredOtherUserID?.lowercase() ?: ""
         }
     }

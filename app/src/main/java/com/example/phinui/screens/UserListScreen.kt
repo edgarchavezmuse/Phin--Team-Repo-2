@@ -70,8 +70,6 @@ fun UserListScreen (
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
 
-    val generalBlock = false
-    val friendBlock = false
 
     LaunchedEffect(Unit) {
         usersDataBase.collection("users").document(currentUserID).get()
@@ -448,7 +446,7 @@ fun UserListScreen (
     userToBlock?.let { (uid, name) ->
         BlockUserDialog(
             name = name,
-            isFriend = generalBlock,
+            isFriend = false,
             onConfirm = {
                 friendRepository.blockUser(
                     uid,

@@ -62,6 +62,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.phinui.components.people.ActiveChatDialog
 import com.example.phinui.components.people.AlreadyFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
 import com.example.phinui.components.people.SendFriendRequestDialog
@@ -448,24 +449,10 @@ fun PeopleScreen() {
 
     val receiverUserName = chatRepositoryViewModel.activeChatUserName.value ?: "Unknown"
     if (chatRepositoryViewModel.showMessageApprovedDialog.value) {
-        AlertDialog(
-            onDismissRequest = {
+        ActiveChatDialog(
+            name = receiverUserName,
+            onDismiss = {
                 chatRepositoryViewModel.showMessageApprovedDialog.value = false
-            },
-            title = {
-                Text("Active Chat")
-            },
-            text = {
-                Text("You already have an active chat with $receiverUserName")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        chatRepositoryViewModel.showMessageApprovedDialog.value = false
-                    }
-                ) {
-                    Text("Ok")
-                }
             }
         )
     }

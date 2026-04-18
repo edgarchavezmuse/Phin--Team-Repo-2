@@ -79,6 +79,36 @@ import com.example.phinui.ui.theme.NavText
     )
 }
 
+@Composable fun ActiveChatDialog(
+    name: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Background,
+        title = {
+            Text("Active Chat")
+        },
+        text = {
+            Text(
+                buildAnnotatedString {
+                    append("You already have an active chat with ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(name)
+                    }
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Ok", color = HeaderRed)
+            }
+        }
+    )
+}
+
 @Composable fun RemoveFriendDialog(
     name: String,
     onConfirm: () -> Unit,
