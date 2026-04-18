@@ -44,15 +44,31 @@ class PhinFirebaseMessagingService : FirebaseMessagingService() {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
 
+            "NEW_MESSAGE" ->
+                Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+
             else ->
                 Intent(this, MainActivity::class.java)
-
-
         }
+
+        val notifType = when (type) {
+
+            "FRIEND_REQUEST" ->
+                NotificationType.FRIEND_REQUESTS
+
+            "FRIEND_ACCEPTED" ->
+                NotificationType.FRIEND_REQUESTS
+
+            else ->
+                NotificationType.MESSAGES
+        }
+
 
         NotificationHelper.showNotification(
             context = this,
-            type = NotificationType.FRIEND_REQUESTS,
+            type = notifType,
             title = title,
             body = body,
             intent = launchIntent,
