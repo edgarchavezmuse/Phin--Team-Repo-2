@@ -25,14 +25,18 @@ import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
+import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
+import com.example.phinui.components.people.RemoveFriendDialog
 import com.example.phinui.components.people.SendFriendRequestDialog
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
@@ -58,12 +62,16 @@ fun UserListScreen (
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val friendRepository = remember { FriendRepository() }
     var myName by remember { mutableStateOf("") }
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
+
     val generalBlock = false
+    val friendBlock = false
 
     LaunchedEffect(Unit) {
         usersDataBase.collection("users").document(currentUserID).get()
@@ -127,6 +135,76 @@ fun UserListScreen (
                             if(friend.uid in hideBlockedUsers) return@items
                             UserListItem(
                                 user = friend,
+                                trailingContent = {
+                                    var showMenu by remember { mutableStateOf(false) }
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMenu = !showMenu }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "Options",
+                                                tint = NavText
+                                            )
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false },
+                                            containerColor = Background
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.PersonRemove,
+                                                            contentDescription = "Remove Friend",
+                                                            tint = NavText
+                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Remove Friend", color = NavText)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    friendToRemove = friend.uid to friend.name
+                                                }
+                                            )
+
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Block,
+                                                            contentDescription = "Block User",
+                                                            tint = HeaderRed
+                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("Block User", color = HeaderRed)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showMenu = false
+                                                    friendToBlock = friend.uid to friend.name
+                                                }
+                                            )
+
+//                                            DropdownMenuItem(
+//                                                text = {
+//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
+//                                                        Spacer(modifier = Modifier.width(8.dp))
+//                                                        Text("Delete", color = HeaderRed)
+//                                                    }
+//                                                },
+//                                                onClick = {
+//                                                    showMenu = false
+//                                                    //chatRepositoryViewModel.denyRequest(chatID)
+//                                                }
+//                                            )
+                                        }
+                                    }
+                                },
                                 onClick = {
                                     navController.navigate(Routes.MESSAGES + "/${friend.uid}")
                                 }
@@ -213,7 +291,7 @@ fun UserListScreen (
                                                 text = {
                                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                                         Icon(
-                                                            imageVector = Icons.Default.Delete,
+                                                            imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
                                                             tint = HeaderRed
                                                         )
@@ -386,6 +464,45 @@ fun UserListScreen (
             onDismiss = { userToBlock = null }
         )
     }
+
+    friendToRemove?.let { (uid, name) ->
+        RemoveFriendDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.removeFriend(
+                    friendUid = uid,
+                    onSuccess = {
+                        friendToRemove = null
+                    },
+                    onError = { e ->
+                        message = e.message
+                        friendToRemove = null
+                    }
+                )
+            },
+            onDismiss = { friendToRemove = null }
+        )
+    }
+
+    friendToBlock?.let { (uid, name) ->
+        BlockFriendDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.blockUser(
+                    blockedUid = uid,
+                    onSuccess = {
+                        friendToBlock = null
+                    },
+                    onError = { e ->
+                        message = e.message
+                        friendToBlock = null
+                    }
+                )
+            },
+            onDismiss = { friendToBlock = null }
+        )
+    }
+
 }
 
 @Composable fun UserListItem(
