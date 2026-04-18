@@ -162,8 +162,7 @@ class FriendRepository(
             batch.update(myUserRef, "friends", FieldValue.arrayUnion(fromUid))
             batch.update(otherUserRef, "friends", FieldValue.arrayUnion(myUid))
 
-            // delete request after accepting
-            batch.delete(requestRef)
+            batch.update(requestRef, "status", "accepted")
         }
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener(onError)
