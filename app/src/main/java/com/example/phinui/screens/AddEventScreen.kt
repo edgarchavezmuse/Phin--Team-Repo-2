@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Schedule
@@ -64,6 +66,7 @@ import java.util.Locale
 import java.util.TimeZone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -250,46 +253,80 @@ fun AddEventScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Reminder",
-            style = MaterialTheme.typography.bodyMedium,
-            color = NavText
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
         Box(modifier = Modifier.fillMaxWidth()) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showReminderMenu = true },
-                shape = RoundedCornerShape(12.dp),
-                tonalElevation = 1.dp,
-                color = Color.White
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                tonalElevation = 0.dp,
+                shadowElevation = 2.dp
             ) {
-                Text(
-                    text = selectedReminder?.let { formatSingleReminderLabel(it) } ?: "None",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Reminder",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFF6F6A64)
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = selectedReminder?.let { formatSingleReminderLabel(it) } ?: "None",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF111111)
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Reminder",
+                        tint = Color(0xFFFF1F1F)
+                    )
+                }
             }
 
             DropdownMenu(
                 expanded = showReminderMenu,
-                onDismissRequest = { showReminderMenu = false }
+                onDismissRequest = { showReminderMenu = false },
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .background(
+                        color = Color(0xFFF7F5F2),
+                        shape = RoundedCornerShape(18.dp)
+                    ),
+                containerColor = Color(0xFFF7F5F2),
+                shadowElevation = 8.dp
             ) {
                 reminderOptions.forEach { (label, value) ->
                     DropdownMenuItem(
-                        text = { Text(label) },
+                        text = {
+                            Text(
+                                text = label,
+                                color = Color(0xFF111111),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        },
                         onClick = {
                             showReminderMenu = false
 
                             if (value == Int.MIN_VALUE) {
+                                customReminderAmount = ""
+                                customReminderUnit = "Minutes"
+                                customReminderError = null
                                 showCustomReminderDialog = true
                             } else {
                                 selectedReminder = value
                             }
-                        }
+                        },
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                     )
                 }
             }
@@ -319,8 +356,12 @@ fun AddEventScreen(
                     trimmedName.isBlank() -> errorMessage = "Please enter an event name."
                     trimmedDate.isBlank() -> errorMessage = "Please enter a date."
                     !isValidDate(trimmedDate) -> errorMessage = "Date must be in YYYY-MM-DD format."
-                    !isAllDay && trimmedStartTime.isBlank() -> errorMessage = "Please select a start time."
-                    !isAllDay && trimmedEndTime.isBlank() -> errorMessage = "Please select an end time."
+                    !isAllDay && trimmedStartTime.isBlank() -> errorMessage =
+                        "Please select a start time."
+
+                    !isAllDay && trimmedEndTime.isBlank() -> errorMessage =
+                        "Please select an end time."
+
                     else -> {
                         val newEvent = if (isAllDay) {
                             CalendarEvent(
@@ -329,7 +370,8 @@ fun AddEventScreen(
                                 start = trimmedDate,
                                 end = trimmedDate,
                                 location = trimmedLocation.ifBlank { null },
-                                reminderMinutes = selectedReminder?.let { listOf(it) } ?: emptyList(),
+                                reminderMinutes = selectedReminder?.let { listOf(it) }
+                                    ?: emptyList(),
                                 source = CalendarSource.LOCAL,
                                 description = trimmedDescription.ifBlank { null },
                                 isAllDay = true
@@ -349,7 +391,8 @@ fun AddEventScreen(
                                 start = "${trimmedDate}T$start24",
                                 end = "${trimmedDate}T$end24",
                                 location = trimmedLocation.ifBlank { null },
-                                reminderMinutes = selectedReminder?.let { listOf(it) } ?: emptyList(),
+                                reminderMinutes = selectedReminder?.let { listOf(it) }
+                                    ?: emptyList(),
                                 source = CalendarSource.LOCAL,
                                 description = trimmedDescription.ifBlank { null },
                                 isAllDay = false
@@ -410,24 +453,58 @@ fun AddEventScreen(
     }
 
     if (showCustomReminderDialog) {
+        val accentRed = Color(0xFFFF1F1F)
+        val cardColor = Color(0xFFF7F5F2)
+        val titleColor = Color(0xFF111111)
+        val bodyColor = Color(0xFF444444)
+        val fieldColor = Color.White
+
         AlertDialog(
-            onDismissRequest = { showCustomReminderDialog = false },
+            onDismissRequest = {
+                showCustomReminderDialog = false
+                customReminderError = null
+            },
+            containerColor = cardColor,
+            shape = RoundedCornerShape(28.dp),
             title = {
-                Text("Custom Reminder")
+                Text(
+                    text = "Custom Reminder",
+                    color = titleColor,
+                    style = MaterialTheme.typography.headlineSmall
+                )
             },
             text = {
                 Column {
+                    Text(
+                        text = "Choose when you want to be reminded.",
+                        color = bodyColor,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     OutlinedTextField(
                         value = customReminderAmount,
                         onValueChange = { input ->
                             if (input.all { it.isDigit() }) {
                                 customReminderAmount = input
+                                customReminderError = null
                             }
                         },
                         label = { Text("Amount") },
                         placeholder = { Text("Enter number") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = accentRed,
+                            unfocusedBorderColor = Color(0xFFD6D0C8),
+                            focusedLabelColor = accentRed,
+                            unfocusedLabelColor = Color(0xFF777777),
+                            cursorColor = accentRed,
+                            focusedContainerColor = fieldColor,
+                            unfocusedContainerColor = fieldColor
+                        )
                     )
 
                     customReminderError?.let {
@@ -439,10 +516,11 @@ fun AddEventScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
                         text = "Unit",
+                        color = titleColor,
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -453,26 +531,30 @@ fun AddEventScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { showCustomReminderUnitMenu = true },
-                            shape = RoundedCornerShape(12.dp),
-                            tonalElevation = 1.dp,
-                            color = Color.White
+                            shape = RoundedCornerShape(14.dp),
+                            color = fieldColor,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp
                         ) {
                             Text(
                                 text = customReminderUnit,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = titleColor
                             )
                         }
 
                         DropdownMenu(
                             expanded = showCustomReminderUnitMenu,
-                            onDismissRequest = { showCustomReminderUnitMenu = false }
+                            onDismissRequest = { showCustomReminderUnitMenu = false },
+                            containerColor = Color.White
                         ) {
                             listOf("Minutes", "Hours", "Days").forEach { unit ->
                                 DropdownMenuItem(
                                     text = { Text(unit) },
                                     onClick = {
                                         customReminderUnit = unit
+                                        customReminderError = null
                                         showCustomReminderUnitMenu = false
                                     }
                                 )
@@ -507,16 +589,24 @@ fun AddEventScreen(
                             customReminderError = null
                             showCustomReminderDialog = false
                         }
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = accentRed,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Save")
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showCustomReminderDialog = false }
+                    onClick = {
+                        showCustomReminderDialog = false
+                        customReminderError = null
+                    }
                 ) {
-                    Text("Cancel")
+                    Text("Cancel", color = accentRed)
                 }
             }
         )
