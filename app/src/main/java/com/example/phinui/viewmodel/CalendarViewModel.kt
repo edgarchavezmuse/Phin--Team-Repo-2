@@ -76,7 +76,7 @@ class CalendarViewModel(
     var selectedDateInWeek by mutableStateOf(
         savedStateHandle.get<String>("selectedDateInWeek")
             ?.let { LocalDate.parse(it) }
-            ?: getStartOfWeek(LocalDate.now())
+            ?: LocalDate.now()
     )
         private set
 
