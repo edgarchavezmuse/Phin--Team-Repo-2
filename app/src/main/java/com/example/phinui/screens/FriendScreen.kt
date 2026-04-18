@@ -60,6 +60,8 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
+import com.example.phinui.components.people.BlockFriendDialog
+import com.example.phinui.components.people.RemoveFriendDialog
 
 @Composable
 fun FriendsScreen(
@@ -337,96 +339,40 @@ fun FriendsScreen(
     }
 
     friendToRemove?.let { (uid, name) ->
-        AlertDialog(
-            onDismissRequest = { friendToRemove = null },
-            containerColor = Background,
-            title = {
-                Text("Remove friend?")
-            },
-            text = {
-                Text(
-                    buildAnnotatedString {
-                        append("Are you sure you want to remove ")
-
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(name)
-                        }
-                        append(" from your friends?")
+        RemoveFriendDialog(
+            name = name,
+            onConfirm = {
+                repo.removeFriend(
+                    friendUid = uid,
+                    onSuccess = {
+                        friendToRemove = null
+                    },
+                    onError = { e ->
+                        message = e.message
+                        friendToRemove = null
                     }
                 )
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        repo.removeFriend(
-                            friendUid = uid,
-                            onSuccess = {
-                                friendToRemove = null
-                            },
-                            onError = { e ->
-                                message = e.message
-                                friendToRemove = null
-                            }
-                        )
-                    }
-                ) {
-                    Text("Remove", color = HeaderRed)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { friendToRemove = null }
-                ) {
-                    Text("Cancel", color = NavText)
-                }
-            }
+            onDismiss = { friendToRemove = null }
         )
     }
 
     friendToBlock?.let { (uid, name) ->
-        AlertDialog(
-            onDismissRequest = { friendToBlock = null },
-            containerColor = Background,
-            title = {
-                Text("Block user?")
-            },
-            text = {
-                Text(
-                    buildAnnotatedString {
-                        append("Are you sure you want to block ")
-
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(name)
-                        }
-                        append("? This will also remove them from your friends.")
+        BlockFriendDialog(
+            name = name,
+            onConfirm = {
+                repo.blockUser(
+                    blockedUid = uid,
+                    onSuccess = {
+                        friendToBlock = null
+                    },
+                    onError = { e ->
+                        message = e.message
+                        friendToBlock = null
                     }
                 )
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        repo.blockUser(
-                            blockedUid = uid,
-                            onSuccess = {
-                                friendToBlock = null
-                            },
-                            onError = { e ->
-                                message = e.message
-                                friendToBlock = null
-                            }
-                        )
-                    }
-                ) {
-                    Text("Block", color = HeaderRed)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { friendToBlock = null }
-                ) {
-                    Text("Cancel", color = NavText)
-                }
-            }
+            onDismiss = { friendToBlock = null }
         )
     }
 

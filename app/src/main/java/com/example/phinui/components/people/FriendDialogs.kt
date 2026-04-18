@@ -79,6 +79,75 @@ import com.example.phinui.ui.theme.NavText
     )
 }
 
+@Composable fun ActiveChatDialog(
+    name: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Background,
+        title = {
+            Text("Active Chat")
+        },
+        text = {
+            Text(
+                buildAnnotatedString {
+                    append("You already have an active chat with ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(name)
+                    }
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Ok", color = HeaderRed)
+            }
+        }
+    )
+}
+
+@Composable fun RemoveFriendDialog(
+    name: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Background,
+        title = {
+            Text("Remove Friend?")
+        },
+        text = {
+            Text(
+                buildAnnotatedString {
+                    append("Are you sure you want to remove ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(name)
+                    }
+                    append(" from your friends?")
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text("Remove", color = HeaderRed)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel", color = NavText)
+            }
+        }
+    )
+}
+
 @Composable fun BlockUserDialog(
     name: String,
     isFriend: Boolean,
@@ -105,6 +174,45 @@ import com.example.phinui.ui.theme.NavText
                     else {
                         append("?")
                     }
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text("Block", color = HeaderRed)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel", color = NavText)
+            }
+        }
+    )
+}
+
+@Composable fun BlockFriendDialog(
+    name: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Background,
+        title = {
+            Text("Block user?")
+        },
+        text = {
+            Text(
+                buildAnnotatedString {
+                    append("Are you sure you want to block ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(name)
+                    }
+                    append("? This will also remove them from your friends")
                 }
             )
         },
