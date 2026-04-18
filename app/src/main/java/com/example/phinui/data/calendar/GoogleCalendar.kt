@@ -3,6 +3,7 @@ package com.example.phinui.data.calendar
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -162,25 +163,65 @@ object GoogleCalendarRepository {
 
         return JSONObject().apply {
             put("summary", event.title)
-            put("description", event.description)
+
+            put("colorId", mapHexToGoogleColorId(event.colorHex))
+
+            if (!event.description.isNullOrBlank()) {
+                put("description", event.description)
+            }
 
             if (!event.location.isNullOrBlank()) {
                 put("location", event.location)
             }
 
-            put(
-                "start",
-                JSONObject().apply {
-                    put("dateTime", normalizeDateTime(event.start))
-                    put("timeZone", timeZoneId)
-                }
-            )
+            if (event.isAllDay) {
+                put(
+                    "start",
+                    JSONObject().apply {
+                        put("date", event.start)
+                    }
+                )
+
+                put(
+                    "end",
+                    JSONObject().apply {
+                        put("date", getNextDate(event.end))
+                    }
+                )
+            } else {
+                put(
+                    "start",
+                    JSONObject().apply {
+                        put("dateTime", normalizeDateTime(event.start))
+                        put("timeZone", timeZoneId)
+                    }
+                )
+
+                put(
+                    "end",
+                    JSONObject().apply {
+                        put("dateTime", normalizeDateTime(event.end))
+                        put("timeZone", timeZoneId)
+                    }
+                )
+            }
 
             put(
-                "end",
+                "reminders",
                 JSONObject().apply {
-                    put("dateTime", normalizeDateTime(event.end))
-                    put("timeZone", timeZoneId)
+                    put("useDefault", false)
+
+                    val overrides = JSONArray()
+                    event.reminderMinutes.distinct().forEach { minutes ->
+                        overrides.put(
+                            JSONObject().apply {
+                                put("method", "popup")
+                                put("minutes", minutes)
+                            }
+                        )
+                    }
+
+                    put("overrides", overrides)
                 }
             )
         }
@@ -194,13 +235,20 @@ object GoogleCalendarRepository {
         val startObj = item.optJSONObject("start")
         val endObj = item.optJSONObject("end")
 
-        val start = startObj?.optString("dateTime")?.ifBlank { null }
-            ?: startObj?.optString("date")?.ifBlank { null }
-            ?: ""
+        val startDateTime = startObj?.optString("dateTime")?.ifBlank { null }
+        val endDateTime = endObj?.optString("dateTime")?.ifBlank { null }
+        val startDate = startObj?.optString("date")?.ifBlank { null }
+        val endDate = endObj?.optString("date")?.ifBlank { null }
 
-        val end = endObj?.optString("dateTime")?.ifBlank { null }
-            ?: endObj?.optString("date")?.ifBlank { null }
-            ?: ""
+        val isAllDay = startDate != null
+
+        val start = startDateTime ?: startDate ?: ""
+        val end = if (isAllDay) {
+            // Google returns all-day end dates as exclusive, so shift back by 1 day
+            endDate?.let { getPreviousDate(it) } ?: ""
+        } else {
+            endDateTime ?: endDate ?: ""
+        }
 
         val remindersList = mutableListOf<Int>()
         val remindersObj = item.optJSONObject("reminders")
@@ -219,6 +267,7 @@ object GoogleCalendarRepository {
 
         val location = item.optString("location").ifBlank { null }
         val description = item.optString("description").ifBlank { null }
+        val colorId = item.optString("colorId").ifBlank { null }
 
         return CalendarEvent(
             id = id,
@@ -228,7 +277,9 @@ object GoogleCalendarRepository {
             location = location,
             reminderMinutes = remindersList,
             source = CalendarSource.GOOGLE,
-            description = description
+            description = description,
+            isAllDay = isAllDay,
+            colorHex = mapGoogleColorIdToHex(colorId)
         )
     }
 
@@ -238,6 +289,13 @@ object GoogleCalendarRepository {
             dateTime.length == 16 && dateTime.contains('T') -> "$dateTime:00"
             else -> dateTime
         }
+    }
+    private fun getNextDate(date: String): String {
+        return LocalDate.parse(date).plusDays(1).toString()
+    }
+
+    private fun getPreviousDate(date: String): String {
+        return LocalDate.parse(date).minusDays(1).toString()
     }
 
     // Deletes events
@@ -264,5 +322,43 @@ object GoogleCalendarRepository {
         } finally {
             connection.disconnect()
         }
+    }
+}
+
+private fun mapHexToGoogleColorId(hex: String?): String {
+    return when (hex?.trim()?.uppercase()) {
+        "#DC2127" -> "11" // Red
+        "#FBD75B" -> "5"  // Yellow
+        "#51B749" -> "10" // Green
+        "#5484ED" -> "9"  // Blue
+        "#DBADFF" -> "3"  // Lavender
+        "#46D6DB" -> "7"  // Teal
+
+        // Map your LOCAL colors → closest Google ones
+        "#FF0000", "#FF1F1F" -> "11"
+        "#FF6A00", "#FF9800" -> "5"   // map orange → yellow
+        "#00FF00", "#4CAF50" -> "10"
+        "#00A2FF", "#2196F3" -> "9"
+        "#8A00FF", "#9C27B0" -> "3"
+        "#FF2D95", "#FF69B4", "#E91E63" -> "3"
+
+        else -> "11"
+    }
+}
+
+private fun mapGoogleColorIdToHex(colorId: String?): String {
+    return when (colorId) {
+        "1" -> "#A4BDFC"
+        "2" -> "#7AE7BF"
+        "3" -> "#DBADFF"
+        "4" -> "#FF887C"
+        "5" -> "#FBD75B"
+        "6" -> "#FFB878"
+        "7" -> "#46D6DB"
+        "8" -> "#E1E1E1"
+        "9" -> "#5484ED"
+        "10" -> "#51B749"
+        "11" -> "#DC2127"
+        else -> "#DC2127"
     }
 }
