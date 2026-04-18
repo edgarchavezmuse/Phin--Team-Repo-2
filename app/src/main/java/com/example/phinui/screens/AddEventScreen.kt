@@ -62,6 +62,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -75,17 +77,13 @@ fun AddEventScreen(
     var eventDescription by rememberSaveable { mutableStateOf("") }
     var eventStartTime by rememberSaveable { mutableStateOf("") }
     var eventEndTime by rememberSaveable { mutableStateOf("") }
-
     var isAllDay by rememberSaveable { mutableStateOf(false) }
     var selectedReminder by rememberSaveable { mutableStateOf<Int?>(null) }
-
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showReminderMenu by remember { mutableStateOf(false) }
-
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
-
     val reminderOptions = listOf(
         "None" to null,
         "At time of event" to 0,
@@ -93,8 +91,14 @@ fun AddEventScreen(
         "10 minutes before" to 10,
         "30 minutes before" to 30,
         "1 hour before" to 60,
-        "1 day before" to 1440
+        "1 day before" to 1440,
+        "Custom..." to Int.MIN_VALUE
     )
+    var showCustomReminderDialog by remember { mutableStateOf(false) }
+    var customReminderAmount by rememberSaveable { mutableStateOf("") }
+    var customReminderUnit by rememberSaveable { mutableStateOf("Minutes") }
+    var showCustomReminderUnitMenu by remember { mutableStateOf(false) }
+    var customReminderError by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -264,7 +268,7 @@ fun AddEventScreen(
                 color = Color.White
             ) {
                 Text(
-                    text = reminderOptions.firstOrNull { it.second == selectedReminder }?.first ?: "None",
+                    text = selectedReminder?.let { formatSingleReminderLabel(it) } ?: "None",
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -278,8 +282,13 @@ fun AddEventScreen(
                     DropdownMenuItem(
                         text = { Text(label) },
                         onClick = {
-                            selectedReminder = value
                             showReminderMenu = false
+
+                            if (value == Int.MIN_VALUE) {
+                                showCustomReminderDialog = true
+                            } else {
+                                selectedReminder = value
+                            }
                         }
                     )
                 }
@@ -396,6 +405,119 @@ fun AddEventScreen(
             onConfirm = { selectedDate ->
                 eventDate = selectedDate
                 showDatePicker = false
+            }
+        )
+    }
+
+    if (showCustomReminderDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomReminderDialog = false },
+            title = {
+                Text("Custom Reminder")
+            },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = customReminderAmount,
+                        onValueChange = { input ->
+                            if (input.all { it.isDigit() }) {
+                                customReminderAmount = input
+                            }
+                        },
+                        label = { Text("Amount") },
+                        placeholder = { Text("Enter number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    customReminderError?.let {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Unit",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showCustomReminderUnitMenu = true },
+                            shape = RoundedCornerShape(12.dp),
+                            tonalElevation = 1.dp,
+                            color = Color.White
+                        ) {
+                            Text(
+                                text = customReminderUnit,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showCustomReminderUnitMenu,
+                            onDismissRequest = { showCustomReminderUnitMenu = false }
+                        ) {
+                            listOf("Minutes", "Hours", "Days").forEach { unit ->
+                                DropdownMenuItem(
+                                    text = { Text(unit) },
+                                    onClick = {
+                                        customReminderUnit = unit
+                                        showCustomReminderUnitMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val amount = customReminderAmount.toIntOrNull()
+
+                        val error = when (customReminderUnit) {
+                            "Minutes" -> if (amount == null || amount !in 1..59) "Minutes must be between 1 and 59." else null
+                            "Hours" -> if (amount == null || amount !in 1..23) "Hours must be between 1 and 23." else null
+                            "Days" -> if (amount == null || amount !in 1..30) "Days must be between 1 and 30." else null
+                            else -> "Invalid reminder."
+                        }
+
+                        if (error != null) {
+                            customReminderError = error
+                        } else {
+                            val totalMinutes = when (customReminderUnit) {
+                                "Minutes" -> amount!!
+                                "Hours" -> amount!! * 60
+                                "Days" -> amount!! * 1440
+                                else -> amount!!
+                            }
+
+                            selectedReminder = totalMinutes
+                            customReminderError = null
+                            showCustomReminderDialog = false
+                        }
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showCustomReminderDialog = false }
+                ) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -647,5 +769,29 @@ private fun formatDisplayDate(date: String): String {
         if (parsed != null) output.format(parsed) else date
     } catch (e: Exception) {
         date
+    }
+}
+
+private fun formatSingleReminderLabel(minutes: Int): String {
+    return when (minutes) {
+        0 -> "At time of event"
+        5 -> "5 minutes before"
+        10 -> "10 minutes before"
+        30 -> "30 minutes before"
+        60 -> "1 hour before"
+        1440 -> "1 day before"
+        else -> when {
+            minutes % 1440 == 0 -> {
+                val days = minutes / 1440
+                if (days == 1) "1 day before" else "$days days before"
+            }
+            minutes % 60 == 0 -> {
+                val hours = minutes / 60
+                if (hours == 1) "1 hour before" else "$hours hours before"
+            }
+            else -> {
+                if (minutes == 1) "1 minute before" else "$minutes minutes before"
+            }
+        }
     }
 }
