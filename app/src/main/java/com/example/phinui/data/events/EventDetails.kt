@@ -20,9 +20,9 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import java.time.format.DateTimeFormatter
-import java.time.OffsetDateTime
-import androidx.compose.material.icons.filled.CalendarToday
 import com.example.phinui.data.calendar.eventDate
+import androidx.compose.material.icons.filled.Notifications
+import com.example.phinui.data.calendar.formatReminderText
 
 
 private val PrimaryRed = Color(0xFFE53935)
@@ -68,8 +68,23 @@ fun EventDetails(event: CalendarEvent) {
                 text = formatEventTimeLine(event),
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextDark
-                //fontWeight = FontWeight.SemiBold
             )
+        }
+
+        val reminderText = formatReminderText(event.reminderMinutes)
+        if (reminderText != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Reminder",
+                    tint = PrimaryRed
+                )
+                Text(
+                    text = "Reminder: $reminderText",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMuted
+                )
+            }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

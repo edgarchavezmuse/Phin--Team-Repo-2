@@ -154,15 +154,17 @@ class FriendRepository(
     ) {
         val myUid = currentUid() ?: return
 
-        db.runBatch { batch ->
-            val requestRef = db.collection("friend_requests").document(requestId)
-            val myUserRef = db.collection("users").document(myUid)
-            val otherUserRef = db.collection("users").document(fromUid)
+        val myUserRef = db.collection("users").document(myUid)
+        val otherUserRef = db.collection("users").document(fromUid)
+        val requestRef = db.collection("friend_requests").document(requestId)
 
-            batch.update(requestRef, "status", "accepted")
+        db.runBatch { batch ->
             batch.update(myUserRef, "friends", FieldValue.arrayUnion(fromUid))
             batch.update(otherUserRef, "friends", FieldValue.arrayUnion(myUid))
-        }.addOnSuccessListener { onSuccess() }
+
+            batch.update(requestRef, "status", "accepted")
+        }
+            .addOnSuccessListener { onSuccess() }
             .addOnFailureListener(onError)
     }
 
@@ -173,7 +175,7 @@ class FriendRepository(
     ) {
         db.collection("friend_requests")
             .document(requestId)
-            .update("status", "declined")
+            .delete()
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener(onError)
     }

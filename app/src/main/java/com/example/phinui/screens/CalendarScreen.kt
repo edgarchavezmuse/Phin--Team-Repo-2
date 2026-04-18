@@ -46,6 +46,11 @@ import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 
 private val PrimaryRed = Color(0xFFE53935)
@@ -101,6 +106,8 @@ fun CalendarScreen(
         .distinctBy { "${it.title.trim().lowercase()}-${it.start.take(16)}" }
 
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
+
+    val showDeleteConfirmation = remember { mutableStateOf(false) }
 
     /*
      * Auto-refresh calendar when screen is reopened
@@ -343,63 +350,14 @@ fun CalendarScreen(
 
             // If user taps 'Remove from calendar' for removal of event
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
-
-                        // Google event removal
-                        if (isGoogleEvent) {
-                            coroutineScope.launch {
-                                try {
-                                    calendarViewModel.deleteGoogleEvent(eventToDelete)
-
-                                    // Display confirmation message
-                                    Toast.makeText(
-                                        context,
-                                        "${eventToDelete.title} removed from Google Calendar",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        context,
-                                        e.message ?: "Failed to remove Google event.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } finally {
-                                    showRemoveDialog.value = false
-                                }
-                            }
-                            // Local event removal
-                        } else {
-                            // Remove from CalendarStorage
-                            coroutineScope.launch(Dispatchers.IO) {
-                                storage.removeEvent(eventToDelete)
-
-                                // Update calendar screen
-                                val updatedEvents = storage.loadEvents()
-                                withContext(Dispatchers.Main) {
-                                    savedEvents.clear()
-                                    savedEvents.addAll(updatedEvents)
-
-                                    // Display confirmation message
-                                    Toast.makeText(
-                                        context,
-                                        "${eventToDelete.title} removed from Phin calendar",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    // Close dialog box
-                                    showRemoveDialog.value = false
-                                }
-                            }
-                        }
+                        showDeleteConfirmation.value = true
                     },
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryRed,
-                        contentColor = Color.White
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = PrimaryRed
                     )
                 ) {
-                    // Confirm button for removing event
                     Text(
                         text = "Remove from calendar",
                         fontWeight = FontWeight.SemiBold
@@ -413,7 +371,107 @@ fun CalendarScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = TextMuted,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        )
+    }
+
+    if (showDeleteConfirmation.value && selectedEvent.value != null) {
+        val eventToDelete = selectedEvent.value!!
+        val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
+
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation.value = false },
+            containerColor = SoftBackground,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = "Remove Event?",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+            },
+            text = {
+                Text(
+                    buildAnnotatedString {
+                        append("Are you sure you want to remove ")
+
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append("\"${eventToDelete.title}\"")
+                        }
+
+                        append(" from your calendar?")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (isGoogleEvent) {
+                            coroutineScope.launch {
+                                try {
+                                    calendarViewModel.deleteGoogleEvent(eventToDelete)
+
+                                    Toast.makeText(
+                                        context,
+                                        "${eventToDelete.title} removed from Google Calendar",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        e.message ?: "Failed to remove Google event.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } finally {
+                                    showDeleteConfirmation.value = false
+                                    showRemoveDialog.value = false
+                                }
+                            }
+                        } else {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                storage.removeEvent(eventToDelete)
+                                val updatedEvents = storage.loadEvents()
+
+                                withContext(Dispatchers.Main) {
+                                    savedEvents.clear()
+                                    savedEvents.addAll(updatedEvents)
+
+                                    Toast.makeText(
+                                        context,
+                                        "${eventToDelete.title} removed from Phin calendar",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    showDeleteConfirmation.value = false
+                                    showRemoveDialog.value = false
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = PrimaryRed
+                    )
+                ) {
+                    Text(
+                        text = "Remove",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteConfirmation.value = false }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = Color.Black,
                         fontWeight = FontWeight.Medium
                     )
                 }
