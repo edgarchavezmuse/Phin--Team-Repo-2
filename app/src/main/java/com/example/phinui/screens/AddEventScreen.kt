@@ -143,19 +143,40 @@ fun AddEventScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(20.dp)
+                )
                 .clickable { isAllDay = !isAllDay }
-                .padding(vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "All-day",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "All-day",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color(0xFF3A342E)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = "No start or end time",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF8A847D)
+                )
+            }
 
             Switch(
                 checked = isAllDay,
-                onCheckedChange = { isAllDay = it }
+                onCheckedChange = { isAllDay = it },
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFFFF2A2A),
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFE7E2DC),
+                    uncheckedBorderColor = Color(0xFFE7E2DC)
+                )
             )
         }
 
