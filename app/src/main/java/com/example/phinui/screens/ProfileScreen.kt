@@ -1,6 +1,7 @@
 package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -19,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,6 +38,15 @@ import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.TextButton
+import com.example.phinui.ui.theme.PrimaryRed
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
@@ -95,16 +106,38 @@ fun ProfileScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Surface(
-            modifier = Modifier.size(96.dp),
-            shape = CircleShape,
-            color = Color(0xFFFFEFEF)
+        Box(
+            modifier = Modifier.size(110.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color(0xFFD32F2F)
+            Surface(
+                modifier = Modifier.size(96.dp),
+                shape = CircleShape,
+                color = Color(0xFFFFEFEF)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = initial,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color(0xFFD32F2F)
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable { isEditing = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = "Edit profile",
+                    tint = Color(0xFFD32F2F),
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
@@ -137,89 +170,106 @@ fun ProfileScreen(navController: NavHostController) {
         if (isLoading) {
             Text("Loading profile...", color = Color.Gray)
         } else {
-            if (isEditing) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Full Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = major,
-                    onValueChange = { major = it },
-                    label = { Text("Major") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = bio,
-                    onValueChange = { bio = it },
-                    label = { Text("Bio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 4,
-                    maxLines = 6
-                )
-            } else {
-                ProfileInfoRow(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = null,
-                            tint = Color(0xFFD32F2F)
+            AnimatedContent(
+                targetState = isEditing,
+                transitionSpec = {
+                    (fadeIn() + slideInVertically { it / 6 })
+                        .togetherWith(fadeOut() + slideOutVertically { -it / 6 })
+                },
+                label = "profile_edit_transition"
+            ) { editing ->
+                if (editing) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Full Name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
                         )
-                    },
-                    label = "Full Name",
-                    value = if (name.isNotBlank()) name else "Not added"
-                )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileInfoRow(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Email,
-                            contentDescription = null,
-                            tint = Color(0xFFD32F2F)
+                        OutlinedTextField(
+                            value = major,
+                            onValueChange = { major = it },
+                            label = { Text("Major") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
                         )
-                    },
-                    label = "Email Address",
-                    value = email
-                )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileInfoRow(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.School,
-                            contentDescription = null,
-                            tint = Color(0xFFD32F2F)
+                        OutlinedTextField(
+                            value = bio,
+                            onValueChange = { bio = it },
+                            label = { Text("Bio") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 4,
+                            maxLines = 6
                         )
-                    },
-                    label = "Major",
-                    value = if (major.isNotBlank()) major else "Not added"
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                ProfileInfoRow(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.ShortText,
-                            contentDescription = null,
-                            tint = Color(0xFFD32F2F)
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        ProfileInfoRow(
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Person,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD32F2F)
+                                )
+                            },
+                            label = "Full Name",
+                            value = if (name.isNotBlank()) name else "Not added"
                         )
-                    },
-                    label = "Bio",
-                    value = if (bio.isNotBlank()) bio else "Not added"
-                )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        ProfileInfoRow(
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Email,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD32F2F)
+                                )
+                            },
+                            label = "Email Address",
+                            value = email
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        ProfileInfoRow(
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.School,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD32F2F)
+                                )
+                            },
+                            label = "Major",
+                            value = if (major.isNotBlank()) major else "Not added"
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        ProfileInfoRow(
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.ShortText,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD32F2F)
+                                )
+                            },
+                            label = "Bio",
+                            value = if (bio.isNotBlank()) bio else "Not added"
+                        )
+                    }
+                }
             }
         }
 
@@ -242,97 +292,105 @@ fun ProfileScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(28.dp))
 
         if (isEditing) {
-            Button(
-                onClick = {
-                    val uid = user?.uid ?: return@Button
-                    isSaving = true
-                    errorMessage = null
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
 
-                    val updatedProfile = mapOf(
-                        "name" to name.trim(),
-                        "major" to major.trim(),
-                        "bio" to bio.trim()
-                    )
-
-                    db.collection("users")
-                        .document(uid)
-                        .set(updatedProfile, com.google.firebase.firestore.SetOptions.merge())
-                        .addOnSuccessListener {
-                            isSaving = false
+                TextButton(
+                    onClick = {
+                        user?.uid?.let { uid ->
+                            db.collection("users")
+                                .document(uid)
+                                .get()
+                                .addOnSuccessListener { document ->
+                                    name = document.getString("name") ?: ""
+                                    major = document.getString("major") ?: ""
+                                    bio = document.getString("bio") ?: ""
+                                    isEditing = false
+                                }
+                                .addOnFailureListener {
+                                    isEditing = false
+                                }
+                        } ?: run {
                             isEditing = false
                         }
-                        .addOnFailureListener {
-                            isSaving = false
-                            errorMessage = "Failed to save profile."
-                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = Color(0xFFD32F2F),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        val uid = user?.uid ?: return@Button
+                        isSaving = true
+                        errorMessage = null
+
+                        val updatedProfile = mapOf(
+                            "name" to name.trim(),
+                            "major" to major.trim(),
+                            "bio" to bio.trim()
+                        )
+
+                        db.collection("users")
+                            .document(uid)
+                            .set(updatedProfile, com.google.firebase.firestore.SetOptions.merge())
+                            .addOnSuccessListener {
+                                isSaving = false
+                                isEditing = false
+                            }
+                            .addOnFailureListener { e ->
+                                isSaving = false
+                                errorMessage = e.message ?: "Failed to save profile."
+                            }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryRed,
+                        contentColor = Color.White
+                    ),
+                    enabled = !isSaving
+                ) {
+                    Text(if (isSaving) "Saving..." else "Save")
+                }
+            }
+        } else {
+
+            Button(
+                onClick = {
+                    auth.signOut()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp),
+                    .height(48.dp),
+                shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE53935),
+                    containerColor = PrimaryRed,
                     contentColor = Color.White
                 ),
-                enabled = !isSaving
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Save,
-                    contentDescription = "Save profile"
+                    imageVector = Icons.Outlined.Logout,
+                    contentDescription = "Log out"
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isSaving) "Saving..." else "Save Changes")
+                Text("Log Out")
             }
-        } else {
-            Button(
-                onClick = { isEditing = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE53935),
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Edit profile"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Edit Profile")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Button(
-            onClick = {
-                auth.signOut()
-                navController.navigate(Routes.LOGIN) {
-                    popUpTo(Routes.HOME) { inclusive = true }
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFE53935),
-                contentColor = Color.White
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Logout,
-                contentDescription = "Log out"
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Log Out",
-                style = MaterialTheme.typography.titleMedium
-            )
         }
     }
 }
@@ -351,7 +409,7 @@ fun ProfileInfoRow(
             modifier = Modifier
                 .size(42.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF7F7F7)),
+                .background(Color(0xFFFFEBEE)),
             contentAlignment = Alignment.Center
         ) {
             icon()
