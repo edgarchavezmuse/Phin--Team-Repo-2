@@ -90,12 +90,12 @@ fun AddScheduleSheet(
 
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
     val presetColors = listOf(
-        "#FF1F1F",
-        "#FF9800",
-        "#4CAF50",
-        "#2196F3",
-        "#9C27B0",
-        "#FF69B4"
+        "#FF2A2A", // Bright Red
+        "#FFD600", // Bright Yellow
+        "#00C853", // Bright Green
+        "#0091FF", // Bright Blue
+        "#B388FF", // Bright Lavender
+        "#00E5FF"  // Bright Teal
     )
 
     val accentRed = Color(0xFFFF1F1F)

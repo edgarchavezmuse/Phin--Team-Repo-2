@@ -107,12 +107,12 @@ fun AddEventScreen(
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
 
     val presetColors = listOf(
-        "#E67C73", //(red)
-        "#F4511E", // (orange)
-        "#33B679", // (green)
-        "#039BE5", // (blue)
-        "#8E24AA", // (purple)
-        "#D81B60"  // (pink)
+        "#DC2127", // Red
+        "#FBD75B", // Yellow
+        "#51B749", // Green
+        "#5484ED", // Blue
+        "#DBADFF", // Lavender
+        "#46D6DB"  // Teal
     )
     Column(
         modifier = Modifier

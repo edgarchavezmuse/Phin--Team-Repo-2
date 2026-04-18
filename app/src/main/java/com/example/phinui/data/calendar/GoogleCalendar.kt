@@ -327,30 +327,38 @@ object GoogleCalendarRepository {
 
 private fun mapHexToGoogleColorId(hex: String?): String {
     return when (hex?.trim()?.uppercase()) {
-        "#7986CB" -> "1"
-        "#33B679" -> "2"
-        "#8E24AA" -> "3"
-        "#E67C73" -> "4"
-        "#F6BF26" -> "5"
-        "#F4511E" -> "6"
-        "#039BE5" -> "7"
-        "#616161" -> "8"
-        "#3F51B5" -> "9"
-        else -> "4"
+        "#DC2127" -> "11" // Red
+        "#FBD75B" -> "5"  // Yellow
+        "#51B749" -> "10" // Green
+        "#5484ED" -> "9"  // Blue
+        "#DBADFF" -> "3"  // Lavender
+        "#46D6DB" -> "7"  // Teal
+
+        // Map your LOCAL colors → closest Google ones
+        "#FF0000", "#FF1F1F" -> "11"
+        "#FF6A00", "#FF9800" -> "5"   // map orange → yellow
+        "#00FF00", "#4CAF50" -> "10"
+        "#00A2FF", "#2196F3" -> "9"
+        "#8A00FF", "#9C27B0" -> "3"
+        "#FF2D95", "#FF69B4", "#E91E63" -> "3"
+
+        else -> "11"
     }
 }
 
 private fun mapGoogleColorIdToHex(colorId: String?): String {
     return when (colorId) {
-        "1" -> "#7986CB"
-        "2" -> "#33B679"
-        "3" -> "#8E24AA"
-        "4" -> "#E67C73"
-        "5" -> "#F6BF26"
-        "6" -> "#F4511E"
-        "7" -> "#039BE5"
-        "8" -> "#616161"
-        "9" -> "#3F51B5"
-        else -> "#FF1F1F"
+        "1" -> "#A4BDFC"
+        "2" -> "#7AE7BF"
+        "3" -> "#DBADFF"
+        "4" -> "#FF887C"
+        "5" -> "#FBD75B"
+        "6" -> "#FFB878"
+        "7" -> "#46D6DB"
+        "8" -> "#E1E1E1"
+        "9" -> "#5484ED"
+        "10" -> "#51B749"
+        "11" -> "#DC2127"
+        else -> "#DC2127"
     }
 }
