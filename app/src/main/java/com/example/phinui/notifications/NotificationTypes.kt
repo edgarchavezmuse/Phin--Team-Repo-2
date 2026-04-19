@@ -16,7 +16,13 @@ enum class NotificationType(
 
     FRIEND_REQUESTS(
         "friend_request_channel",
-        "Friend Requests V2",
+        "Friend Requests V3",
+        NotificationManager.IMPORTANCE_HIGH
+    ),
+
+    MESSAGES(
+        "message_channel",
+        "Messages V1",
         NotificationManager.IMPORTANCE_HIGH
     )
 }

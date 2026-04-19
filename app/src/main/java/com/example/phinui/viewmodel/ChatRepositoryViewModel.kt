@@ -1,19 +1,15 @@
 package com.example.phinui.viewmodel
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.components.messages.User
 import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -24,7 +20,6 @@ class ChatRepositoryViewModel (
     val firebaseAuthenticated = FirebaseAuth.getInstance()
     val firebaseFirestoreAuthenticated = FirebaseFirestore.getInstance()
     val currentUserID = firebaseAuthenticated.currentUser?.uid
-    //val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
     val approvedChats = mutableStateOf<List<Map<String, Any>>>(emptyList())
     val messageRequests = mutableStateOf<List<Map<String, Any>>>(emptyList())
 
@@ -58,7 +53,7 @@ class ChatRepositoryViewModel (
     val getGeneralChats = derivedStateOf {
         val friendIDs = friendsList.value.map { it.uid }.toSet()
 
-        approvedChats.value.filter{ chat ->
+        val filterOutFriends = approvedChats.value.filter{ chat ->
             val participants = chat["participants"] as? List<*> ?: return@filter false
 
             val otherUserID = participants
@@ -66,6 +61,14 @@ class ChatRepositoryViewModel (
                 .firstOrNull{ it != currentUserID }
 
             otherUserID!= null && otherUserID !in friendIDs
+        }
+
+        filterOutFriends.sortedBy { chat ->
+            val filteredParticipants = chat["participants"] as? List<*> ?: return@sortedBy ""
+            val filteredOtherUserID = filteredParticipants
+                .mapNotNull { it as? String }
+                .firstOrNull{ it != currentUserID }
+            filteredOtherUserID?.lowercase() ?: ""
         }
     }
 
@@ -82,24 +85,73 @@ class ChatRepositoryViewModel (
     }
 
     fun sendMessageRequest(senderUserID: String, receiverUserID: String, receiverUserName: String?) {
-        val checkChat = approvedChats.value.firstOrNull{ chat ->
-            val participants = chat["participants"] as? List<*>
-            val userIDs = participants?.mapNotNull { it as? String} ?: emptyList()
+        val currentUserDocument = firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(senderUserID)
 
-            senderUserID in userIDs && receiverUserID in userIDs
-        }
+        val targetUserDocument = firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(receiverUserID)
 
-        val isMessageRequestApproved = checkChat?.get("messageRequestApproved") as? Boolean ?: false
-        if (isMessageRequestApproved) {
-            showMessageApprovedDialog.value = true
-            activeChatUserName.value = receiverUserName
+        firebaseFirestoreAuthenticated.runTransaction { transaction ->
+            val currentUserDocumentSnapshot = transaction.get(currentUserDocument)
+            val targetUserDocumentSnapshot = transaction.get(targetUserDocument)
+            val currentUserBlockedList =
+                (currentUserDocumentSnapshot.get("blocked") as? List<*> ?: emptyList<Any>())
+                    .mapNotNull { it as? String }
+            val targetUserBlockedList =
+                (targetUserDocumentSnapshot.get("blocked") as? List<*> ?: emptyList<Any>())
+                    .mapNotNull { it as? String }
+
+            if (currentUserBlockedList.contains(receiverUserID)) {
+                // exit function
+                throw Exception("CURRENT_USER_BLOCKED_TARGET_USER")
+            }
+
+            if (targetUserBlockedList.contains(senderUserID)) {
+                // exit function
+                throw Exception("TARGET_USER_BLOCKED_CURRENT_USER")
+            }
+
+            val checkChat = approvedChats.value.firstOrNull { chat ->
+                val participants = chat["participants"] as? List<*>
+                val userIDs = participants?.mapNotNull { it as? String } ?: emptyList()
+
+                senderUserID in userIDs && receiverUserID in userIDs
+            }
+
+            val isMessageRequestApproved =
+                checkChat?.get("messageRequestApproved") as? Boolean ?: false
+            if (isMessageRequestApproved) {
+                return@runTransaction "CHAT_EXISTS"
+            }
+
+            return@runTransaction "SEND_REQUEST"
         }
-        else {
-            try {
-                chatRepository.sendMessageRequest(senderUserID, receiverUserID)
-                confirmSendMessageRequest.value = "Message request sent"
-            } catch (e: Exception) {
-                confirmSendMessageRequest.value = e.message ?: "Failed to send request."
+            .addOnSuccessListener { result ->
+                when (result) {
+                    "CHAT_EXISTS" -> {
+                        showMessageApprovedDialog.value = true
+                        activeChatUserName.value = receiverUserName
+                    }
+                    "SEND_REQUEST" -> {
+                        chatRepository.sendMessageRequest(senderUserID, receiverUserID)
+                        confirmSendMessageRequest.value = "Message request sent"
+                    }
+                }
+            }
+
+            .addOnFailureListener { error ->
+            when (error.message) {
+                "CURRENT_USER_BLOCKED_TARGET_USER" -> {
+                    confirmSendMessageRequest.value = "Unable to send request"
+                }
+                "TARGET_USER_BLOCKED_CURRENT_USER" -> {
+                    confirmSendMessageRequest.value = "Unable to send request"
+                }
+                else -> {
+                    confirmSendMessageRequest.value = "Failed to send request"
+                }
             }
         }
     }
@@ -110,6 +162,19 @@ class ChatRepositoryViewModel (
 
     fun denyRequest(chatID: String) {
         chatRepository.denyMessageRequest(chatID)
+    }
+
+    fun onDeleteMessage(
+        message: Map<String, Any>,
+        chatID: String
+    ) {
+        val senderID = message["senderID"] as? String ?: return
+        val messageID = message["messageID"] as? String ?: return
+        val currentUserID = currentUserID ?: return
+
+        if (senderID != currentUserID) return
+
+        chatRepository.deleteMessage(chatID, messageID)
     }
 
 }

@@ -12,6 +12,14 @@ import com.google.firebase.messaging.RemoteMessage
 
 class PhinFirebaseMessagingService : FirebaseMessagingService() {
 
+    val deepLinkTypes = setOf(
+        "FRIEND_REQUEST",
+        "FRIEND_ACCEPTED",
+        "NEW_MESSAGE",
+        "MESSAGE_REQUEST",
+        "ACCEPT_MESSAGE_REQUEST"
+    )
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         // send the token to the database
@@ -30,23 +38,33 @@ class PhinFirebaseMessagingService : FirebaseMessagingService() {
         val title = remoteMessage.data["title"] ?: "Notification"
         val body = remoteMessage.data["body"] ?: ""
         val type = remoteMessage.data["type"]
+        val uri = remoteMessage.data["uri"]
 
-        val launchIntent = when (type) {
-
-            "FRIEND_REQUEST" ->
-                Intent(Intent.ACTION_VIEW, Uri.parse("phin://friends")).apply {
+        val launchIntent =
+            if (type in deepLinkTypes) {
+                Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
+            } else {
+                Intent(this, MainActivity::class.java)
+            }
+
+        val notifType = when (type) {
+
+            "FRIEND_REQUEST" ->
+                NotificationType.FRIEND_REQUESTS
+
+            "FRIEND_ACCEPTED" ->
+                NotificationType.FRIEND_REQUESTS
 
             else ->
-                Intent(this, MainActivity::class.java)
-
-
+                NotificationType.MESSAGES
         }
+
 
         NotificationHelper.showNotification(
             context = this,
-            type = NotificationType.FRIEND_REQUESTS,
+            type = notifType,
             title = title,
             body = body,
             intent = launchIntent,

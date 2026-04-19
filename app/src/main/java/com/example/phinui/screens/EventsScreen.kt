@@ -113,7 +113,7 @@ fun EventsScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = TextMuted,
+                        color = Color.Black,
                         fontWeight = FontWeight.Medium
                     )
                 }

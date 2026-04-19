@@ -199,8 +199,13 @@ fun PhinNavHost(
                 navArgument("receiverID") {
                     type = NavType.StringType
                 }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "phin://messages/{receiverID}"
+                }
             )
-            ) { backStackEntry ->
+        ) { backStackEntry ->
             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: ""
             val receiverID = backStackEntry.arguments?.getString("receiverID") ?: ""
 
@@ -211,7 +216,14 @@ fun PhinNavHost(
             )
         }
 
-        composable (Routes.USERLIST) {
+        composable(
+            Routes.USERLIST,
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "phin://userlist"
+                }
+            )
+        ) {
             UserListScreen(navController = navController)
         }
 

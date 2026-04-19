@@ -16,7 +16,7 @@ class ScheduleRepository(
         db.collection("users")
             .document(uid)
             .collection("schedule")
-            .add(scheduleClass)
+            .add(scheduleClass.copy(id = ""))
             .await()
     }
 
@@ -33,5 +33,37 @@ class ScheduleRepository(
         return snapshot.documents.mapNotNull { doc ->
             doc.toObject(ScheduleClass::class.java)?.copy(id = doc.id)
         }
+    }
+
+    suspend fun updateClass(scheduleClass: ScheduleClass) {
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User is not logged in")
+
+        if (scheduleClass.id.isBlank()) {
+            throw IllegalStateException("Class ID is missing")
+        }
+
+        db.collection("users")
+            .document(uid)
+            .collection("schedule")
+            .document(scheduleClass.id)
+            .set(scheduleClass.copy(id = ""))
+            .await()
+    }
+
+    suspend fun deleteClass(scheduleClass: ScheduleClass) {
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User is not logged in")
+
+        if (scheduleClass.id.isBlank()) {
+            throw IllegalStateException("Class ID is missing")
+        }
+
+        db.collection("users")
+            .document(uid)
+            .collection("schedule")
+            .document(scheduleClass.id)
+            .delete()
+            .await()
     }
 }

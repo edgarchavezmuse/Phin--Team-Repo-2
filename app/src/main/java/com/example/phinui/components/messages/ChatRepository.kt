@@ -22,7 +22,8 @@ class ChatRepository {
         val message = hashMapOf(
             "senderID" to senderUserID,
             "text" to messageText,
-            "timestamp" to messageProperties.currentTime
+            "timestamp" to messageProperties.currentTime,
+            "deleted" to false
         )
 
         //Store message in the chats collection in firebase
@@ -49,6 +50,19 @@ class ChatRepository {
         }
     }
 
+    fun deleteMessage(chatID: String, messageID: String) {
+        chatsCollection
+            .document(chatID)
+            .collection("messages")
+            .document(messageID)
+            .update(
+                mapOf(
+                    "deleted" to true,
+                    "text" to "This message was deleted"
+                )
+            )
+    }
+
     fun sendMessageRequest(senderUserID: String, receiverUserID: String) {
         val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
 
@@ -57,7 +71,8 @@ class ChatRepository {
                 "lastMessage" to "",
                 "lastTimestamp" to messageProperties.currentTime,
                 "participants" to listOf(senderUserID, receiverUserID),
-                "messageRequestApproved" to false
+                "messageRequestApproved" to false,
+                "senderID" to senderUserID
             )
         ).addOnFailureListener {
             messageProperties.chatReference.set(
@@ -65,7 +80,8 @@ class ChatRepository {
                     "lastMessage" to "",
                     "lastTimestamp" to messageProperties.currentTime,
                     "participants" to listOf(senderUserID, receiverUserID),
-                    "messageRequestApproved" to false
+                    "messageRequestApproved" to false,
+                    "senderID" to senderUserID
                 )
             )
         }
@@ -89,7 +105,11 @@ class ChatRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener {snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                val messages = snapshot?.documents?.mapNotNull {it.data} ?: emptyList()
+                val messages = snapshot.documents.map { doc ->
+                    doc.data!!.toMutableMap().apply {
+                        put("messageID", doc.id)
+                    }
+                }
                 newMessage(messages)
             }
     }
@@ -105,6 +125,10 @@ class ChatRepository {
                 if (error != null || snapshot == null) return@addSnapshotListener
                 val messageRequest = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
+
+                    val senderID = data["senderID"] as? String
+                    if (senderID == userID) return@mapNotNull null
+
                     data + mapOf("chatID" to doc.id)
                 }
                 onResult(messageRequest)
