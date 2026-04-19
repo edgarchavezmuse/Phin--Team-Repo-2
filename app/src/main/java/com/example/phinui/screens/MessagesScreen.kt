@@ -1,15 +1,18 @@
 package com.example.phinui.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
@@ -17,7 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.ChatRepository
@@ -31,16 +36,18 @@ fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
     userListViewModel: UserListViewModel = viewModel(),
-    //chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
     setTopBarTitle: (String) -> Unit
 ) {
     val chatRepository = remember { ChatRepository() }
+    val chatRepositoryViewModel = remember { ChatRepositoryViewModel() }
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
     val selectedUser = userListViewModel.selectedUser
     val isLoadingStatus = userListViewModel.isLoading
     val autoScrollState = rememberLazyListState()
     val initialChatOpen = remember { mutableStateOf(true) }
+    var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
+    var showDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -78,6 +85,41 @@ fun MessagesScreen(
             CircularProgressIndicator()
         }
 
+        if (showDeleteDialog.value && selectedMessage.value != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog.value = false
+                    selectedMessage.value = null
+                },
+                title = { Text("Delete message?") },
+                text = { Text("This message will be deleted for everyone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val message = selectedMessage.value ?: return@TextButton
+                        val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
+                        chatRepositoryViewModel.onDeleteMessage(
+                            message = message,
+                            chatID = chatID
+                        )
+                        showDeleteDialog.value = false
+                        selectedMessage.value = null
+                    }) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog.value = false
+                            selectedMessage.value = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
@@ -87,28 +129,51 @@ fun MessagesScreen(
             items(messages) { message ->
                 val text = message["text"] as? String?: ""
                 val senderID = message["senderID"] as? String?: ""
-                val isMe = senderID == senderUserID
+                val isDeleted = message["deleted"] as? Boolean ?: false
+                val isMyMessage = senderID == senderUserID
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(4.dp),
-                    horizontalArrangement = if (isMe) Arrangement.End
+                    horizontalArrangement = if (isMyMessage) Arrangement.End
                     else Arrangement.Start,
                 ) {
                 Box(
                     modifier = Modifier
                         .widthIn(max = 250.dp)
                         .background(
-                            color = if (isMe) SenderUserColor
-                            else ReceiverUserColor
+                            color = when {
+                                isDeleted -> DeletedMessageColor
+                                isMyMessage -> SenderUserColor
+                                else -> ReceiverUserColor
+                            }
                         )
                         .padding(12.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures (
+                                onLongPress = {
+                                    if (isMyMessage && !isDeleted) {
+                                        selectedMessage.value = message
+                                        showDeleteDialog.value = true
+                                    }
+                                }
+                            )
+                        }
                 ) {
-                    Text(
-                        text = text,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isDeleted) {
+                        Text(
+                            text = "This message was deleted",
+                            //fontWeight = FontWeight.Bold,
+                            fontStyle = FontStyle.Italic
+                        )
+                    }
+                    else {
+                        Text(
+                            text = text,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                   }
                 }
             }
