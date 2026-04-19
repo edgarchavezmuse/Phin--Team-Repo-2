@@ -57,7 +57,8 @@ class ChatRepository {
                 "lastMessage" to "",
                 "lastTimestamp" to messageProperties.currentTime,
                 "participants" to listOf(senderUserID, receiverUserID),
-                "messageRequestApproved" to false
+                "messageRequestApproved" to false,
+                "senderID" to senderUserID
             )
         ).addOnFailureListener {
             messageProperties.chatReference.set(
@@ -65,7 +66,8 @@ class ChatRepository {
                     "lastMessage" to "",
                     "lastTimestamp" to messageProperties.currentTime,
                     "participants" to listOf(senderUserID, receiverUserID),
-                    "messageRequestApproved" to false
+                    "messageRequestApproved" to false,
+                    "senderID" to senderUserID
                 )
             )
         }
@@ -105,6 +107,10 @@ class ChatRepository {
                 if (error != null || snapshot == null) return@addSnapshotListener
                 val messageRequest = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
+
+                    val senderID = data["senderID"] as? String
+                    if (senderID == userID) return@mapNotNull null
+
                     data + mapOf("chatID" to doc.id)
                 }
                 onResult(messageRequest)
