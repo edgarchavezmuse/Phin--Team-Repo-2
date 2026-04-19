@@ -216,7 +216,14 @@ fun PhinNavHost(
             )
         }
 
-        composable (Routes.USERLIST) {
+        composable(
+            Routes.USERLIST,
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "phin://userlist"
+                }
+            )
+        ) {
             UserListScreen(navController = navController)
         }
 
