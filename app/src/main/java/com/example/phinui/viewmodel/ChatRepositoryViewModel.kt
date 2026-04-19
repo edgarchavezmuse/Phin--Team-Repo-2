@@ -1,20 +1,15 @@
 package com.example.phinui.viewmodel
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.core.os.registerForAllProfilingResults
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.components.messages.User
 import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -167,6 +162,19 @@ class ChatRepositoryViewModel (
 
     fun denyRequest(chatID: String) {
         chatRepository.denyMessageRequest(chatID)
+    }
+
+    fun onDeleteMessage(
+        message: Map<String, Any>,
+        chatID: String
+    ) {
+        val senderID = message["senderID"] as? String ?: return
+        val messageID = message["messageID"] as? String ?: return
+        val currentUserID = currentUserID ?: return
+
+        if (senderID != currentUserID) return
+
+        chatRepository.deleteMessage(chatID, messageID)
     }
 
 }

@@ -22,7 +22,8 @@ class ChatRepository {
         val message = hashMapOf(
             "senderID" to senderUserID,
             "text" to messageText,
-            "timestamp" to messageProperties.currentTime
+            "timestamp" to messageProperties.currentTime,
+            "deleted" to false
         )
 
         //Store message in the chats collection in firebase
@@ -47,6 +48,19 @@ class ChatRepository {
                 )
             )
         }
+    }
+
+    fun deleteMessage(chatID: String, messageID: String) {
+        chatsCollection
+            .document(chatID)
+            .collection("messages")
+            .document(messageID)
+            .update(
+                mapOf(
+                    "deleted" to true,
+                    "text" to "This message was deleted"
+                )
+            )
     }
 
     fun sendMessageRequest(senderUserID: String, receiverUserID: String) {
@@ -91,7 +105,11 @@ class ChatRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener {snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
-                val messages = snapshot?.documents?.mapNotNull {it.data} ?: emptyList()
+                val messages = snapshot.documents.map { doc ->
+                    doc.data!!.toMutableMap().apply {
+                        put("messageID", doc.id)
+                    }
+                }
                 newMessage(messages)
             }
     }
