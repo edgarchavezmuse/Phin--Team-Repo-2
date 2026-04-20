@@ -368,15 +368,10 @@ fun UserListScreen (
                             UserListItem(
                                 user = user,
                                 trailingContent = {
-                                    //var showMenu by remember { mutableStateOf(false) }
-                                    //Box {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-//                                        IconButton(
-//                                            onClick = { showMenu = !showMenu }
-//                                        )
 
                                         IconButton(
                                             onClick = {
@@ -385,11 +380,6 @@ fun UserListScreen (
                                                 )
                                             }
                                         ) {
-//                                            Icon(
-//                                                imageVector = Icons.Default.MoreVert,
-//                                                contentDescription = "Options",
-//                                                tint = NavText
-//                                            )
 
                                             Icon(
                                                 imageVector = Icons.Default.Check,
@@ -397,8 +387,6 @@ fun UserListScreen (
                                                 tint = NavText
                                             )
                                         }
-
-                                        //Spacer(modifier = Modifier.width(2.dp))
 
                                         IconButton(
                                             onClick = { chatRepositoryViewModel.denyRequest(chatID) }
@@ -409,41 +397,6 @@ fun UserListScreen (
                                                 tint = HeaderRed
                                             )
                                         }
-
-//                                        DropdownMenu(
-//                                            expanded = showMenu,
-//                                            onDismissRequest = { showMenu = false },
-//                                            containerColor = Background
-//                                        ) {
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.Check, contentDescription = "Accept", tint = NavText)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Accept", color = NavText)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    chatRepositoryViewModel.approveRequest(chatID)
-//                                                }
-//                                            )
-//
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.Delete, contentDescription = "Decline", tint = HeaderRed)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Decline", color = HeaderRed)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    chatRepositoryViewModel.denyRequest(chatID)
-//                                                }
-//                                            )
-//                                        }
-                                        //}
                                     }
                                 }
                             )
