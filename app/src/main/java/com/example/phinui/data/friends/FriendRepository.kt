@@ -191,34 +191,32 @@ class FriendRepository(
         val otherUserRef = db.collection("users").document(blockedUid)
 
         db.collection("friend_requests")
-            .whereEqualTo("fromUid", myUid)
-            .whereEqualTo("toUid", blockedUid)
-            .whereEqualTo("status", "pending")
+            .whereEqualTo("fromUid", blockedUid)
+            .whereEqualTo("toUid", myUid)
             .get()
-            .addOnSuccessListener { outgoingSnapshot ->
+            .addOnSuccessListener { incomingSnapshot ->
 
                 db.collection("friend_requests")
-                    .whereEqualTo("fromUid", blockedUid)
-                    .whereEqualTo("toUid", myUid)
-                    .whereEqualTo("status", "pending")
+                    .whereEqualTo("fromUid", myUid)
+                    .whereEqualTo("toUid", blockedUid)
                     .get()
-                    .addOnSuccessListener { incomingSnapshot ->
+                    .addOnSuccessListener { outgoingSnapshot ->
 
                         db.runBatch { batch ->
                             batch.update(myUserRef, "blocked", FieldValue.arrayUnion(blockedUid))
                             batch.update(myUserRef, "friends", FieldValue.arrayRemove(blockedUid))
                             batch.update(otherUserRef, "friends", FieldValue.arrayRemove(myUid))
 
-                            outgoingSnapshot.documents.forEach { doc ->
-                                batch.delete(doc.reference)
-                            }
-
                             incomingSnapshot.documents.forEach { doc ->
                                 batch.delete(doc.reference)
                             }
-                        }.addOnSuccessListener {
-                            onSuccess()
-                        }.addOnFailureListener(onError)
+
+                            outgoingSnapshot.documents.forEach { doc ->
+                                batch.delete(doc.reference)
+                            }
+                        }
+                            .addOnSuccessListener { onSuccess() }
+                            .addOnFailureListener(onError)
                     }
                     .addOnFailureListener(onError)
             }
@@ -310,15 +308,38 @@ class FriendRepository(
     ) {
         val myUid = currentUid() ?: return
 
-        db.runBatch { batch ->
-            val myUserRef = db.collection("users").document(myUid)
-            val friendUserRef = db.collection("users").document(friendUid)
+        val myUserRef = db.collection("users").document(myUid)
+        val otherUserRef = db.collection("users").document(friendUid)
 
-            // Remove each other from friends list
-            batch.update(myUserRef, "friends", FieldValue.arrayRemove(friendUid))
-            batch.update(friendUserRef, "friends", FieldValue.arrayRemove(myUid))
-        }
-            .addOnSuccessListener { onSuccess() }
+        db.collection("friend_requests")
+            .whereEqualTo("fromUid", friendUid)
+            .whereEqualTo("toUid", myUid)
+            .get()
+            .addOnSuccessListener { incomingSnapshot ->
+
+                db.collection("friend_requests")
+                    .whereEqualTo("fromUid", myUid)
+                    .whereEqualTo("toUid", friendUid)
+                    .get()
+                    .addOnSuccessListener { outgoingSnapshot ->
+
+                        db.runBatch { batch ->
+                            batch.update(myUserRef, "friends", FieldValue.arrayRemove(friendUid))
+                            batch.update(otherUserRef, "friends", FieldValue.arrayRemove(myUid))
+
+                            incomingSnapshot.documents.forEach { doc ->
+                                batch.delete(doc.reference)
+                            }
+
+                            outgoingSnapshot.documents.forEach { doc ->
+                                batch.delete(doc.reference)
+                            }
+                        }
+                            .addOnSuccessListener { onSuccess() }
+                            .addOnFailureListener(onError)
+                    }
+                    .addOnFailureListener(onError)
+            }
             .addOnFailureListener(onError)
     }
 
