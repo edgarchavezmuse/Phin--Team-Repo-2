@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
@@ -367,49 +368,33 @@ fun UserListScreen (
                             UserListItem(
                                 user = user,
                                 trailingContent = {
-                                    var showMenu by remember { mutableStateOf(false) }
-                                    Box {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+
                                         IconButton(
-                                            onClick = { showMenu = !showMenu }
+                                            onClick = {
+                                                chatRepositoryViewModel.approveRequest(
+                                                    chatID
+                                                )
+                                            }
                                         ) {
+
                                             Icon(
-                                                imageVector = Icons.Default.MoreVert,
-                                                contentDescription = "Options",
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Accept Request",
                                                 tint = NavText
                                             )
                                         }
 
-                                        DropdownMenu(
-                                            expanded = showMenu,
-                                            onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                        IconButton(
+                                            onClick = { chatRepositoryViewModel.denyRequest(chatID) }
                                         ) {
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(Icons.Default.Check, contentDescription = "Accept", tint = NavText)
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Accept", color = NavText)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    showMenu = false
-                                                    chatRepositoryViewModel.approveRequest(chatID)
-                                                }
-                                            )
-
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(Icons.Default.Delete, contentDescription = "Decline", tint = HeaderRed)
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Decline", color = HeaderRed)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    showMenu = false
-                                                    chatRepositoryViewModel.denyRequest(chatID)
-                                                }
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Decline Request",
+                                                tint = HeaderRed
                                             )
                                         }
                                     }
