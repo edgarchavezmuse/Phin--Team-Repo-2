@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.edit
+import com.example.phinui.notifications.ReminderScheduler
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -17,13 +18,14 @@ class CalendarStorage(private val context: Context) {
     private val EVENTS_KEY = stringPreferencesKey("saved_events")
 
     // saves the event in "dataStore"
-    suspend fun saveEvent(event: CalendarEvent) {
+    suspend fun saveEvent(event: CalendarEvent, reminderScheduler: ReminderScheduler) {
         val currentEvents = loadEvents().toMutableList()
 
         val localEvent = event.copy(source = CalendarSource.LOCAL)
 
         currentEvents.add(localEvent)
         saveAllEvents(currentEvents)
+        reminderScheduler.scheduleReminder(localEvent)
     }
 
     // loads events from "dataStore"

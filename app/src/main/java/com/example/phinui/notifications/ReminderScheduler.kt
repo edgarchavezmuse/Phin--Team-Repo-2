@@ -12,6 +12,8 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import android.app.AlarmManager
 import android.util.Log
+import java.time.LocalDateTime
+import java.time.format.DateTimeParseException
 
 class ReminderScheduler(private val context: Context) {
 
@@ -40,10 +42,18 @@ class ReminderScheduler(private val context: Context) {
         event.reminderMinutes.forEach { minutesBefore ->
 
             // convert event.start to Instant
-            val eventStart = if (event.start.contains('T')) {
+            val eventStart = try {
                 OffsetDateTime.parse(event.start).toInstant()
-            } else {
-                LocalDate.parse(event.start).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            } catch (e: DateTimeParseException) {
+                try {
+                    LocalDateTime.parse(event.start)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                } catch (e: DateTimeParseException) {
+                    LocalDate.parse(event.start)
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()
+                }
             }
 
             val triggerTime = eventStart

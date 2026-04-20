@@ -281,7 +281,7 @@ fun PhinNavHost(
                                         savedEvents.add(localEvent)
 
                                         withContext(Dispatchers.IO) {
-                                            storeEvent.saveEvent(localEvent)
+                                            storeEvent.saveEvent(localEvent, reminderScheduler)
                                         }
 
                                         Toast.makeText(
@@ -373,7 +373,7 @@ fun PhinNavHost(
                                     }
 
                                     withContext(Dispatchers.IO) {
-                                        storeEvent.saveEvent(localEvent)
+                                        storeEvent.saveEvent(localEvent, reminderScheduler)
                                     }
 
                                     Toast.makeText(
