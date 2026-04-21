@@ -247,7 +247,7 @@ class CalendarViewModel(
 
                 // cancel reminders for removed events
                 (oldEventIds - newEventIds).forEach { removedId ->
-                    reminderScheduler.cancelGoogleCalendarReminder(removedId)
+                    reminderScheduler.cancelReminder(removedId)
                 }
 
             } catch (e: GoogleCalendarUnauthorizedException) {

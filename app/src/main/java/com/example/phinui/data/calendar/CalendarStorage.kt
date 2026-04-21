@@ -73,7 +73,7 @@ class CalendarStorage(private val context: Context) {
         event: CalendarEvent,
         reminderScheduler: ReminderScheduler
     ) {
-        reminderScheduler.cancelLocalReminder(event)
+        reminderScheduler.cancelReminder(event.id, event.reminderMinutes)
 
         val updatedEvents = loadEvents().filterNot { it.id == event.id }
         saveAllEvents(updatedEvents)

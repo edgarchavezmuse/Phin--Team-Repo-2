@@ -33,7 +33,7 @@ class ReminderScheduler(private val context: Context) {
         }
 
         // cancel any existing jobs for the event
-        cancelLocalReminder(event)
+        cancelReminder(event.id, event.reminderMinutes)
 
         // save reminder minutes
         remindersMap[event.id] = event.reminderMinutes
@@ -89,13 +89,16 @@ class ReminderScheduler(private val context: Context) {
         }
     }
 
-    fun cancelGoogleCalendarReminder(eventId: String) {
+    fun cancelReminder(
+        eventId: String,
+        reminderMinutes: List<Int>? = null
+    ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         // get reminder minutes for the event
-        val reminderMinutes = remindersMap[eventId] ?: return
+        val minutesList = reminderMinutes ?: remindersMap[eventId] ?: return
 
-        reminderMinutes.forEach { minutesBefore ->
+        minutesList.forEach { minutesBefore ->
             val requestCode = (eventId.hashCode() * 31) + minutesBefore
 
             val intent = Intent(context, ReminderReceiver::class.java).apply {
@@ -117,29 +120,5 @@ class ReminderScheduler(private val context: Context) {
 
         // remove from map
         remindersMap.remove(eventId)
-    }
-
-    fun cancelLocalReminder(event: CalendarEvent) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-        event.reminderMinutes.forEach { minutesBefore ->
-            val requestCode = (event.id.hashCode() * 31) + minutesBefore
-
-            val intent = Intent(context, ReminderReceiver::class.java).apply {
-                action = "com.example.PhinUI.REMINDER"
-            }
-
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            pendingIntent?.let {
-                alarmManager.cancel(it)
-                it.cancel()
-            }
-        }
     }
 }
