@@ -1,5 +1,15 @@
 package com.example.phinui.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,61 +18,99 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.ShortText
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
+import com.example.phinui.ui.theme.PrimaryRed
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.TextButton
-import com.example.phinui.ui.theme.PrimaryRed
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
+    val storage = FirebaseStorage.getInstance()
     val user = auth.currentUser
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf(user?.email ?: "No email") }
     var major by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
+    var photoUrl by remember { mutableStateOf<String?>(null) }
 
     var isEditing by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
+    var isUploadingPhoto by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        val uid = user?.uid ?: return@rememberLauncherForActivityResult
+        isUploadingPhoto = true
+        errorMessage = null
+
+        val photoRef = storage.reference.child("profile_photos/$uid")
+
+        photoRef.putFile(uri)
+            .continueWithTask { task ->
+                if (!task.isSuccessful) {
+                    throw task.exception ?: Exception("Photo upload failed.")
+                }
+                photoRef.downloadUrl
+            }
+            .addOnSuccessListener { downloadUri ->
+                val newPhotoUrl = downloadUri.toString()
+
+                db.collection("users")
+                    .document(uid)
+                    .set(mapOf("photoUrl" to newPhotoUrl), SetOptions.merge())
+                    .addOnSuccessListener {
+                        photoUrl = newPhotoUrl
+                        isUploadingPhoto = false
+                    }
+                    .addOnFailureListener { e ->
+                        isUploadingPhoto = false
+                        errorMessage = e.message ?: "Failed to save photo URL."
+                    }
+            }
+            .addOnFailureListener { e ->
+                isUploadingPhoto = false
+                errorMessage = e.message ?: "Failed to upload photo."
+            }
+    }
 
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
@@ -74,6 +122,7 @@ fun ProfileScreen(navController: NavHostController) {
                     name = document.getString("name") ?: ""
                     major = document.getString("major") ?: ""
                     bio = document.getString("bio") ?: ""
+                    photoUrl = document.getString("photoUrl")
                     email = user.email ?: "No email"
                     isLoading = false
                 }
@@ -115,12 +164,24 @@ fun ProfileScreen(navController: NavHostController) {
                 shape = CircleShape,
                 color = Color(0xFFFFEFEF)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = initial,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color(0xFFD32F2F)
+                if (!photoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = "Profile photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initial,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color(0xFFD32F2F)
+                        )
+                    }
                 }
             }
 
@@ -130,16 +191,33 @@ fun ProfileScreen(navController: NavHostController) {
                     .size(30.dp)
                     .clip(CircleShape)
                     .background(Color.White)
-                    .clickable { isEditing = true },
+                    .clickable {
+                        if (isEditing) {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        } else {
+                            isEditing = true
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Edit profile",
+                    imageVector = if (isEditing) Icons.Outlined.CameraAlt else Icons.Outlined.Edit,
+                    contentDescription = if (isEditing) "Change profile photo" else "Edit profile",
                     tint = Color(0xFFD32F2F),
                     modifier = Modifier.size(16.dp)
                 )
             }
+        }
+
+        if (isUploadingPhoto) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Uploading photo...",
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -296,7 +374,6 @@ fun ProfileScreen(navController: NavHostController) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
                 TextButton(
                     onClick = {
                         user?.uid?.let { uid ->
@@ -307,7 +384,9 @@ fun ProfileScreen(navController: NavHostController) {
                                     name = document.getString("name") ?: ""
                                     major = document.getString("major") ?: ""
                                     bio = document.getString("bio") ?: ""
+                                    photoUrl = document.getString("photoUrl")
                                     isEditing = false
+                                    errorMessage = null
                                 }
                                 .addOnFailureListener {
                                     isEditing = false
@@ -341,7 +420,7 @@ fun ProfileScreen(navController: NavHostController) {
 
                         db.collection("users")
                             .document(uid)
-                            .set(updatedProfile, com.google.firebase.firestore.SetOptions.merge())
+                            .set(updatedProfile, SetOptions.merge())
                             .addOnSuccessListener {
                                 isSaving = false
                                 isEditing = false
@@ -359,13 +438,12 @@ fun ProfileScreen(navController: NavHostController) {
                         containerColor = PrimaryRed,
                         contentColor = Color.White
                     ),
-                    enabled = !isSaving
+                    enabled = !isSaving && !isUploadingPhoto
                 ) {
                     Text(if (isSaving) "Saving..." else "Save")
                 }
             }
         } else {
-
             Button(
                 onClick = {
                     auth.signOut()

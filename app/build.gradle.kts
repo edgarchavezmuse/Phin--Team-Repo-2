@@ -109,4 +109,8 @@ dependencies {
 
     // fcm
     implementation("com.google.firebase:firebase-messaging:25.0.1")
+
+    // profile photo
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }
