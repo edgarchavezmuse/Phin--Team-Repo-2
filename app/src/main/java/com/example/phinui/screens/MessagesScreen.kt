@@ -65,6 +65,19 @@ fun MessagesScreen(
         userListViewModel.loadSelectedUser(receiverUserID)
     }
 
+    val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
+
+    LaunchedEffect(chatID) {
+        chatRepositoryViewModel.onChatOpened(senderUserID, chatID)
+    }
+
+
+    DisposableEffect(Unit) {
+        onDispose {
+            chatRepositoryViewModel.onChatClosed(senderUserID)
+        }
+    }
+
     if (initialChatOpen.value) {
         //Automatic scroll effect
         LaunchedEffect(messages) {

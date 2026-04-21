@@ -45,11 +45,28 @@ exports.sendNewMessageNotification = onDocumentUpdated(
         const fcmToken = accepterData && accepterData.fcmToken ?
                 accepterData.fcmToken : null;
 
+        const activeChatID = accepterData ? accepterData.activeChatID : null;
+        const lastActive = accepterData ? accepterData.lastActive : null;
+
         if (!fcmToken) {
           console.log("No FCM token for user: ", accepterId);
           return null;
         } else {
           console.log("FCM token for messaging: ", fcmToken);
+        }
+
+        const chatId = event.params.requestId;
+        const now = Date.now();
+        const lastActiveTime =
+          lastActive && typeof lastActive.toMillis === "function" ?
+          lastActive.toMillis() : 0;
+        const isInChat = activeChatID === chatId;
+        const isActive = (now - lastActiveTime) < 60000;
+
+        // only send if user is not on the chat screen
+        if (isInChat && isActive) {
+          console.log("User is currently in this chat. Skipping notification");
+          return null;
         }
 
         await admin.messaging().send({
