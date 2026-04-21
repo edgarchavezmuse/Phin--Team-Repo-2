@@ -4,6 +4,7 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 
 class ChatRepository {
 
@@ -150,6 +151,21 @@ class ChatRepository {
                 }
                 onResult(chats)
             }
+    }
+
+    fun setActiveChat(userID: String, chatID: String?) {
+        val userRef = database
+            .collection("users")
+            .document(userID)
+
+        userRef.set(
+            mapOf(
+                "activeChatID" to chatID,
+                "lastActive" to com.google.firebase.Timestamp.now()
+            ),
+            SetOptions.merge()
+        )
+
     }
 
     data class MessageInfo(

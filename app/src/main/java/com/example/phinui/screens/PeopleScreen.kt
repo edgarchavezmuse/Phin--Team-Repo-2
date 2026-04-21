@@ -65,6 +65,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.example.phinui.components.people.ActiveChatDialog
 import androidx.compose.material3.*
+import com.example.phinui.components.people.PendingFriendRequestDialog
 
 @Composable
 fun PeopleScreen() {
@@ -86,6 +87,7 @@ fun PeopleScreen() {
     var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
     var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+    var pendingRequestUser by remember { mutableStateOf<String?>(null) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -435,12 +437,23 @@ fun PeopleScreen() {
                         userToAdd = null
                     },
                     {
-                        message = it.message
+                        if (it.message == "PENDING_REQUEST_EXISTS") {
+                            pendingRequestUser = name
+                        } else {
+                            message = it.message
+                        }
                         userToAdd = null
                     }
                 )
             },
             onDismiss = { userToAdd = null }
+        )
+    }
+
+    pendingRequestUser?.let { name ->
+        PendingFriendRequestDialog(
+            name = name,
+            onDismiss = { pendingRequestUser = null }
         )
     }
 

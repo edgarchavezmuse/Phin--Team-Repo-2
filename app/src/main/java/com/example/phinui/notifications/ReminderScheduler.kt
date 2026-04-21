@@ -12,6 +12,8 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import android.app.AlarmManager
 import android.util.Log
+import java.time.LocalDateTime
+import java.time.format.DateTimeParseException
 
 class ReminderScheduler(private val context: Context) {
 
@@ -31,7 +33,7 @@ class ReminderScheduler(private val context: Context) {
         }
 
         // cancel any existing jobs for the event
-        cancelReminder(event.id)
+        cancelReminder(event.id, event.reminderMinutes)
 
         // save reminder minutes
         remindersMap[event.id] = event.reminderMinutes
@@ -40,10 +42,18 @@ class ReminderScheduler(private val context: Context) {
         event.reminderMinutes.forEach { minutesBefore ->
 
             // convert event.start to Instant
-            val eventStart = if (event.start.contains('T')) {
+            val eventStart = try {
                 OffsetDateTime.parse(event.start).toInstant()
-            } else {
-                LocalDate.parse(event.start).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            } catch (e: DateTimeParseException) {
+                try {
+                    LocalDateTime.parse(event.start)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                } catch (e: DateTimeParseException) {
+                    LocalDate.parse(event.start)
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()
+                }
             }
 
             val triggerTime = eventStart
@@ -79,13 +89,16 @@ class ReminderScheduler(private val context: Context) {
         }
     }
 
-    fun cancelReminder(eventId: String) {
+    fun cancelReminder(
+        eventId: String,
+        reminderMinutes: List<Int>? = null
+    ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         // get reminder minutes for the event
-        val reminderMinutes = remindersMap[eventId] ?: return
+        val minutesList = reminderMinutes ?: remindersMap[eventId] ?: return
 
-        reminderMinutes.forEach { minutesBefore ->
+        minutesList.forEach { minutesBefore ->
             val requestCode = (eventId.hashCode() * 31) + minutesBefore
 
             val intent = Intent(context, ReminderReceiver::class.java).apply {

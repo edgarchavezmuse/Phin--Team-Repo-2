@@ -9,6 +9,7 @@ import androidx.compose.ui.text.withStyle
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.NavText
+import com.example.phinui.components.people.PendingFriendRequestDialog
 
 @Composable fun SendFriendRequestDialog(
     name: String,
@@ -44,6 +45,38 @@ import com.example.phinui.ui.theme.NavText
                 onClick = onDismiss
             ) {
                 Text("Cancel", color = NavText)
+            }
+        }
+    )
+}
+
+@Composable
+fun PendingFriendRequestDialog(
+    name: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Background,
+        title = {
+            Text("Friend request pending")
+        },
+        text = {
+            Text(
+                buildAnnotatedString {
+                    append("You already have a friend request pending with ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(name)
+                    }
+                    append(".")
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("OK", color = HeaderRed)
             }
         }
     )

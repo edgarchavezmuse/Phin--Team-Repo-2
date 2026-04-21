@@ -177,4 +177,12 @@ class ChatRepositoryViewModel (
         chatRepository.deleteMessage(chatID, messageID)
     }
 
+    fun onChatOpened(userID: String, chatID: String) {
+        chatRepository.setActiveChat(userID, chatID)
+    }
+
+    fun onChatClosed(userID: String) {
+        chatRepository.setActiveChat(userID, null)
+    }
+
 }
