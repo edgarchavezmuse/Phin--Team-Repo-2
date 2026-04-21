@@ -28,6 +28,8 @@ import androidx.compose.material.icons.outlined.ShortText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +77,7 @@ fun ProfileScreen(navController: NavHostController) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var showConfirm by remember { mutableStateOf(false) }
+    var showPhotoMenu by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -208,6 +211,7 @@ fun ProfileScreen(navController: NavHostController) {
                 text = { Text("This will delete your profile picture.") }
             )
         }
+
         Text(
             text = "My Profile",
             fontSize = 28.sp,
@@ -255,9 +259,7 @@ fun ProfileScreen(navController: NavHostController) {
                     .background(Color.White)
                     .clickable {
                         if (isEditing) {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
+                            showPhotoMenu = true
                         } else {
                             isEditing = true
                         }
@@ -270,6 +272,31 @@ fun ProfileScreen(navController: NavHostController) {
                     tint = Color(0xFFD32F2F),
                     modifier = Modifier.size(16.dp)
                 )
+
+                DropdownMenu(
+                    expanded = showPhotoMenu,
+                    onDismissRequest = { showPhotoMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Upload Photo") },
+                        onClick = {
+                            showPhotoMenu = false
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
+                    )
+
+                    if (!photoUrl.isNullOrBlank()) {
+                        DropdownMenuItem(
+                            text = { Text("Remove Photo", color = Color.Red) },
+                            onClick = {
+                                showPhotoMenu = false
+                                showConfirm = true
+                            }
+                        )
+                    }
+                }
             }
         }
 
@@ -322,18 +349,6 @@ fun ProfileScreen(navController: NavHostController) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        if (!photoUrl.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            TextButton(
-                                onClick = { showConfirm = true }
-                            ) {
-                                Text(
-                                    text = "Remove Photo",
-                                    color = Color.Red
-                                )
-                            }
-                        }
 
                         OutlinedTextField(
                             value = name,
