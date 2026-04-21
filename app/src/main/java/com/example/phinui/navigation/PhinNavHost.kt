@@ -217,14 +217,26 @@ fun PhinNavHost(
         }
 
         composable(
-            Routes.USERLIST,
+            route = "${Routes.USERLIST}?tab={tab}",
+            arguments = listOf(
+                navArgument("tab") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
+            ),
             deepLinks = listOf(
                 navDeepLink {
-                    uriPattern = "phin://userlist"
+                    uriPattern = "phin://userlist?tab={tab}"
                 }
             )
-        ) {
-            UserListScreen(navController = navController)
+        ) { backStackEntry ->
+
+            val tab = backStackEntry.arguments?.getInt("tab") ?: 0
+
+            UserListScreen(
+                navController = navController,
+                initialTab = tab
+            )
         }
 
         composable(Routes.PROFILE) {
@@ -236,14 +248,26 @@ fun PhinNavHost(
         }
 
         composable(
-            Routes.FRIENDS,
+            route = "${Routes.FRIENDS}?tab={tab}",
+            arguments = listOf(
+                navArgument("tab") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
+            ),
             deepLinks = listOf(
                 navDeepLink {
-                    uriPattern = "phin://friends"
+                    uriPattern = "phin://friends?tab={tab}"
                 }
             )
-        ) {
-            FriendsScreen(navController = navController)
+        ) { backStackEntry ->
+
+            val tab = backStackEntry.arguments?.getInt("tab") ?: 0
+
+            FriendsScreen(
+                navController = navController,
+                initialTab = tab
+                )
         }
 
         composable(Routes.SCHEDULE) {
