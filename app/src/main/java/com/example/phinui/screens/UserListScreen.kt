@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.lifecycle.viewModelScope
 import com.example.phinui.components.messages.ChatRepository
@@ -52,6 +53,7 @@ import kotlinx.coroutines.coroutineScope
 @Composable
 fun UserListScreen (
     navController: NavController,
+    initialTab: Int = 0,
     chatRepositoryViewModel: ChatRepositoryViewModel = viewModel(),
     friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
         factory = FriendRepositoryViewModelFactory(FriendRepository())
@@ -59,7 +61,7 @@ fun UserListScreen (
 
     val currentUserID = chatRepositoryViewModel.currentUserID ?: return
     val friendList = friendRepositoryViewModel.friendsList.value
-    var selectedTab by remember { mutableIntStateOf(value = 0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(initialTab) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }

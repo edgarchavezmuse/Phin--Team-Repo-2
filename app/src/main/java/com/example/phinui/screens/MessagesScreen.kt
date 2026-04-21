@@ -48,6 +48,7 @@ fun MessagesScreen(
     val initialChatOpen = remember { mutableStateOf(true) }
     var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     var showDeleteDialog = remember { mutableStateOf(false) }
+    val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -64,8 +65,6 @@ fun MessagesScreen(
     LaunchedEffect(receiverUserID) {
         userListViewModel.loadSelectedUser(receiverUserID)
     }
-
-    val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
 
     LaunchedEffect(chatID) {
         chatRepositoryViewModel.onChatOpened(senderUserID, chatID)
