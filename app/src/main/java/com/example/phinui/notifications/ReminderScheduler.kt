@@ -33,7 +33,7 @@ class ReminderScheduler(private val context: Context) {
         }
 
         // cancel any existing jobs for the event
-        cancelReminder(event.id)
+        cancelLocalReminder(event)
 
         // save reminder minutes
         remindersMap[event.id] = event.reminderMinutes
@@ -89,7 +89,7 @@ class ReminderScheduler(private val context: Context) {
         }
     }
 
-    fun cancelReminder(eventId: String) {
+    fun cancelGoogleCalendarReminder(eventId: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         // get reminder minutes for the event
@@ -117,5 +117,29 @@ class ReminderScheduler(private val context: Context) {
 
         // remove from map
         remindersMap.remove(eventId)
+    }
+
+    fun cancelLocalReminder(event: CalendarEvent) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        event.reminderMinutes.forEach { minutesBefore ->
+            val requestCode = (event.id.hashCode() * 31) + minutesBefore
+
+            val intent = Intent(context, ReminderReceiver::class.java).apply {
+                action = "com.example.PhinUI.REMINDER"
+            }
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            pendingIntent?.let {
+                alarmManager.cancel(it)
+                it.cancel()
+            }
+        }
     }
 }

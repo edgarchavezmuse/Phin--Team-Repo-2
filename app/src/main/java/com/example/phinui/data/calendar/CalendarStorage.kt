@@ -69,7 +69,12 @@ class CalendarStorage(private val context: Context) {
     }
 
     // remove selected event from "dataStore"
-    suspend fun removeEvent(event: CalendarEvent) {
+    suspend fun removeEvent(
+        event: CalendarEvent,
+        reminderScheduler: ReminderScheduler
+    ) {
+        reminderScheduler.cancelLocalReminder(event)
+
         val updatedEvents = loadEvents().filterNot { it.id == event.id }
         saveAllEvents(updatedEvents)
     }

@@ -350,7 +350,8 @@ fun PhinNavHost(
                     )
                 },
                 selectedEvent = selectedEvent,
-                showRemoveDialog = showRemoveDialog
+                showRemoveDialog = showRemoveDialog,
+                reminderScheduler = reminderScheduler
             )
         }
 
