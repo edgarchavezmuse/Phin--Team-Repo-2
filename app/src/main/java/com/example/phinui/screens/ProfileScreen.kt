@@ -194,21 +194,48 @@ fun ProfileScreen(navController: NavHostController) {
         if (showConfirm) {
             AlertDialog(
                 onDismissRequest = { showConfirm = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showConfirm = false
-                        removeProfilePhoto()
-                    }) {
-                        Text("Remove")
-                    }
+                shape = RoundedCornerShape(24.dp),
+                containerColor = Color.White,
+                title = {
+                    Text(
+                        text = "Remove Photo?",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to remove your profile photo?",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 },
                 dismissButton = {
-                    TextButton(onClick = { showConfirm = false }) {
-                        Text("Cancel")
+                    TextButton(
+                        onClick = { showConfirm = false }
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 },
-                title = { Text("Remove Photo?") },
-                text = { Text("This will delete your profile picture.") }
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showConfirm = false
+                            removeProfilePhoto()
+                        }
+                    ) {
+                        Text(
+                            text = "Remove",
+                            color = PrimaryRed,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             )
         }
 
@@ -275,7 +302,10 @@ fun ProfileScreen(navController: NavHostController) {
 
                 DropdownMenu(
                     expanded = showPhotoMenu,
-                    onDismissRequest = { showPhotoMenu = false }
+                    onDismissRequest = { showPhotoMenu = false },
+                    containerColor = Color.White,
+                    tonalElevation = 2.dp,
+                    shadowElevation = 6.dp
                 ) {
                     DropdownMenuItem(
                         text = { Text("Upload Photo") },
