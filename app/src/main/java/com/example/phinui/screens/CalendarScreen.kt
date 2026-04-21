@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import com.example.phinui.notifications.ReminderScheduler
 
 
 private val PrimaryRed = Color(0xFFE53935)
@@ -69,7 +70,8 @@ fun CalendarScreen(
     onConnectClick: () -> Unit,
     onAddEventClick: () -> Unit,
     selectedEvent: MutableState<CalendarEvent?>,
-    showRemoveDialog: MutableState<Boolean>
+    showRemoveDialog: MutableState<Boolean>,
+    reminderScheduler: ReminderScheduler
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -436,7 +438,7 @@ fun CalendarScreen(
                             }
                         } else {
                             coroutineScope.launch(Dispatchers.IO) {
-                                storage.removeEvent(eventToDelete)
+                                storage.removeEvent(eventToDelete, reminderScheduler)
                                 val updatedEvents = storage.loadEvents()
 
                                 withContext(Dispatchers.Main) {

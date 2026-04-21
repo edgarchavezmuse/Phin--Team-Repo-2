@@ -281,7 +281,7 @@ fun PhinNavHost(
                                         savedEvents.add(localEvent)
 
                                         withContext(Dispatchers.IO) {
-                                            storeEvent.saveEvent(localEvent)
+                                            storeEvent.saveEvent(localEvent, reminderScheduler)
                                         }
 
                                         Toast.makeText(
@@ -350,7 +350,8 @@ fun PhinNavHost(
                     )
                 },
                 selectedEvent = selectedEvent,
-                showRemoveDialog = showRemoveDialog
+                showRemoveDialog = showRemoveDialog,
+                reminderScheduler = reminderScheduler
             )
         }
 
@@ -373,7 +374,7 @@ fun PhinNavHost(
                                     }
 
                                     withContext(Dispatchers.IO) {
-                                        storeEvent.saveEvent(localEvent)
+                                        storeEvent.saveEvent(localEvent, reminderScheduler)
                                     }
 
                                     Toast.makeText(
