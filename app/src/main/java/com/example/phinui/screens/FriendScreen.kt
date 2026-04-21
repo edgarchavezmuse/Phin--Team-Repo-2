@@ -157,6 +157,13 @@ fun FriendsScreen(
                         onClick = { selectedTab = 1 }
                     ) {
                         Text("Requests")
+//                        Text(
+//                            if (incoming.isNotEmpty()) {
+//                                "Requests (${incoming.size})"
+//                            } else {
+//                                "Requests"
+//                            }
+//                        )
                     }
                 }
 
