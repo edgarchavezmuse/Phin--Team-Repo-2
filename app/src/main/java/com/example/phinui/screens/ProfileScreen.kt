@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.ShortText
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -73,6 +74,8 @@ fun ProfileScreen(navController: NavHostController) {
     var isUploadingPhoto by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    var showConfirm by remember { mutableStateOf(false) }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
@@ -112,6 +115,43 @@ fun ProfileScreen(navController: NavHostController) {
             }
     }
 
+    fun removeProfilePhoto() {
+        val uid = user?.uid ?: return
+
+        val photoRef = storage.reference.child("profile_photos/$uid")
+
+        isUploadingPhoto = true
+        errorMessage = null
+
+        photoRef.delete()
+            .addOnSuccessListener {
+                db.collection("users")
+                    .document(uid)
+                    .update("photoUrl", null)
+                    .addOnSuccessListener {
+                        photoUrl = null
+                        isUploadingPhoto = false
+                    }
+                    .addOnFailureListener { e ->
+                        isUploadingPhoto = false
+                        errorMessage = e.message ?: "Failed to update profile."
+                    }
+            }
+            .addOnFailureListener { e ->
+                db.collection("users")
+                    .document(uid)
+                    .update("photoUrl", null)
+                    .addOnSuccessListener {
+                        photoUrl = null
+                        isUploadingPhoto = false
+                    }
+                    .addOnFailureListener { firestoreError ->
+                        isUploadingPhoto = false
+                        errorMessage = firestoreError.message ?: "Failed to remove photo."
+                    }
+            }
+    }
+
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
             isLoading = true
@@ -146,6 +186,28 @@ fun ProfileScreen(navController: NavHostController) {
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+
+        if (showConfirm) {
+            AlertDialog(
+                onDismissRequest = { showConfirm = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showConfirm = false
+                        removeProfilePhoto()
+                    }) {
+                        Text("Remove")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirm = false }) {
+                        Text("Cancel")
+                    }
+                },
+                title = { Text("Remove Photo?") },
+                text = { Text("This will delete your profile picture.") }
+            )
+        }
         Text(
             text = "My Profile",
             fontSize = 28.sp,
@@ -260,6 +322,19 @@ fun ProfileScreen(navController: NavHostController) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        if (!photoUrl.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            TextButton(
+                                onClick = { showConfirm = true }
+                            ) {
+                                Text(
+                                    text = "Remove Photo",
+                                    color = Color.Red
+                                )
+                            }
+                        }
+
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
@@ -510,3 +585,4 @@ fun ProfileInfoRow(
         }
     }
 }
+
