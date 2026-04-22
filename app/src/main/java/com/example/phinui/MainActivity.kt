@@ -27,31 +27,33 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.phinui.components.SideMenu
 import com.example.phinui.notifications.NotificationPermissionRequest
+import com.example.phinui.ui.components.AnimatedWaves
 import com.example.phinui.ui.components.CustomBottomBar
+import com.example.phinui.ui.components.rememberWaveAnimationState
 import com.example.phinui.ui.navigation.PhinNavHost
+import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.PhinUITheme
 import kotlinx.coroutines.launch
-import com.example.phinui.ui.navigation.Routes
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +88,13 @@ fun PhinUIApp() {
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
 
+    val waveAnimation = rememberWaveAnimationState(
+        frontDurationMillis = 4000, // speed of wave
+        backDurationMillis = 3000, // speed of wave
+        shipSpeedDpPerSecond = 45f, // speed of ship
+        bobDurationMillis = 2000
+    )
+
     LaunchedEffect(currentRoute) {
         drawerState.close()
 
@@ -102,14 +111,33 @@ fun PhinUIApp() {
             modifier = Modifier.fillMaxSize(),
             containerColor = Background
         ) { innerPadding ->
-            PhinNavHost(
-                navController = navController,
-                modifier = Modifier.padding(innerPadding),
-                setTopBarTitle = { title, messagesScreen ->
-                    topBarTitle = title
-                    isMessagesScreen = messagesScreen
-                }
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                AnimatedWaves(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    waveColor = HeaderRed,
+                    height = 110.dp,
+                    showShip = true,
+                    shipSize = 20.dp,
+                    shipVerticalOffset = 18f,
+                    frontPhase = waveAnimation.frontPhase,
+                    backPhase = waveAnimation.backPhase,
+                    shipProgress = waveAnimation.shipProgress,
+                    bobPhase = waveAnimation.bobPhase
+                )
+
+                PhinNavHost(
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize(),
+                    setTopBarTitle = { title, messagesScreen ->
+                        topBarTitle = title
+                        isMessagesScreen = messagesScreen
+                    }
+                )
+            }
         }
     } else {
         ModalNavigationDrawer(
@@ -175,8 +203,10 @@ fun PhinUIApp() {
                 },
                 containerColor = Background,
                 bottomBar = {
-                    CustomBottomBar(navController = navController)
-
+                    CustomBottomBar(
+                        navController = navController,
+                        waveAnimation = waveAnimation
+                    )
                 }
             ) { innerPadding ->
                 PhinNavHost(

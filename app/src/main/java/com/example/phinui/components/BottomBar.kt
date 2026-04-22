@@ -2,21 +2,12 @@ package com.example.phinui.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,10 +20,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Message
-import androidx.compose.material.icons.filled.Home
+import com.example.phinui.ui.theme.HeaderRed
 
 data class BottomNavItem(
     val label: String,
@@ -42,7 +30,9 @@ data class BottomNavItem(
 
 @Composable
 fun CustomBottomBar(
-    navController: NavHostController
+    navController: NavHostController,
+    waveAnimation: WaveAnimationState,
+    showWaves: Boolean = true // turns waves and ship on and off
 ) {
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
@@ -62,26 +52,49 @@ fun CustomBottomBar(
         color = Background,
         shadowElevation = 0.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            bottomItems.forEach { item ->
-                BottomBarItem(
-                    label = item.label,
-                    icon = item.icon,
-                    selected = currentRoute == item.route,
-                    onClick = {
+
+            // waves
+            if (showWaves) {
+                AnimatedWaves(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter),
+                    waveColor = HeaderRed,
+                    height = 90.dp,
+                    showShip = true,
+                    shipSize = 18.dp,
+                    shipVerticalOffset = 15f,
+                    frontPhase = waveAnimation.frontPhase,
+                    backPhase = waveAnimation.backPhase,
+                    shipProgress = waveAnimation.shipProgress,
+                    bobPhase = waveAnimation.bobPhase
+                )
+            }
+
+            // icons
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                bottomItems.forEach { item ->
+                    BottomBarItem(
+                        label = item.label,
+                        icon = item.icon,
+                        selected = currentRoute == item.route,
+                        onClick = {
                             navController.navigate(item.route) {
                                 launchSingleTop = true
                                 restoreState = true
-
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
