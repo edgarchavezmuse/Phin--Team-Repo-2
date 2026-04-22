@@ -82,10 +82,7 @@ fun VendingStockScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Text(
-            text = "Machine ID: $locationId",
-            style = MaterialTheme.typography.bodyMedium
-        )
+
 
         when {
             isLoading -> {
@@ -111,8 +108,6 @@ fun VendingStockScreen(
             }
         }
 
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Back")
-        }
+
     }
 }
