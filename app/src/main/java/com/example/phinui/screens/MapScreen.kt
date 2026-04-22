@@ -71,9 +71,11 @@ import kotlinx.coroutines.tasks.await
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.example.phinui.ui.navigation.Routes
+import androidx.navigation.NavHostController
 
 @Composable
-fun MapScreen() {
+fun MapScreen(navController: NavHostController) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -317,6 +319,9 @@ fun MapScreen() {
                     .padding(16.dp),
                 onDismiss = {
                     selectedLocation = null
+                },
+                onVendingStockClick = { vendingLocation ->
+                    navController.navigate("${Routes.VENDING_STOCK}/${vendingLocation.id}")
                 }
             )
         }
@@ -359,7 +364,8 @@ fun CategoryFilterBar(
 fun PinInfoCard(
     location: CampusLocation,
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onVendingStockClick: (CampusLocation) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -377,90 +383,114 @@ fun PinInfoCard(
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                Column(
+                    modifier = Modifier.padding(bottom = 56.dp)
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = location.name,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 12.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .clickable { onDismiss() }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Close",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
+
+                    if (!location.category.isNullOrBlank()) {
+                        Text(
+                            text = location.category.replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 12.dp)
+                        )
+                    }
+
+                    if (!location.description.isNullOrBlank()) {
+                        Text(
+                            text = location.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+
                     Text(
-                        text = location.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.weight(1f)
+                        text = "Lat: ${location.latitude}, Lng: ${location.longitude}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 16.dp)
                     )
 
                     Box(
                         modifier = Modifier
-                            .padding(start = 12.dp)
+                            .padding(top = 16.dp)
                             .background(
-                                color = Color(0xFFD32F2F),
+                                color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(50)
                             )
-                            .clickable { onDismiss() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .clickable {
+                                openGoogleMapsDirections(
+                                    location.latitude,
+                                    location.longitude,
+                                    location.name,
+                                    context
+                                )
+                            }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
                         Text(
-                            text = "Close",
+                            text = "Directions",
                             color = Color.White,
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
 
-                if (!location.category.isNullOrBlank()) {
-                    Text(
-                        text = location.category.replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
-                }
-
-                if (!location.description.isNullOrBlank()) {
-                    Text(
-                        text = location.description,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-
-                Text(
-                    text = "Lat: ${location.latitude}, Lng: ${location.longitude}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .padding(top = 16.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(50)
-                        )
-                        .clickable {
-                            openGoogleMapsDirections(
-                                location.latitude,
-                                location.longitude,
-                                location.name,
-                                context
+                if (location.category.equals("vending", ignoreCase = true)) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(50)
                             )
-                        }
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = "Directions",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                            .clickable { onVendingStockClick(location) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "Stock",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 private fun markerHueForCategory(category: String?): Float {
     return when (category?.lowercase()) {
         "restroom" -> BitmapDescriptorFactory.HUE_AZURE

@@ -92,7 +92,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation("com.google.android.libraries.places:places:4.4.1")
-
+    implementation("io.coil-kt:coil-compose:2.6.0")
    //end of map depend
     implementation("com.google.accompanist:accompanist-permissions:0.37.2")
     implementation(platform("com.google.firebase:firebase-bom:34.11.0")) //for firebase

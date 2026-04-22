@@ -54,6 +54,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
+import com.example.phinui.ui.screens.VendingStockScreen
 
 @Composable
 fun PhinNavHost(
@@ -413,7 +414,23 @@ fun PhinNavHost(
         }
 
         composable(Routes.MAP) {
-            MapScreen()
+            MapScreen(navController = navController)
+        }
+
+        composable(
+            route = Routes.VENDING_STOCK + "/{locationId}",
+            arguments = listOf(
+                navArgument("locationId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val locationId = backStackEntry.arguments?.getString("locationId") ?: ""
+
+            VendingStockScreen(
+                locationId = locationId,
+                navController = navController
+            )
         }
     }
 }

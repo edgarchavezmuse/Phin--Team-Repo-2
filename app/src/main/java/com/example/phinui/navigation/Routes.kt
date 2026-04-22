@@ -9,6 +9,8 @@ object Routes {
     const val CALENDAR = "calendar"
     const val ADD_EVENT = "add_event"
     const val MAP = "map"
+
+    const val VENDING_STOCK = "vending_stock"
     const val SCHEDULE = "schedule"
     const val REGISTER = "register"
     const val LOGIN = "login"
