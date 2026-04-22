@@ -66,7 +66,7 @@ exports.sendAcceptMessageRequestNotification = onDocumentUpdated(
             title: "Message Request Accepted",
             fromUid: senderId,
             body: `${senderName} accepted your message request`,
-            uri: `phin://userlist`,
+            uri: `phin://userlist?tab=1`,
           },
         });
 

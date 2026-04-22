@@ -57,7 +57,7 @@ exports.sendMessageRequestNotification = onDocumentCreated(
             title: "New Message Request",
             fromUid: senderId,
             body: `${senderName} sent you a message request`,
-            uri: `phin://userlist`,
+            uri: `phin://userlist?tab=2`,
           },
         });
 
