@@ -87,8 +87,7 @@ fun MapScreen(navController: NavHostController) {
 
     var campusLocations by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
-    var selectedLocation by rememberSaveable { mutableStateOf<CampusLocation?>(null) }
-
+    var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
     val placesClient = remember { Places.createClient(context) }
 
     val fusedLocationClient = remember {

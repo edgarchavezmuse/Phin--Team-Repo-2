@@ -5,16 +5,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
@@ -23,9 +30,10 @@ fun VendingStockScreen(
     locationId: String,
     navController: NavHostController
 ) {
-    var imageUrl by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var machineName by remember(locationId) { mutableStateOf("Vending Stock") }
+    var imageUrl by remember(locationId) { mutableStateOf<String?>(null) }
+    var isLoading by remember(locationId) { mutableStateOf(true) }
+    var errorMessage by remember(locationId) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(locationId) {
         isLoading = true
@@ -33,27 +41,31 @@ fun VendingStockScreen(
         errorMessage = null
 
         try {
-            Log.d("VendingStockScreen", "locationId = $locationId")
+            val firestore = FirebaseFirestore.getInstance()
+            val storage = FirebaseStorage.getInstance(
+                "gs://our-awesome-app-2-269fe.firebasestorage.app"
+            )
 
-            if (locationId.isBlank()) {
-                errorMessage = "Missing vending machine ID."
-                return@LaunchedEffect
+            val doc = firestore
+                .collection("campus.locations")
+                .document(locationId)
+                .get()
+                .await()
+
+            machineName = doc.getString("name") ?: "Vending Stock"
+
+            val imagePath = doc.getString("imagePath")
+
+            if (imagePath.isNullOrBlank()) {
+                errorMessage = "No image configured for this machine."
+            } else {
+                Log.d("VendingStockScreen", "Loading imagePath = $imagePath")
+                val ref = storage.reference.child(imagePath)
+                imageUrl = ref.downloadUrl.await().toString()
             }
-
-            val path = "vending_stock/$locationId.jpg"
-            Log.d("VendingStockScreen", "Loading storage path: $path")
-
-            val ref = FirebaseStorage.getInstance()
-                .reference
-                .child(path)
-
-            val url = ref.downloadUrl.await().toString()
-            Log.d("VendingStockScreen", "Download URL loaded: $url")
-
-            imageUrl = url
         } catch (e: Exception) {
             Log.e("VendingStockScreen", "Failed to load vending image", e)
-            errorMessage = e.message ?: "Unknown error loading image."
+            errorMessage = e.message ?: "Failed to load image."
         } finally {
             isLoading = false
         }
@@ -66,7 +78,7 @@ fun VendingStockScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Vending Stock",
+            text = machineName,
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -85,17 +97,17 @@ fun VendingStockScreen(
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = "Vending machine stock",
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 200.dp, max = 500.dp)
                 )
             }
 
-            errorMessage != null -> {
-                Text("Failed to load image.")
-                Text(errorMessage!!)
-            }
-
             else -> {
-                Text("No stock image available.")
+                Text(
+                    text = errorMessage ?: "No stock image available.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
 
