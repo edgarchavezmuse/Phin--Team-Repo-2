@@ -45,7 +45,7 @@ exports.sendFriendRequestNotification = onDocumentCreated(
             title: "New Friend Request",
             fromUid: data.fromUid,
             body: `${senderName} sent you a friend request`,
-            uri: "phin://friends",
+            uri: "phin://friends?tab=1",
           },
         });
 

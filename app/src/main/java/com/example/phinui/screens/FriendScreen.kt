@@ -57,6 +57,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
@@ -65,12 +66,13 @@ import com.example.phinui.components.people.RemoveFriendDialog
 
 @Composable
 fun FriendsScreen(
-    navController: NavController
+    navController: NavController,
+    initialTab: Int = 0
 ) {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(initialTab) }
     var friends by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var incoming by remember { mutableStateOf<List<Pair<String, FriendRequest>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -115,6 +117,10 @@ fun FriendsScreen(
         }
     }
 
+    LaunchedEffect(initialTab) {
+        selectedTab = initialTab
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -150,7 +156,13 @@ fun FriendsScreen(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 }
                     ) {
-                        Text("Requests")
+                        Text(
+                            if (incoming.isNotEmpty()) {
+                                "Requests (${incoming.size})"
+                            } else {
+                                "Requests"
+                            }
+                        )
                     }
                 }
 
