@@ -66,6 +66,9 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.example.phinui.components.people.ActiveChatDialog
 import androidx.compose.material3.*
 import com.example.phinui.components.people.PendingFriendRequestDialog
+import androidx.compose.foundation.clickable
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
 
 @Composable
 fun PeopleScreen() {
@@ -88,6 +91,7 @@ fun PeopleScreen() {
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
     var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var pendingRequestUser by remember { mutableStateOf<String?>(null) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -256,7 +260,20 @@ fun PeopleScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name, 44)
+                                UserAvatar(
+                                    name = name,
+                                    size = 44,
+                                    photoUrl = user["photoUrl"] as? String,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = user["photoUrl"] as? String,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -388,7 +405,20 @@ fun PeopleScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name, 44)
+                                UserAvatar(
+                                    name = name,
+                                    size = 44,
+                                    photoUrl = user["photoUrl"] as? String,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = user["photoUrl"] as? String,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(12.dp))
 
                                 Column(
@@ -502,6 +532,17 @@ fun PeopleScreen() {
                 )
             },
             onDismiss = { userToUnblock = null }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
         )
     }
 
