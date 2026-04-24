@@ -21,6 +21,7 @@ import java.net.URL
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.authorization.GoogleCalendarSessionStorage
 import com.example.phinui.data.calendar.GoogleCalendarUnauthorizedException
+import com.example.phinui.data.calendar.FirebaseCalendarRepository
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
@@ -84,6 +85,8 @@ class CalendarViewModel(
         get() = (0..6).map { offset -> currentWeekStartDate.plusDays(offset.toLong()) }
 
 
+    private val firebaseCalendarRepository = FirebaseCalendarRepository()
+
     // Load current events for the week the authorization is successful
     fun onAuthorizationSuccess(token: String) {
         googleAccessToken = token
@@ -117,7 +120,7 @@ class CalendarViewModel(
 
     // Refresh events when updated
     fun refreshEvents() {
-        if (googleAccessToken == null || isLoadingEvents) return
+        if (isLoadingEvents) return
         loadEventsForCurrentWeek()
     }
 
@@ -127,10 +130,7 @@ class CalendarViewModel(
         selectedDateInWeek = selectedDateInWeek.minusDays(7)
 
         persistWeekState()
-
-        if (googleAccessToken != null) {
-            loadEventsForCurrentWeek()
-        }
+        loadEventsForCurrentWeek()
     }
 
 
@@ -139,10 +139,7 @@ class CalendarViewModel(
         selectedDateInWeek = selectedDateInWeek.plusDays(7)
 
         persistWeekState()
-
-        if (googleAccessToken != null) {
-            loadEventsForCurrentWeek()
-        }
+        loadEventsForCurrentWeek()
     }
 
 
@@ -178,10 +175,7 @@ class CalendarViewModel(
         currentReferenceDate = today
         selectedDateInWeek = today
         persistWeekState()
-
-        if (googleAccessToken != null) {
-            loadEventsForCurrentWeek()
-        }
+        loadEventsForCurrentWeek()
     }
 
     // Adds event to Google or local calendar depending on sign-in state
@@ -206,55 +200,74 @@ class CalendarViewModel(
         }
     }
 
+    suspend fun saveLocalEventToFirebase(event: CalendarEvent) {
+        firebaseCalendarRepository.saveEvent(event)
+        reminderScheduler.scheduleReminder(event)
+        loadEventsForCurrentWeek()
+    }
+
+    suspend fun deleteLocalEventFromFirebase(event: CalendarEvent) {
+        firebaseCalendarRepository.deleteEvent(event.id)
+        reminderScheduler.cancelReminder(event.id, event.reminderMinutes)
+        loadEventsForCurrentWeek()
+    }
+
     /*
     * Data loader helper
     * Fetches events for a specific week and stores them grouped by LocalDate
     */
     private fun loadEventsForCurrentWeek() {
-
-        val token = googleAccessToken ?: return
-
-
         isLoadingEvents = true
         errorMessage = null
 
         viewModelScope.launch {
-
             try {
+                val firebaseEvents = firebaseCalendarRepository.loadWeekEvents(currentWeekStartDate)
 
-                // Call repository to fetch events from Google Calendar API for the given week
-                val events = GoogleCalendarRepository.fetchWeekEvents(
-                    accessToken = token,
-                    weekStart = currentWeekStartDate,
-                    zone = ZoneId.systemDefault()
-                )
+                val googleEvents = if (googleAccessToken != null) {
+                    try {
+                        GoogleCalendarRepository.fetchWeekEvents(
+                            accessToken = googleAccessToken!!,
+                            weekStart = currentWeekStartDate,
+                            zone = ZoneId.systemDefault()
+                        )
+                    } catch (e: GoogleCalendarUnauthorizedException) {
+                        googleAccessToken = null
+                        isRestoringGoogleSession = false
+                        errorMessage = "Session expired. Reconnecting required."
+                        emptyList()
+                    }
+                } else {
+                    emptyList()
+                }
 
-                // store previous events to track removed ones
-                val oldEventIds = eventsGroupedByDate.values.flatten().map { it.id }.toSet()
+                val oldReminderKeys = eventsGroupedByDate.values
+                    .flatten()
+                    .map { "${it.source.name}_${it.id}" }
+                    .toSet()
+
+                val allEvents = (firebaseEvents + googleEvents)
+                    .distinctBy { "${it.source.name}_${it.id}" }
 
                 eventsGroupedByDate = groupEventsByDateForWeek(
-                    events = events,
+                    events = allEvents,
                     weekStartDate = currentWeekStartDate
                 )
 
-                // schedule reminders for each event
                 val newEvents = eventsGroupedByDate.values.flatten()
-                val newEventIds = newEvents.map { it.id }.toSet()
+                val newReminderKeys = newEvents
+                    .map { "${it.source.name}_${it.id}" }
+                    .toSet()
 
                 newEvents.forEach { event ->
                     reminderScheduler.scheduleReminder(event)
                 }
 
-                // cancel reminders for removed events
-                (oldEventIds - newEventIds).forEach { removedId ->
+                val removedKeys = oldReminderKeys - newReminderKeys
+                removedKeys.forEach { removedKey ->
+                    val removedId = removedKey.substringAfter("_")
                     reminderScheduler.cancelReminder(removedId)
                 }
-
-            } catch (e: GoogleCalendarUnauthorizedException) {
-                googleAccessToken = null
-                isRestoringGoogleSession = false
-                errorMessage = "Session expired. Reconnecting required."
-                eventsGroupedByDate = emptyMap()
 
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Failed to load events."

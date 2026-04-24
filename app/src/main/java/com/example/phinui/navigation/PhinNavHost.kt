@@ -17,7 +17,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import com.example.phinui.data.calendar.CalendarEvent
-import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
@@ -54,6 +53,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
+import com.example.phinui.data.calendar.FirebaseCalendarRepository
 
 @Composable
 fun PhinNavHost(
@@ -63,7 +63,6 @@ fun PhinNavHost(
 ) {
     // variables for ensuring events get passed to calendar
     val context = LocalContext.current
-    val storeEvent = remember { CalendarStorage(context) }
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
     val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
@@ -72,11 +71,6 @@ fun PhinNavHost(
 
     createNotificationChannels(context)
 
-    LaunchedEffect(Unit) {
-        val loaded = storeEvent.loadEvents()
-        savedEvents.clear()
-        savedEvents.addAll(loaded)
-    }
 
     val activity = context as ComponentActivity
 
@@ -119,6 +113,16 @@ fun PhinNavHost(
         } else {
             calendarViewModel.onAuthorizationSuccess(tokenFromResult)
         }
+    }
+
+    LaunchedEffect(calendarViewModel.eventsGroupedByDate) {
+        val localEvents = calendarViewModel.eventsGroupedByDate
+            .values
+            .flatten()
+            .filter { it.source == CalendarSource.LOCAL }
+
+        savedEvents.clear()
+        savedEvents.addAll(localEvents)
     }
 
     LaunchedEffect(
@@ -302,11 +306,8 @@ fun PhinNavHost(
                                 when (val result = calendarViewModel.addEventToAppropriateCalendar(event)) {
                                     is AddEventResult.ShouldSaveLocally -> {
                                         val localEvent = event.copy(source = CalendarSource.LOCAL)
-                                        savedEvents.add(localEvent)
 
-                                        withContext(Dispatchers.IO) {
-                                            storeEvent.saveEvent(localEvent, reminderScheduler)
-                                        }
+                                        calendarViewModel.saveLocalEventToFirebase(localEvent)
 
                                         Toast.makeText(
                                             context,
@@ -393,13 +394,7 @@ fun PhinNavHost(
 
                                     val localEvent = newEvent.copy(source = CalendarSource.LOCAL)
 
-                                    if (savedEvents.none { it.title == localEvent.title && it.start == localEvent.start }) {
-                                        savedEvents.add(localEvent)
-                                    }
-
-                                    withContext(Dispatchers.IO) {
-                                        storeEvent.saveEvent(localEvent, reminderScheduler)
-                                    }
+                                    calendarViewModel.saveLocalEventToFirebase(localEvent)
 
                                     Toast.makeText(
                                         context,

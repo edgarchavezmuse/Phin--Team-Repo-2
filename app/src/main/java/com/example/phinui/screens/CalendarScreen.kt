@@ -20,11 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.notifications.ExactAlarmPermissionRequest
-import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.viewmodel.CalendarViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.credentials.ClearCredentialStateRequest
@@ -45,7 +42,6 @@ import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
 import androidx.compose.foundation.background
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.SpanStyle
@@ -81,7 +77,6 @@ fun CalendarScreen(
     ExactAlarmPermissionRequest()
     // Variables for removing events from local calendar
     val coroutineScope = rememberCoroutineScope()
-    val storage = CalendarStorage(context)
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken
@@ -117,7 +112,7 @@ fun CalendarScreen(
      */
     DisposableEffect(lifecycleOwner, googleAccessToken) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && googleAccessToken != null) {
+            if (event == Lifecycle.Event.ON_RESUME) {
                 calendarViewModel.refreshEvents()
             }
         }
@@ -437,20 +432,22 @@ fun CalendarScreen(
                                 }
                             }
                         } else {
-                            coroutineScope.launch(Dispatchers.IO) {
-                                storage.removeEvent(eventToDelete, reminderScheduler)
-                                val updatedEvents = storage.loadEvents()
-
-                                withContext(Dispatchers.Main) {
-                                    savedEvents.clear()
-                                    savedEvents.addAll(updatedEvents)
+                            coroutineScope.launch {
+                                try {
+                                    calendarViewModel.deleteLocalEventFromFirebase(eventToDelete)
 
                                     Toast.makeText(
                                         context,
                                         "${eventToDelete.title} removed from Phin calendar",
                                         Toast.LENGTH_SHORT
                                     ).show()
-
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        e.message ?: "Failed to remove local event.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } finally {
                                     showDeleteConfirmation.value = false
                                     showRemoveDialog.value = false
                                 }
