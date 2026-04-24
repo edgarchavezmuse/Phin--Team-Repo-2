@@ -8,11 +8,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
@@ -20,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+//import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -139,10 +145,20 @@ fun MessagesScreen(
             verticalArrangement = Arrangement.Top
         ) {
             items(messages) { message ->
-                val text = message["text"] as? String?: ""
-                val senderID = message["senderID"] as? String?: ""
+                val type = message["type"] as? String?: "text"
+                val text = message["text"] as? String ?: ""
+
+                val senderID = message["senderID"] as? String ?: ""
                 val isDeleted = message["deleted"] as? Boolean ?: false
+                val messageID = message["messageID"] as? String ?: ""
+                val chatID = message["chatID"] as? String ?: ""
                 val isMyMessage = senderID == senderUserID
+
+                val studySessionTitle = message["title"] as? String ?: "Study Session"
+                val studySessionDescription = message["description"] as? String ?: ""
+                val participants = message["participants"] as? Map<String, String> ?: emptyMap()
+                val myStatus = participants[senderUserID] ?: "PENDING"
+                val receiverStatus = participants[receiverUserID] ?: "PENDING"
 
                 Row(
                     modifier = Modifier
@@ -151,46 +167,132 @@ fun MessagesScreen(
                     horizontalArrangement = if (isMyMessage) Arrangement.End
                     else Arrangement.Start,
                 ) {
-                Box(
-                    modifier = Modifier
-                        .widthIn(max = 250.dp)
-                        .background(
-                            color = when {
-                                isDeleted -> DeletedMessageColor
-                                isMyMessage -> SenderUserColor
-                                else -> ReceiverUserColor
-                            }
-                        )
-                        .padding(12.dp)
-                        .pointerInput(Unit) {
-                            detectTapGestures (
-                                onLongPress = {
-                                    if (isMyMessage && !isDeleted) {
-                                        selectedMessage.value = message
-                                        showDeleteDialog.value = true
-                                    }
+                    Box(
+                        modifier = Modifier
+                            .widthIn(max = 250.dp)
+                            .background(
+                                color = when {
+                                    isDeleted -> DeletedMessageColor
+                                    isMyMessage -> SenderUserColor
+                                    else -> ReceiverUserColor
                                 }
                             )
+                            .padding(12.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onLongPress = {
+                                        if (isMyMessage && !isDeleted) {
+                                            selectedMessage.value = message
+                                            showDeleteDialog.value = true
+                                        }
+                                    }
+                                )
+                            }
+                    ) {
+
+                        if (isDeleted) {
+                            Text(
+                                text = "This message was deleted",
+                                fontStyle = FontStyle.Italic
+                            )
                         }
-                ) {
-                    if (isDeleted) {
-                        Text(
-                            text = "This message was deleted",
-                            //fontWeight = FontWeight.Bold,
-                            fontStyle = FontStyle.Italic
-                        )
+
+                        else {
+                            when (type) {
+                                "text" -> {
+                                    Text(
+                                        text = text,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                "invitation" -> {
+                                    Column {
+                                        Text(
+                                            text = studySessionTitle,
+                                            fontWeight = FontWeight.Bold
+                                        )
+
+                                        if (studySessionDescription.isNotEmpty()) {
+                                            Text(
+                                                text = studySessionDescription
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        when (myStatus) {
+                                            "PENDING" -> {
+                                                if (!isMyMessage) {
+                                                    Row {
+                                                        Button(
+                                                            onClick = {
+                                                                chatRepository.respondStudySessionInvitation(
+                                                                    chatID = chatID,
+                                                                    messageID = messageID,
+                                                                    senderUserID = senderUserID,
+                                                                    invitationResponse = "ACCEPTED"
+                                                                )
+                                                            }
+                                                        ) {
+                                                            Text("Accept")
+                                                        }
+
+                                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                                        Button(
+                                                            onClick = {
+                                                                chatRepository.respondStudySessionInvitation(
+                                                                    chatID = chatID,
+                                                                    messageID = messageID,
+                                                                    senderUserID = senderUserID,
+                                                                    invitationResponse = "DECLINED"
+                                                                )
+                                                            }
+                                                        ) {
+                                                            Text("Decline")
+                                                        }
+                                                    }
+                                                } else {
+                                                    Text("Pending response...")
+                                                }
+                                            }
+
+                                            "ACCEPTED" -> {
+                                                when (receiverStatus) {
+                                                    "PENDING" -> {
+                                                        Text("Pending response...")
+                                                    }
+                                                    "ACCEPTED" -> {
+                                                        Text("Accepted")
+                                                    }
+                                                    "DECLINED" -> {
+                                                        Text("Declined")
+                                                    }
+                                                }
+                                            }
+
+                                            // This one may never fire
+                                            "DECLINED" -> {
+                                                if (receiverStatus == "PENDING"){
+                                                    Text("Pending response...")
+                                                }
+                                                else {
+                                                    Text("Declined")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                    else {
-                        Text(
-                            text = text,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                  }
                 }
             }
         }
 
+        // Buttons and text field
+        var showStudySessionInviteDialog by remember { mutableStateOf(false) }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -220,6 +322,68 @@ fun MessagesScreen(
             }
             ) {
                 Text ("Send")
+            }
+
+            IconButton(onClick = {
+                showStudySessionInviteDialog = true
+            }
+            ) {
+                Icon(Icons.Default.Event, contentDescription = "Invite")
+            }
+
+            if (showStudySessionInviteDialog) {
+                var studySessionTitle by remember { mutableStateOf("") }
+                var studySessionDescription by remember {mutableStateOf("")}
+
+                AlertDialog(
+                    onDismissRequest = { showStudySessionInviteDialog = false },
+                    title = {
+                        Text("Create study session")
+                    },
+                    text = {
+                        Column{
+                            TextField(
+                                value = studySessionTitle,
+                                onValueChange = { studySessionTitle = it },
+                                label = { Text("Title") }
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            TextField(
+                                value = studySessionDescription,
+                                onValueChange = { studySessionDescription = it },
+                                label = { Text("Description") }
+                            )
+                        }
+                    },
+
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                chatRepository.sendStudySessionInvitation(
+                                    senderUserID = senderUserID,
+                                    receiverUserID = receiverUserID,
+                                    studySessionTitle = studySessionTitle,
+                                    studySessionDescription = studySessionDescription
+                                )
+
+                                showStudySessionInviteDialog = false
+                            }
+                        ) {
+                            Text("Send")
+                        }
+                    },
+                    dismissButton = {
+                        Button(
+                            onClick = {
+                                showStudySessionInviteDialog = false
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
         }
     }

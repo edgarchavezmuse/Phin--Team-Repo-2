@@ -21,6 +21,7 @@ class ChatRepository {
         val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
 
         val message = hashMapOf(
+            "type" to "text",
             "senderID" to senderUserID,
             "text" to messageText,
             "timestamp" to messageProperties.currentTime,
@@ -49,6 +50,43 @@ class ChatRepository {
                 )
             )
         }
+    }
+
+    fun sendStudySessionInvitation(
+        senderUserID: String,
+        receiverUserID: String,
+        studySessionTitle: String,
+        studySessionDescription: String
+    ) {
+        val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
+
+        val studySessionInvitation = hashMapOf(
+            "type" to "invitation",
+            "senderID" to senderUserID,
+            "title" to studySessionTitle,
+            "description" to studySessionDescription,
+            "timestamp" to messageProperties.currentTime,
+            "deleted" to false,
+            "participants" to mapOf(
+                senderUserID to "ACCEPTED",
+                receiverUserID to "PENDING"
+            )
+        )
+
+        messageProperties.messageReference.add(studySessionInvitation)
+    }
+
+    fun respondStudySessionInvitation(
+        chatID: String,
+        messageID: String,
+        senderUserID: String,
+        invitationResponse: String
+    ) {
+        chatsCollection
+            .document(chatID)
+            .collection("messages")
+            .document(messageID)
+            .update("participants.$senderUserID", invitationResponse)
     }
 
     fun deleteMessage(chatID: String, messageID: String) {
@@ -109,6 +147,7 @@ class ChatRepository {
                 val messages = snapshot.documents.map { doc ->
                     doc.data!!.toMutableMap().apply {
                         put("messageID", doc.id)
+                        put("chatID", messageProperties.chatID)
                     }
                 }
                 newMessage(messages)
