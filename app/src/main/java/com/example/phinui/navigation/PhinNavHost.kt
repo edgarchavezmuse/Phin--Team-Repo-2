@@ -53,7 +53,6 @@ import com.google.firebase.auth.FirebaseAuth
 
 import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
-import com.example.phinui.data.calendar.FirebaseCalendarRepository
 
 @Composable
 fun PhinNavHost(
@@ -68,6 +67,7 @@ fun PhinNavHost(
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { FirebaseAuth.getInstance() }
     val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
+    val currentUserId = auth.currentUser?.uid
 
     createNotificationChannels(context)
 
@@ -113,6 +113,12 @@ fun PhinNavHost(
         } else {
             calendarViewModel.onAuthorizationSuccess(tokenFromResult)
         }
+    }
+
+    LaunchedEffect(currentUserId) {
+        savedEvents.clear()
+        allEvents.clear()
+        calendarViewModel.refreshEvents()
     }
 
     LaunchedEffect(calendarViewModel.eventsGroupedByDate) {
