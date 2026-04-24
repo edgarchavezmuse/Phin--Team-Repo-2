@@ -54,7 +54,8 @@ fun MessagesScreen(
     val initialChatOpen = remember { mutableStateOf(true) }
     var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     var showDeleteDialog = remember { mutableStateOf(false) }
-    val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
+    //val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
+    val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -62,7 +63,8 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(senderUserID, receiverUserID) {
-        chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
+        //chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
+        chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) {
                 newMessages ->
             messages = newMessages
         }
@@ -114,7 +116,8 @@ fun MessagesScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         val message = selectedMessage.value ?: return@TextButton
-                        val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
+                        //val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
+                        //val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
                         chatRepositoryViewModel.onDeleteMessage(
                             message = message,
                             chatID = chatID
@@ -227,7 +230,7 @@ fun MessagesScreen(
                                                     Row {
                                                         Button(
                                                             onClick = {
-                                                                chatRepository.respondStudySessionInvitation(
+                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
                                                                     chatID = chatID,
                                                                     messageID = messageID,
                                                                     senderUserID = senderUserID,
@@ -242,7 +245,7 @@ fun MessagesScreen(
 
                                                         Button(
                                                             onClick = {
-                                                                chatRepository.respondStudySessionInvitation(
+                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
                                                                     chatID = chatID,
                                                                     messageID = messageID,
                                                                     senderUserID = senderUserID,
@@ -312,7 +315,8 @@ fun MessagesScreen(
 
             Button(onClick = {
                 if (messageText.isNotBlank()) {
-                    chatRepository.sendMessage(
+                    //chatRepository.sendMessage(
+                    chatRepositoryViewModel.callSendMessage(
                         senderUserID,
                         receiverUserID,
                         messageText
@@ -361,7 +365,7 @@ fun MessagesScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                chatRepository.sendStudySessionInvitation(
+                                chatRepositoryViewModel.callSendStudySessionInvitation(
                                     senderUserID = senderUserID,
                                     receiverUserID = receiverUserID,
                                     studySessionTitle = studySessionTitle,

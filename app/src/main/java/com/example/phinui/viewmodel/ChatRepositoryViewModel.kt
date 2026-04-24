@@ -50,6 +50,14 @@ class ChatRepositoryViewModel (
         }
     }
 
+    fun callGetChatID(firstUserID: String, secondUserID: String): String {
+        return chatRepository.getChatID(firstUserID, secondUserID)
+    }
+
+    fun callCheckForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
+        chatRepository.checkForNewMessage(senderUserID, receiverUserID, newMessage)
+    }
+
     val getGeneralChats = derivedStateOf {
         val friendIDs = friendsList.value.map { it.uid }.toSet()
 
@@ -154,6 +162,28 @@ class ChatRepositoryViewModel (
                 }
             }
         }
+    }
+
+    fun callSendMessage(senderUserID: String, receiverUserID: String, messageText: String) {
+        chatRepository.sendMessage(senderUserID, receiverUserID, messageText)
+    }
+
+    fun callSendStudySessionInvitation(
+        senderUserID: String,
+        receiverUserID: String,
+        studySessionTitle: String,
+        studySessionDescription: String
+    ) {
+        chatRepository.sendStudySessionInvitation(senderUserID, receiverUserID, studySessionTitle, studySessionDescription)
+    }
+
+    fun callRespondStudySessionInvitation(
+        chatID: String,
+        messageID: String,
+        senderUserID: String,
+        invitationResponse: String
+    ) {
+        chatRepository.respondStudySessionInvitation(chatID, messageID, senderUserID, invitationResponse)
     }
 
     fun approveRequest(chatID: String) {
