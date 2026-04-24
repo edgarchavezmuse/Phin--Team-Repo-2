@@ -1,6 +1,5 @@
 package com.example.phinui.ui.screens
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,6 +64,9 @@ import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.RemoveFriendDialog
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.foundation.clickable
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
 
 @Composable
 fun FriendsScreen(
@@ -79,6 +81,7 @@ fun FriendsScreen(
     var incoming by remember { mutableStateOf<List<Pair<String, FriendRequest>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var requestEmails by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
     var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -197,7 +200,19 @@ fun FriendsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name = name, size = 44)
+                                UserAvatar(
+                                    name = name,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = user["photoUrl"] as? String,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -291,6 +306,9 @@ fun FriendsScreen(
                 }
                 else {
                     items(incoming) { (requestId, req) ->
+                        val name = req.fromName
+                        val email = requestEmails[req.fromUid] ?: ""
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -302,7 +320,20 @@ fun FriendsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(req.fromName, 44)
+                                UserAvatar(
+                                    name = name,
+                                    size = 44,
+                                    photoUrl = null,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = null,
+                                            major = "",
+                                            bio = ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -512,6 +543,17 @@ fun FriendsScreen(
                     Text("Cancel", color = NavText)
                 }
             }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
         )
     }
 }
