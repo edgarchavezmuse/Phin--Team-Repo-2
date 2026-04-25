@@ -25,23 +25,23 @@ class FirebaseCalendarRepository(
             .collection("events")
 
     suspend fun saveEvent(event: CalendarEvent) {
-        eventsCollection()
-            .document(event.id)
-            .set(
-                mapOf(
-                    "id" to event.id,
-                    "title" to event.title,
-                    "start" to event.start,
-                    "end" to event.end,
-                    "location" to event.location,
-                    "reminderMinutes" to event.reminderMinutes,
-                    "description" to event.description,
-                    "isAllDay" to event.isAllDay,
-                    "colorHex" to event.colorHex,
-                    "source" to event.source.name
-                )
+        val docRef = eventsCollection().document()
+        val safeEvent = event.copy(id = docRef.id)
+
+        docRef.set(
+            mapOf(
+                "id" to safeEvent.id,
+                "title" to safeEvent.title,
+                "start" to safeEvent.start,
+                "end" to safeEvent.end,
+                "location" to safeEvent.location,
+                "reminderMinutes" to safeEvent.reminderMinutes,
+                "description" to safeEvent.description,
+                "isAllDay" to safeEvent.isAllDay,
+                "colorHex" to safeEvent.colorHex,
+                "source" to safeEvent.source.name
             )
-            .await()
+        ).await()
     }
 
     suspend fun deleteEvent(eventId: String) {

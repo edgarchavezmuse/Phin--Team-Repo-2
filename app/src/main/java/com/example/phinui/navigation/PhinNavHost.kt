@@ -290,8 +290,11 @@ fun PhinNavHost(
                 //events = allEvents,
                 events = schoolEvents,
                 onEventClick = { event ->
-                    val googleEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
-                    val existsLocally = savedEvents.any { sameCalendarEvent(it, event) }
+                    val allCalendarEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
+                    val googleEvents = allCalendarEvents.filter { it.source == CalendarSource.GOOGLE }
+                    val localEvents = allCalendarEvents.filter { it.source == CalendarSource.LOCAL }
+
+                    val existsLocally = localEvents.any { sameCalendarEvent(it, event) }
                     val existsInGoogle = googleEvents.any { sameCalendarEvent(it, event) }
 
                     if (existsInGoogle) {
