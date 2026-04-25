@@ -10,6 +10,7 @@ import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -48,6 +49,14 @@ class ChatRepositoryViewModel (
         chatRepository.listenChats(userID) { chats ->
             approvedChats.value = chats
         }
+    }
+
+    fun callGetChatID(firstUserID: String, secondUserID: String): String {
+        return chatRepository.getChatID(firstUserID, secondUserID)
+    }
+
+    fun callCheckForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
+        chatRepository.checkForNewMessage(senderUserID, receiverUserID, newMessage)
     }
 
     val getGeneralChats = derivedStateOf {
@@ -154,6 +163,31 @@ class ChatRepositoryViewModel (
                 }
             }
         }
+    }
+
+    fun callSendMessage(senderUserID: String, receiverUserID: String, messageText: String) {
+        chatRepository.sendMessage(senderUserID, receiverUserID, messageText)
+    }
+
+    fun callSendStudySessionInvitation(
+        senderUserID: String,
+        receiverUserID: String,
+        studySessionTitle: String,
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+
+    ) {
+        chatRepository.sendStudySessionInvitation(senderUserID, receiverUserID, studySessionTitle, studySessionDescription, startTime, endTime)
+    }
+
+    fun callRespondStudySessionInvitation(
+        chatID: String,
+        messageID: String,
+        senderUserID: String,
+        invitationResponse: String
+    ) {
+        chatRepository.respondStudySessionInvitation(chatID, messageID, senderUserID, invitationResponse)
     }
 
     fun approveRequest(chatID: String) {
