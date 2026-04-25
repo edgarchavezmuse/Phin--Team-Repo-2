@@ -5,6 +5,7 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.Timestamp
 
 class ChatRepository {
 
@@ -56,7 +57,9 @@ class ChatRepository {
         senderUserID: String,
         receiverUserID: String,
         studySessionTitle: String,
-        studySessionDescription: String
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
     ) {
         val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
 
@@ -67,6 +70,8 @@ class ChatRepository {
             "description" to studySessionDescription,
             "timestamp" to messageProperties.currentTime,
             "deleted" to false,
+            "startTime" to startTime,
+            "endTime" to endTime,
             "participants" to mapOf(
                 senderUserID to "ACCEPTED",
                 receiverUserID to "PENDING"

@@ -10,6 +10,7 @@ import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -172,9 +173,12 @@ class ChatRepositoryViewModel (
         senderUserID: String,
         receiverUserID: String,
         studySessionTitle: String,
-        studySessionDescription: String
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+
     ) {
-        chatRepository.sendStudySessionInvitation(senderUserID, receiverUserID, studySessionTitle, studySessionDescription)
+        chatRepository.sendStudySessionInvitation(senderUserID, receiverUserID, studySessionTitle, studySessionDescription, startTime, endTime)
     }
 
     fun callRespondStudySessionInvitation(
