@@ -22,6 +22,8 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.data.authorization.GoogleCalendarSessionStorage
 import com.example.phinui.data.calendar.GoogleCalendarUnauthorizedException
 import com.example.phinui.data.calendar.FirebaseCalendarRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.example.phinui.data.calendar.GoogleCalendarFirebaseRepository
 
 sealed class AddEventResult {
     data class AddedToGoogle(val event: CalendarEvent) : AddEventResult()
@@ -30,7 +32,8 @@ sealed class AddEventResult {
 class CalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val reminderScheduler: ReminderScheduler,
-    private val sessionStorage: GoogleCalendarSessionStorage
+    private val sessionStorage: GoogleCalendarSessionStorage,
+    private val firebaseRepository: GoogleCalendarFirebaseRepository
 ) : ViewModel() {
 
     //  Authorization + calendar data state
@@ -39,14 +42,13 @@ class CalendarViewModel(
         private set
 
     val isGoogleCalendarConnected: Boolean
-        get() = sessionStorage.isConnected()
-
+        get() = googleAccessToken != null || userEmail != null
     var isRestoringGoogleSession by mutableStateOf(false)
         private set
 
     var userEmail by mutableStateOf(
         savedStateHandle.get<String>("userEmail")
-            ?: sessionStorage.getUserEmail()
+            ?: currentFirebaseUid()?.let { sessionStorage.getUserEmail(it) }
     )
         private set
 
@@ -87,6 +89,11 @@ class CalendarViewModel(
 
     private val firebaseCalendarRepository = FirebaseCalendarRepository()
 
+
+    private fun currentFirebaseUid(): String? {
+        return FirebaseAuth.getInstance().currentUser?.uid
+    }
+
     // Load current events for the week the authorization is successful
     fun onAuthorizationSuccess(token: String) {
         googleAccessToken = token
@@ -97,14 +104,17 @@ class CalendarViewModel(
             userEmail = email
             savedStateHandle["userEmail"] = email
 
-            sessionStorage.saveSession(userEmail = email)
+            currentFirebaseUid()?.let { uid ->
+                sessionStorage.saveSession(firebaseUid = uid, userEmail = email)
+                firebaseRepository.saveConnection(uid, email)
+            }
 
             loadEventsForCurrentWeek()
         }
     }
 
     fun beginGoogleSessionRestore() {
-        if (!sessionStorage.isConnected()) return
+        if (userEmail == null) return
         if (googleAccessToken != null) return
         if (isRestoringGoogleSession) return
 
@@ -155,8 +165,7 @@ class CalendarViewModel(
         errorMessage = message
     }
 
-    // Sign out of Google Calendar for this session
-    fun signOut() {
+    fun clearInMemoryState() {
         googleAccessToken = null
         userEmail = null
         errorMessage = null
@@ -164,10 +173,37 @@ class CalendarViewModel(
         isRestoringGoogleSession = false
         eventsGroupedByDate = emptyMap()
 
-        // Clear persisted state used by this ViewModel
         savedStateHandle["userEmail"] = null
+    }
 
-        sessionStorage.clearSession()
+    // Sign out of Google Calendar for this session
+    fun signOut() {
+        val uid = currentFirebaseUid()
+
+        clearInMemoryState()
+
+        if (uid != null) {
+            sessionStorage.clearSession(uid)
+            viewModelScope.launch {
+                firebaseRepository.clearConnection(uid)
+            }
+        }
+    }
+
+    fun restoreConnectionFromFirebase() {
+        val uid = currentFirebaseUid() ?: return
+
+        viewModelScope.launch {
+            try {
+                val connection = firebaseRepository.getConnection(uid)
+
+                if (connection?.connected == true) {
+                    userEmail = connection.googleEmail
+                    savedStateHandle["userEmail"] = connection.googleEmail
+                }
+            } catch (_: Exception) {
+            }
+        }
     }
 
     fun goToCurrentWeek() {

@@ -8,8 +8,8 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import android.content.Context
 import com.example.phinui.data.authorization.GoogleCalendarSessionStorage
+import com.example.phinui.data.calendar.GoogleCalendarFirebaseRepository
 
-// in order to allow ReminderScheduler parameter
 class CalendarViewModelFactory(
     private val context: Context,
     private val reminderScheduler: ReminderScheduler,
@@ -18,16 +18,17 @@ class CalendarViewModelFactory(
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
         extras: CreationExtras
-    ) : T {
+    ): T {
         if (modelClass.isAssignableFrom(CalendarViewModel::class.java)) {
-            // CreationExtras API to get SavedStateHandle
             val savedStateHandle: SavedStateHandle = extras.createSavedStateHandle()
             val sessionStorage = GoogleCalendarSessionStorage(context.applicationContext)
+            val firebaseRepository = GoogleCalendarFirebaseRepository()
 
             return CalendarViewModel(
                 savedStateHandle = savedStateHandle,
                 reminderScheduler = reminderScheduler,
-                sessionStorage = sessionStorage
+                sessionStorage = sessionStorage,
+                firebaseRepository = firebaseRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
