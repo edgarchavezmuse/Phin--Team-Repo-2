@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AlarmOff
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.outlined.Edit
@@ -58,6 +59,7 @@ import com.example.phinui.viewmodel.UserListViewModel
 import com.google.firebase.Timestamp
 import java.time.*
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -198,6 +200,8 @@ fun MessagesScreen(
                 val isDeleted = message["deleted"] as? Boolean ?: false
                 val messageID = message["messageID"] as? String ?: ""
                 val chatID = message["chatID"] as? String ?: ""
+                val startTime = message["startTime"] as? Timestamp
+                val endTime = message["endTime"] as? Timestamp
                 val isMyMessage = senderID == senderUserID
 
                 val studySessionTitle = message["title"] as? String ?: "Study Session"
@@ -205,6 +209,15 @@ fun MessagesScreen(
                 val participants = message["participants"] as? Map<String, String> ?: emptyMap()
                 val myStatus = participants[senderUserID] ?: "PENDING"
                 val receiverStatus = participants[receiverUserID] ?: "PENDING"
+
+                val convertDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
+                val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
+                val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
+                val displayEndTime = endTime?.toDate()?.let {convertTime.format(it) } ?: ""
+
+//                val displayStartTime = startTime?.toDate()?.toString() ?: ""
+//                val displayEndTime = endTime?.toDate()?.toString() ?: ""
 
                 Row(
                     modifier = Modifier
@@ -264,6 +277,12 @@ fun MessagesScreen(
                                                 text = studySessionDescription
                                             )
                                         }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text("Date: " + displayDate)
+                                        Text("Start time: " + displayStartTime)
+                                        Text("End time: " + displayEndTime)
 
                                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -381,6 +400,8 @@ fun MessagesScreen(
             if (showStudySessionInviteDialog) {
                 var studySessionTitle by remember { mutableStateOf("") }
                 var studySessionDescription by remember {mutableStateOf("")}
+                val amPMTime = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
+                var emptyFieldChecker by remember { mutableStateOf<String?>(null) }
 
                 AlertDialog(
                     onDismissRequest = { showStudySessionInviteDialog = false },
@@ -404,7 +425,7 @@ fun MessagesScreen(
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
@@ -414,7 +435,11 @@ fun MessagesScreen(
                             ) {
                                 Icon(Icons.Default.DateRange, contentDescription = "Date")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Select date")
+                                Text(
+                                    text =
+                                        if (selectedStudyDate.isNotEmpty()) { selectedStudyDate }
+                                        else { "Select date" }
+                                )
                             }
 
                             if (showDatePicker) {
@@ -437,7 +462,9 @@ fun MessagesScreen(
                             ) {
                                 Icon(Icons.Default.AccessTime, contentDescription = "Start time")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Select start time")
+                                Text(
+                                    text = selectedStudyStartTime?.format(amPMTime) ?: "Select start time"
+                                )
                             }
 
                             if (showStartTimePicker) {
@@ -461,9 +488,11 @@ fun MessagesScreen(
                                     .clickable { showEndTimePicker = true }
                                     .padding(12.dp)
                             ) {
-                                Icon(Icons.Default.AccessTime, contentDescription = "End time")
+                                Icon(Icons.Default.AlarmOff, contentDescription = "End time")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Select end time")
+                                Text(
+                                    text = selectedStudyEndTime?.format(amPMTime) ?: "Select end time"
+                                )
                             }
 
                             if (showEndTimePicker) {
@@ -477,14 +506,58 @@ fun MessagesScreen(
                                     }
                                 )
                             }
+
+                            emptyFieldChecker?.let{
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     },
 
                     confirmButton = {
                         Button(
                             onClick = {
-                                if(selectedStudyStartTime == null || selectedStudyEndTime == null) {
-                                    return@Button
+                                // studySessionDescription is optional.
+                                val eventStartTime = selectedStudyStartTime
+                                val eventEndTime = selectedStudyEndTime
+
+                                when {
+                                    studySessionTitle.isBlank() -> {
+                                        emptyFieldChecker = "Please enter a title"
+                                        return@Button
+                                    }
+
+                                    selectedStudyDate.isBlank() -> {
+                                        emptyFieldChecker = "Please select a date"
+                                        return@Button
+
+                                    }
+
+                                    eventStartTime == null -> {
+                                        emptyFieldChecker = "Please select a start time"
+                                        return@Button
+
+                                    }
+
+                                    eventEndTime == null -> {
+                                        emptyFieldChecker = "Please select an end time"
+                                        return@Button
+
+                                    }
+
+                                    eventEndTime <= eventStartTime -> {
+                                        emptyFieldChecker = "End time must be after start time"
+                                        return@Button
+                                    }
+
+                                    else -> {
+                                        emptyFieldChecker = null
+                                    }
+
                                 }
 
                                 val studyStartTime = convertToCalendarTimestamp(
