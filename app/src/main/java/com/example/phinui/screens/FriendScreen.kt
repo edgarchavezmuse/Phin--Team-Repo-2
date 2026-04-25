@@ -57,6 +57,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -65,11 +66,13 @@ import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.RemoveFriendDialog
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.MailOutline
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
 fun FriendsScreen(
     navController: NavController,
-    initialTab: Int = 0
+    initialTab: Int = 0,
+    chatRepositoryViewModel: ChatRepositoryViewModel
 ) {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }
@@ -251,6 +254,25 @@ fun FriendsScreen(
                                         onClick = {
                                             showMenu = false
                                             friendToRemove = uid to name
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Email,
+                                                    contentDescription = "Send Message",
+                                                    tint = NavText
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Send Message", color = NavText)
+                                            }
+                                        },
+                                        onClick = {
+                                            // did we want the message to get created here?
+                                            navController.navigate(Routes.MESSAGES + "/${uid}")
+                                            showMenu = false
                                         }
                                     )
 

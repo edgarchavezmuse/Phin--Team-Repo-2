@@ -51,6 +51,7 @@ import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
+import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
 fun PhinNavHost(
@@ -111,6 +112,8 @@ fun PhinNavHost(
         viewModelStoreOwner = activity,
         factory = calendarFactory
     )
+
+    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
 
     val isLoading by eventsViewModel.isLoading.collectAsState()
     val schoolEvents by eventsViewModel.events.collectAsState()
@@ -267,7 +270,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.PEOPLE) {
-            PeopleScreen()
+            PeopleScreen(chatRepositoryViewModel)
         }
 
         composable(
@@ -289,7 +292,8 @@ fun PhinNavHost(
 
             FriendsScreen(
                 navController = navController,
-                initialTab = tab
+                initialTab = tab,
+                chatRepositoryViewModel = chatRepositoryViewModel
                 )
         }
 

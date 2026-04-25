@@ -68,13 +68,14 @@ import androidx.compose.material3.*
 import com.example.phinui.components.people.PendingFriendRequestDialog
 
 @Composable
-fun PeopleScreen() {
+fun PeopleScreen(
+    chatRepositoryViewModel: ChatRepositoryViewModel
+) {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }
     val auth = remember { FirebaseAuth.getInstance() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
-    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
