@@ -206,6 +206,25 @@ class CalendarViewModel(
         loadEventsForCurrentWeek()
     }
 
+    //Wrapper for study session invitations
+//    fun saveStudySessionEvent(event: CalendarEvent) {
+//        viewModelScope.launch { saveLocalEventToFirebase(event) }
+//    }
+    fun saveStudySessionEvent(
+        event: CalendarEvent,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                saveLocalEventToFirebase(event)
+                onResult(true)
+            }
+            catch (e: Exception) {
+                onResult(false)
+            }
+        }
+    }
+
     suspend fun deleteLocalEventFromFirebase(event: CalendarEvent) {
         firebaseCalendarRepository.deleteEvent(event.id)
         reminderScheduler.cancelReminder(event.id, event.reminderMinutes)
