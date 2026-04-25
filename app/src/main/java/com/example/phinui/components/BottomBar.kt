@@ -32,7 +32,7 @@ data class BottomNavItem(
 fun CustomBottomBar(
     navController: NavHostController,
     waveAnimation: WaveAnimationState,
-    showWaves: Boolean = true // turns waves and ship on and off
+    showWaves: Boolean = false // turns waves and ship on and off
 ) {
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route

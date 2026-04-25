@@ -88,10 +88,11 @@ fun PhinUIApp() {
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
 
+    val showAuthWaves = false // turns waves and ship on and off in Login and Register screens
     val waveAnimation = rememberWaveAnimationState(
-        frontDurationMillis = 4000, // speed of wave
-        backDurationMillis = 3000, // speed of wave
-        shipSpeedDpPerSecond = 45f, // speed of ship
+        frontDurationMillis = 4200, // speed of wave
+        backDurationMillis = 3500, // speed of wave
+        shipSpeedDpPerSecond = 43f, // speed of ship
         bobDurationMillis = 2000
     )
 
@@ -116,18 +117,20 @@ fun PhinUIApp() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                AnimatedWaves(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    waveColor = HeaderRed,
-                    height = 110.dp,
-                    showShip = true,
-                    shipSize = 20.dp,
-                    shipVerticalOffset = 18f,
-                    frontPhase = waveAnimation.frontPhase,
-                    backPhase = waveAnimation.backPhase,
-                    shipProgress = waveAnimation.shipProgress,
-                    bobPhase = waveAnimation.bobPhase
-                )
+                if (showAuthWaves) {
+                    AnimatedWaves(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        waveColor = HeaderRed,
+                        height = 110.dp,
+                        showShip = true,
+                        shipSize = 20.dp,
+                        shipVerticalOffset = 18f,
+                        frontPhase = waveAnimation.frontPhase,
+                        backPhase = waveAnimation.backPhase,
+                        shipProgress = waveAnimation.shipProgress,
+                        bobPhase = waveAnimation.bobPhase
+                    )
+                }
 
                 PhinNavHost(
                     navController = navController,
