@@ -9,30 +9,28 @@ class GoogleCalendarSessionStorage(context: Context) {
         Context.MODE_PRIVATE
     )
 
-    companion object {
-        private const val KEY_CONNECTED = "connected"
-        private const val KEY_USER_EMAIL = "user_email"
-    }
+    private fun connectedKey(firebaseUid: String): String = "connected_$firebaseUid"
+    private fun emailKey(firebaseUid: String): String = "user_email_$firebaseUid"
 
-    fun saveSession(userEmail: String?) {
+    fun saveSession(firebaseUid: String, userEmail: String?) {
         sessionPreference.edit()
-            .putBoolean(KEY_CONNECTED, true)
-            .putString(KEY_USER_EMAIL, userEmail)
+            .putBoolean(connectedKey(firebaseUid), true)
+            .putString(emailKey(firebaseUid), userEmail)
             .apply()
     }
 
-    fun isConnected(): Boolean {
-        return sessionPreference.getBoolean(KEY_CONNECTED, false)
+    fun isConnected(firebaseUid: String): Boolean {
+        return sessionPreference.getBoolean(connectedKey(firebaseUid), false)
     }
 
-    fun getUserEmail(): String? {
-        return sessionPreference.getString(KEY_USER_EMAIL, null)
+    fun getUserEmail(firebaseUid: String): String? {
+        return sessionPreference.getString(emailKey(firebaseUid), null)
     }
 
-    fun clearSession() {
+    fun clearSession(firebaseUid: String) {
         sessionPreference.edit()
-            .remove(KEY_CONNECTED)
-            .remove(KEY_USER_EMAIL)
+            .remove(connectedKey(firebaseUid))
+            .remove(emailKey(firebaseUid))
             .apply()
     }
 }
