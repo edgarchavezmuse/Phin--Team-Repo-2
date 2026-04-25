@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.example.phinui.notifications.FCMTokenManager.clearToken
+import com.example.phinui.notifications.FCMTokenManager.deleteDeviceToken
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
@@ -566,6 +568,8 @@ fun ProfileScreen(navController: NavHostController) {
         } else {
             Button(
                 onClick = {
+                    clearToken()
+                    deleteDeviceToken()
                     auth.signOut()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
