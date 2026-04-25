@@ -23,36 +23,34 @@ import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.MessagesScreen
 import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.phinui.ui.screens.MapScreen
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
-import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
 import com.example.phinui.ui.screens.ScheduleScreen
 import com.example.phinui.data.calendar.CalendarSource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.notifications.NotificationHelper.createNotificationChannels
 import com.example.phinui.screens.UserListScreen
-
-//firebase
 import com.example.phinui.ui.screens.LoginScreen
 import com.example.phinui.ui.screens.RegisterScreen
 import com.example.phinui.viewmodel.EventsRepository
 import com.example.phinui.viewmodel.EventsViewModel
 import com.example.phinui.viewmodel.EventsViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
-
 import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
 
 @Composable
 fun PhinNavHost(
@@ -66,8 +64,21 @@ fun PhinNavHost(
     val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { FirebaseAuth.getInstance() }
-    val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
-    val currentUserId = auth.currentUser?.uid
+    var currentUserId by remember { mutableStateOf(auth.currentUser?.uid) }
+
+    DisposableEffect(auth) {
+        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            currentUserId = firebaseAuth.currentUser?.uid
+        }
+
+        auth.addAuthStateListener(listener)
+
+        onDispose {
+            auth.removeAuthStateListener(listener)
+        }
+    }
+
+    val startDestination = if (currentUserId != null) Routes.HOME else Routes.LOGIN
 
     createNotificationChannels(context)
 
@@ -118,6 +129,8 @@ fun PhinNavHost(
     LaunchedEffect(currentUserId) {
         savedEvents.clear()
         allEvents.clear()
+        calendarViewModel.clearInMemoryState()
+        calendarViewModel.restoreConnectionFromFirebase()
         calendarViewModel.refreshEvents()
     }
 
@@ -367,18 +380,30 @@ fun PhinNavHost(
                 },
                 onConnectClick = {
                     calendarViewModel.setError(null)
-                    GoogleAuthManager.startAuthorization(
-                        activity = activity,
-                        launcher = authorizationLauncher,
-                        onAccessToken = { token ->
-                            calendarViewModel.onAuthorizationSuccess(token)
-                        },
-                        onError = { exception ->
-                            calendarViewModel.onGoogleSessionRestoreFailed(
-                                exception.message ?: "Authorization error."
+
+                    val credentialManager = CredentialManager.create(activity)
+
+                    coroutineScope.launch {
+                        try {
+                            credentialManager.clearCredentialState(
+                                ClearCredentialStateRequest()
                             )
+                        } catch (_: Exception) {
                         }
-                    )
+
+                        GoogleAuthManager.startAuthorization(
+                            activity = activity,
+                            launcher = authorizationLauncher,
+                            onAccessToken = { token ->
+                                calendarViewModel.onAuthorizationSuccess(token)
+                            },
+                            onError = { exception ->
+                                calendarViewModel.onGoogleSessionRestoreFailed(
+                                    exception.message ?: "Authorization error."
+                                )
+                            }
+                        )
+                    }
                 },
                 selectedEvent = selectedEvent,
                 showRemoveDialog = showRemoveDialog,
