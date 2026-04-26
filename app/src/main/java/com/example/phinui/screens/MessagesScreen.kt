@@ -293,7 +293,7 @@ fun MessagesScreen(
                                                     Row {
                                                         Button(
                                                             onClick = {
-                                                                //Create event on local calendar
+                                                                //Set up for adding event to local calendar for receiver user
                                                                 val createStudySessionEventTitle = message["title"] as? String ?: "Study Session"
                                                                 val createStudySessionEventDescription = message["description"] as? String ?: ""
                                                                 val createStudySessionEventStartTime = message["startTime"] as? Timestamp
@@ -331,6 +331,14 @@ fun MessagesScreen(
                                                                     source = CalendarSource.LOCAL
                                                                 )
 
+                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                                    chatID = chatID,
+                                                                    messageID = messageID,
+                                                                    senderUserID = senderUserID,
+                                                                    invitationResponse = "ACCEPTED"
+                                                                )
+
+                                                                //Event gets created for receiver user
                                                                 calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
                                                                     if (success) {
                                                                         Toast.makeText(
@@ -345,13 +353,6 @@ fun MessagesScreen(
                                                                             Toast.LENGTH_SHORT).show()
                                                                     }
                                                                 }
-
-                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = chatID,
-                                                                    messageID = messageID,
-                                                                    senderUserID = senderUserID,
-                                                                    invitationResponse = "ACCEPTED"
-                                                                )
                                                             }
                                                         ) {
                                                             Text("Accept")
@@ -431,7 +432,6 @@ fun MessagesScreen(
 
             Button(onClick = {
                 if (messageText.isNotBlank()) {
-                    //chatRepository.sendMessage(
                     chatRepositoryViewModel.callSendMessage(
                         senderUserID,
                         receiverUserID,
@@ -632,6 +632,49 @@ fun MessagesScreen(
                                     startTime = studyStartTime,
                                     endTime = studyEndTime
                                 )
+
+                                val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                                val convertStudyStartTime = studyStartTime
+                                    .toDate()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime()
+                                    .format(timeFormatter)
+
+                                val convertStudyEndTime = studyEndTime
+                                    .toDate()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime()
+                                    .format(timeFormatter)
+
+                                val createStudySessionEvent = CalendarEvent(
+                                    id = "",
+                                    title = studySessionTitle,
+                                    description = studySessionDescription,
+                                    start = convertStudyStartTime,
+                                    end = convertStudyEndTime,
+                                    location = null,
+                                    reminderMinutes = emptyList(),
+                                    isAllDay = false,
+                                    colorHex = "#DC2127",
+                                    source = CalendarSource.LOCAL
+                                )
+
+                                calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
+                                    if (success) {
+                                        Toast.makeText(
+                                            context,
+                                            "$studySessionTitle added to your local calendar",
+                                            Toast.LENGTH_SHORT).show()
+                                    }
+                                    else {
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to add $studySessionTitle to your local calendar",
+                                            Toast.LENGTH_SHORT).show()
+                                    }
+                                }
 
                                 showStudySessionInviteDialog = false
                             }

@@ -207,16 +207,15 @@ class CalendarViewModel(
     }
 
     //Wrapper for study session invitations
-//    fun saveStudySessionEvent(event: CalendarEvent) {
-//        viewModelScope.launch { saveLocalEventToFirebase(event) }
-//    }
     fun saveStudySessionEvent(
+        //userID: String,
         event: CalendarEvent,
         onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
             try {
                 saveLocalEventToFirebase(event)
+                //firebaseCalendarRepository.saveEventForUser(userID, event)
                 onResult(true)
             }
             catch (e: Exception) {
