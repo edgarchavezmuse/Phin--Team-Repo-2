@@ -327,7 +327,7 @@ fun MessagesScreen(
                                                                     location = null,
                                                                     reminderMinutes = emptyList(),
                                                                     isAllDay = false,
-                                                                    colorHex = "#DC2127",
+                                                                    colorHex = "0xFFE53935",
                                                                     source = CalendarSource.LOCAL
                                                                 )
 
@@ -657,7 +657,7 @@ fun MessagesScreen(
                                     location = null,
                                     reminderMinutes = emptyList(),
                                     isAllDay = false,
-                                    colorHex = "#DC2127",
+                                    colorHex = "0xFFE53935",
                                     source = CalendarSource.LOCAL
                                 )
 
