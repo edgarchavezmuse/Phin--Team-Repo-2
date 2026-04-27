@@ -44,6 +44,8 @@ import com.example.phinui.ui.navigation.Routes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.material.icons.filled.MenuBook
+import com.example.phinui.notifications.FCMTokenManager.clearToken
+import com.example.phinui.notifications.FCMTokenManager.deleteDeviceToken
 
 data class MenuItem (
     val label: String,
@@ -144,6 +146,8 @@ fun SideMenu(
             modifier = Modifier
                 .clickable(
                     onClick = {
+                        clearToken()
+                        deleteDeviceToken()
                         auth.signOut()
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.HOME) { inclusive = true }

@@ -1,5 +1,6 @@
 package com.example.phinui.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -47,13 +48,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 //import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.ChatRepository
+import com.example.phinui.data.calendar.CalendarEvent
+import com.example.phinui.data.calendar.CalendarSource
+import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.ui.theme.*
+import com.example.phinui.viewmodel.CalendarViewModel
+import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.UserListViewModel
 import com.google.firebase.Timestamp
@@ -72,8 +79,16 @@ fun MessagesScreen(
     userListViewModel: UserListViewModel = viewModel(),
     setTopBarTitle: (String) -> Unit
 ) {
-    val chatRepository = remember { ChatRepository() }
     val chatRepositoryViewModel = remember { ChatRepositoryViewModel() }
+    val context = LocalContext.current
+    val reminderScheduler = remember { ReminderScheduler(context) }
+    val calendarViewModel: CalendarViewModel = viewModel(
+        factory = CalendarViewModelFactory(
+            context = context.applicationContext,
+            reminderScheduler = reminderScheduler
+        )
+    )
+
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
 
@@ -84,7 +99,6 @@ fun MessagesScreen(
 
     var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     var showDeleteDialog = remember { mutableStateOf(false) }
-    //val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
     val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -94,13 +108,6 @@ fun MessagesScreen(
     var selectedStudyDate by remember { mutableStateOf("") }
     var selectedStudyStartTime by remember { mutableStateOf<LocalTime?>(null) }
     var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null)}
-//    var selectedStudyStartHour by remember { mutableStateOf<Int?>(null) }
-//    var selectedStudyStartMinute by remember { mutableStateOf<Int?>(null) }
-//    var selectedStudyEndHour by remember { mutableStateOf<Int?>(null) }
-//    var selectedStudyEndMinute by remember { mutableStateOf<Int?>(null) }
-
-    //var selectedStudyTime by remember { mutableStateOf("") }
-    //var eventDate by remember { mutableStateOf("") }
 
     LaunchedEffect(selectedUser) {
         selectedUser?.name?.let { userName ->
@@ -108,7 +115,6 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(senderUserID, receiverUserID) {
-        //chatRepository.checkForNewMessage(senderUserID, receiverUserID) {
         chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) {
                 newMessages ->
             messages = newMessages
@@ -161,8 +167,6 @@ fun MessagesScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         val message = selectedMessage.value ?: return@TextButton
-                        //val chatID = chatRepository.getChatID(senderUserID, receiverUserID)
-                        //val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
                         chatRepositoryViewModel.onDeleteMessage(
                             message = message,
                             chatID = chatID
@@ -215,9 +219,6 @@ fun MessagesScreen(
                 val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
                 val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
                 val displayEndTime = endTime?.toDate()?.let {convertTime.format(it) } ?: ""
-
-//                val displayStartTime = startTime?.toDate()?.toString() ?: ""
-//                val displayEndTime = endTime?.toDate()?.toString() ?: ""
 
                 Row(
                     modifier = Modifier
@@ -292,12 +293,66 @@ fun MessagesScreen(
                                                     Row {
                                                         Button(
                                                             onClick = {
+                                                                //Set up for adding event to local calendar for receiver user
+                                                                val createStudySessionEventTitle = message["title"] as? String ?: "Study Session"
+                                                                val createStudySessionEventDescription = message["description"] as? String ?: ""
+                                                                val createStudySessionEventStartTime = message["startTime"] as? Timestamp
+                                                                val createStudySessionEventEndTime = message["endTime"] as? Timestamp
+
+                                                                if (createStudySessionEventStartTime == null || createStudySessionEventEndTime == null) {
+                                                                    return@Button
+                                                                }
+
+                                                                val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                                                                val convertStudySessionEventStartTime = createStudySessionEventStartTime
+                                                                    .toDate()
+                                                                    .toInstant()
+                                                                    .atZone(ZoneId.systemDefault())
+                                                                    .toLocalDateTime()
+                                                                    .format(timeFormatter)
+
+                                                                val convertStudySessionEventEndTime = createStudySessionEventEndTime
+                                                                    .toDate()
+                                                                    .toInstant()
+                                                                    .atZone(ZoneId.systemDefault())
+                                                                    .toLocalDateTime()
+                                                                    .format(timeFormatter)
+
+                                                                val createStudySessionEvent = CalendarEvent(
+                                                                    id = "",
+                                                                    title = createStudySessionEventTitle,
+                                                                    description = createStudySessionEventDescription,
+                                                                    start = convertStudySessionEventStartTime,
+                                                                    end = convertStudySessionEventEndTime,
+                                                                    location = null,
+                                                                    reminderMinutes = emptyList(),
+                                                                    isAllDay = false,
+                                                                    colorHex = "0xFFE53935",
+                                                                    source = CalendarSource.LOCAL
+                                                                )
+
                                                                 chatRepositoryViewModel.callRespondStudySessionInvitation(
                                                                     chatID = chatID,
                                                                     messageID = messageID,
                                                                     senderUserID = senderUserID,
                                                                     invitationResponse = "ACCEPTED"
                                                                 )
+
+                                                                //Event gets created for receiver user
+                                                                calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
+                                                                    if (success) {
+                                                                        Toast.makeText(
+                                                                            context,
+                                                                            "$createStudySessionEventTitle added to your local calendar",
+                                                                            Toast.LENGTH_SHORT).show()
+                                                                    }
+                                                                    else {
+                                                                        Toast.makeText(
+                                                                            context,
+                                                                            "Failed to add $createStudySessionEventTitle to your local calendar",
+                                                                            Toast.LENGTH_SHORT).show()
+                                                                    }
+                                                                }
                                                             }
                                                         ) {
                                                             Text("Accept")
@@ -377,7 +432,6 @@ fun MessagesScreen(
 
             Button(onClick = {
                 if (messageText.isNotBlank()) {
-                    //chatRepository.sendMessage(
                     chatRepositoryViewModel.callSendMessage(
                         senderUserID,
                         receiverUserID,
@@ -578,6 +632,49 @@ fun MessagesScreen(
                                     startTime = studyStartTime,
                                     endTime = studyEndTime
                                 )
+
+                                val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                                val convertStudyStartTime = studyStartTime
+                                    .toDate()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime()
+                                    .format(timeFormatter)
+
+                                val convertStudyEndTime = studyEndTime
+                                    .toDate()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime()
+                                    .format(timeFormatter)
+
+                                val createStudySessionEvent = CalendarEvent(
+                                    id = "",
+                                    title = studySessionTitle,
+                                    description = studySessionDescription,
+                                    start = convertStudyStartTime,
+                                    end = convertStudyEndTime,
+                                    location = null,
+                                    reminderMinutes = emptyList(),
+                                    isAllDay = false,
+                                    colorHex = "0xFFE53935",
+                                    source = CalendarSource.LOCAL
+                                )
+
+                                calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
+                                    if (success) {
+                                        Toast.makeText(
+                                            context,
+                                            "$studySessionTitle added to your local calendar",
+                                            Toast.LENGTH_SHORT).show()
+                                    }
+                                    else {
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to add $studySessionTitle to your local calendar",
+                                            Toast.LENGTH_SHORT).show()
+                                    }
+                                }
 
                                 showStudySessionInviteDialog = false
                             }
@@ -815,35 +912,3 @@ private fun EventTimePickerDialog(
         }
     }
 }
-
-//private fun convertTo24Hour(time12: String): String {
-//    val parts = time12.trim().split(" ")
-//    val time = parts[0]
-//    val period = parts[1]
-//
-//    val (hourStr, minuteStr) = time.split(":")
-//    var hour = hourStr.toInt()
-//
-//    if (period == "PM" && hour != 12) {
-//        hour += 12
-//    } else if (period == "AM" && hour == 12) {
-//        hour = 0
-//    }
-//
-//    return String.format("%02d:%02d", hour, minuteStr.toInt())
-//}
-//
-//private fun formatTo12Hour(hour24: Int, minute: Int): String {
-//    val period = if (hour24 >= 12) "PM" else "AM"
-//    val hour12 = when {
-//        hour24 == 0 -> 12
-//        hour24 > 12 -> hour24 - 12
-//        else -> hour24
-//    }
-//    return String.format("%d:%02d %s", hour12, minute, period)
-//}
-
-//private fun isValidDate(date: String): Boolean {
-//    val regex = Regex("""\d{4}-\d{2}-\d{2}""")
-//    return regex.matches(date)
-//}
