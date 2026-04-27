@@ -51,7 +51,6 @@ import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
-import com.example.phinui.viewmodel.ChatRepositoryViewModel
 
 @Composable
 fun PhinNavHost(
