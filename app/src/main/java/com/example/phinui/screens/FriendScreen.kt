@@ -65,7 +65,6 @@ import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.RemoveFriendDialog
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.MailOutline
-import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import androidx.compose.foundation.clickable
 import com.example.phinui.ui.components.UserProfilePreviewDialog
 import com.example.phinui.data.model.PreviewUser
@@ -285,7 +284,6 @@ fun FriendsScreen(
                                             }
                                         },
                                         onClick = {
-                                            // did we want the message to get created here?
                                             navController.navigate(Routes.MESSAGES + "/${uid}")
                                             showMenu = false
                                         }

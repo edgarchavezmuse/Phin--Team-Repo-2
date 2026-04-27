@@ -71,14 +71,13 @@ import com.example.phinui.ui.components.UserProfilePreviewDialog
 import com.example.phinui.data.model.PreviewUser
 
 @Composable
-fun PeopleScreen(
-    chatRepositoryViewModel: ChatRepositoryViewModel
-) {
+fun PeopleScreen() {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }
     val auth = remember { FirebaseAuth.getInstance() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
+    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
 
     var selectedTab by remember { mutableIntStateOf(0) }
 

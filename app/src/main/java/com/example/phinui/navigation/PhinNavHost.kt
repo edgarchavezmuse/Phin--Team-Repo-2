@@ -113,8 +113,6 @@ fun PhinNavHost(
         factory = calendarFactory
     )
 
-    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
-
     val isLoading by eventsViewModel.isLoading.collectAsState()
     val schoolEvents by eventsViewModel.events.collectAsState()
 
@@ -270,7 +268,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.PEOPLE) {
-            PeopleScreen(chatRepositoryViewModel)
+            PeopleScreen()
         }
 
         composable(
