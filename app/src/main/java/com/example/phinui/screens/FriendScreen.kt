@@ -1,6 +1,5 @@
 package com.example.phinui.ui.screens
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,6 +64,9 @@ import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.RemoveFriendDialog
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.foundation.clickable
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
 
 @Composable
 fun FriendsScreen(
@@ -79,6 +81,8 @@ fun FriendsScreen(
     var incoming by remember { mutableStateOf<List<Pair<String, FriendRequest>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var requestEmails by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var requestUsers by remember { mutableStateOf<Map<String, Map<String, Any>>>(emptyMap()) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
     var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -107,13 +111,13 @@ fun FriendsScreen(
 
     LaunchedEffect(incoming) {
         incoming.forEach { (_, req) ->
-            if (!requestEmails.containsKey(req.fromUid)) {
+            if (!requestUsers.containsKey(req.fromUid)) {
                 db.collection("users")
                     .document(req.fromUid)
                     .get()
                     .addOnSuccessListener { doc ->
-                        val email = doc.getString("email") ?: ""
-                        requestEmails = requestEmails + (req.fromUid to email)
+                        val data = doc.data ?: return@addOnSuccessListener
+                        requestUsers = requestUsers + (req.fromUid to data)
                     }
             }
         }
@@ -197,7 +201,19 @@ fun FriendsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name = name, size = 44)
+                                UserAvatar(
+                                    name = name,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = user["photoUrl"] as? String,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -291,6 +307,11 @@ fun FriendsScreen(
                 }
                 else {
                     items(incoming) { (requestId, req) ->
+                        val userData = requestUsers[req.fromUid]
+
+                        val name = userData?.get("name") as? String ?: req.fromName
+                        val email = userData?.get("email") as? String ?: ""
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -302,7 +323,19 @@ fun FriendsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(req.fromName, 44)
+                                UserAvatar(
+                                    name = name,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = userData?.get("photoUrl") as? String,
+                                            major = userData?.get("major") as? String ?: "",
+                                            bio = userData?.get("bio") as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -512,6 +545,17 @@ fun FriendsScreen(
                     Text("Cancel", color = NavText)
                 }
             }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
         )
     }
 }
