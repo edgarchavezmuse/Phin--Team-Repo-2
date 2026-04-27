@@ -73,8 +73,7 @@ import com.example.phinui.data.model.PreviewUser
 @Composable
 fun FriendsScreen(
     navController: NavController,
-    initialTab: Int = 0,
-    chatRepositoryViewModel: ChatRepositoryViewModel
+    initialTab: Int = 0
 ) {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }

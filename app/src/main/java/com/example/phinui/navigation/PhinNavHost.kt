@@ -292,8 +292,7 @@ fun PhinNavHost(
 
             FriendsScreen(
                 navController = navController,
-                initialTab = tab,
-                chatRepositoryViewModel = chatRepositoryViewModel
+                initialTab = tab
                 )
         }
 
