@@ -263,7 +263,6 @@ fun PeopleScreen() {
                                 UserAvatar(
                                     name = name,
                                     size = 44,
-                                    photoUrl = user["photoUrl"] as? String,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,
@@ -408,7 +407,6 @@ fun PeopleScreen() {
                                 UserAvatar(
                                     name = name,
                                     size = 44,
-                                    photoUrl = user["photoUrl"] as? String,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,

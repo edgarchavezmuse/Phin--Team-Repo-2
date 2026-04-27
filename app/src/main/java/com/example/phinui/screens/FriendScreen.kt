@@ -81,6 +81,7 @@ fun FriendsScreen(
     var incoming by remember { mutableStateOf<List<Pair<String, FriendRequest>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var requestEmails by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var requestUsers by remember { mutableStateOf<Map<String, Map<String, Any>>>(emptyMap()) }
     var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -110,13 +111,13 @@ fun FriendsScreen(
 
     LaunchedEffect(incoming) {
         incoming.forEach { (_, req) ->
-            if (!requestEmails.containsKey(req.fromUid)) {
+            if (!requestUsers.containsKey(req.fromUid)) {
                 db.collection("users")
                     .document(req.fromUid)
                     .get()
                     .addOnSuccessListener { doc ->
-                        val email = doc.getString("email") ?: ""
-                        requestEmails = requestEmails + (req.fromUid to email)
+                        val data = doc.data ?: return@addOnSuccessListener
+                        requestUsers = requestUsers + (req.fromUid to data)
                     }
             }
         }
@@ -306,8 +307,10 @@ fun FriendsScreen(
                 }
                 else {
                     items(incoming) { (requestId, req) ->
-                        val name = req.fromName
-                        val email = requestEmails[req.fromUid] ?: ""
+                        val userData = requestUsers[req.fromUid]
+
+                        val name = userData?.get("name") as? String ?: req.fromName
+                        val email = userData?.get("email") as? String ?: ""
 
                         Row(
                             modifier = Modifier
@@ -323,14 +326,13 @@ fun FriendsScreen(
                                 UserAvatar(
                                     name = name,
                                     size = 44,
-                                    photoUrl = null,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
-                                            photoUrl = null,
-                                            major = "",
-                                            bio = ""
+                                            photoUrl = userData?.get("photoUrl") as? String,
+                                            major = userData?.get("major") as? String ?: "",
+                                            bio = userData?.get("bio") as? String ?: ""
                                         )
                                     }
                                 )
