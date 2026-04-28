@@ -56,6 +56,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -267,6 +268,24 @@ fun FriendsScreen(
                                         onClick = {
                                             showMenu = false
                                             friendToRemove = uid to name
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Email,
+                                                    contentDescription = "Send Message",
+                                                    tint = NavText
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Send Message", color = NavText)
+                                            }
+                                        },
+                                        onClick = {
+                                            navController.navigate(Routes.MESSAGES + "/${uid}")
+                                            showMenu = false
                                         }
                                     )
 
