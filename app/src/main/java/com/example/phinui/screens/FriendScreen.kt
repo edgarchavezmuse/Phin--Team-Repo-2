@@ -366,7 +366,7 @@ fun FriendsScreen(
                                     )
 
                                     Text(
-                                        text = requestEmails[req.fromUid] ?: "",
+                                        text = email,
                                         color = TextMuted,
                                         fontSize = 12.sp,
                                         maxLines = 1
