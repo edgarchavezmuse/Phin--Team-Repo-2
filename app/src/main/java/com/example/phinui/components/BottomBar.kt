@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.phinui.screens.BottomBarType
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
@@ -29,10 +30,32 @@ data class BottomNavItem(
 )
 
 @Composable
-fun CustomBottomBar(
+fun ChosenBottomBar(
     navController: NavHostController,
     waveAnimation: WaveAnimationState,
-    showWaves: Boolean = false // turns waves and ship on and off
+    type: BottomBarType
+) {
+    when (type) {
+
+        BottomBarType.ON -> {
+            CustomBottomBar(
+                navController
+            )
+        }
+
+        BottomBarType.OFF -> {
+            // don't render it
+        }
+
+        BottomBarType.WAVE -> {
+            WaveBottomBar(waveAnimation)
+        }
+    }
+}
+
+@Composable
+fun CustomBottomBar(
+    navController: NavHostController
 ) {
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
@@ -55,25 +78,6 @@ fun CustomBottomBar(
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-
-            // waves
-            if (showWaves) {
-                AnimatedWaves(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter),
-                    waveColor = HeaderRed,
-                    height = 90.dp,
-                    showShip = true,
-                    shipSize = 18.dp,
-                    shipVerticalOffset = 15f,
-                    frontPhase = waveAnimation.frontPhase,
-                    backPhase = waveAnimation.backPhase,
-                    shipProgress = waveAnimation.shipProgress,
-                    bobPhase = waveAnimation.bobPhase
-                )
-            }
-
             // icons
             Row(
                 modifier = Modifier
@@ -96,6 +100,40 @@ fun CustomBottomBar(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun WaveBottomBar(waveAnimation: WaveAnimationState) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = Background,
+        shadowElevation = 0.dp
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+
+            // waves
+            AnimatedWaves(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                waveColor = HeaderRed,
+                height = 90.dp,
+                showShip = true,
+                shipSize = 18.dp,
+                shipVerticalOffset = 15f,
+                frontPhase = waveAnimation.frontPhase,
+                backPhase = waveAnimation.backPhase,
+                shipProgress = waveAnimation.shipProgress,
+                bobPhase = waveAnimation.bobPhase
+            )
+
         }
     }
 }

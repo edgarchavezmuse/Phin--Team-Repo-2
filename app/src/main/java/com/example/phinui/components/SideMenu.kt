@@ -44,6 +44,7 @@ import com.example.phinui.ui.navigation.Routes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Settings
 import com.example.phinui.notifications.FCMTokenManager.clearToken
 import com.example.phinui.notifications.FCMTokenManager.deleteDeviceToken
 
@@ -146,23 +147,17 @@ fun SideMenu(
             modifier = Modifier
                 .clickable(
                     onClick = {
-                        clearToken()
-                        deleteDeviceToken()
-                        auth.signOut()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.HOME) { inclusive = true }
-                            launchSingleTop = true
-                        }
+                        navController.navigate(Routes.SETTINGS)
                     }
                 )
         ) {
             Icon(
-                imageVector = Icons.Default.Logout,
-                contentDescription = "Log out"
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings"
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Log Out",
+                text = "Settings",
                 style = MaterialTheme.typography.titleMedium
             )
         }
