@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +29,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
@@ -45,7 +48,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.phinui.components.SideMenu
 import com.example.phinui.notifications.NotificationPermissionRequest
 import com.example.phinui.ui.components.AnimatedWaves
-import com.example.phinui.ui.components.CustomBottomBar
+import com.example.phinui.ui.components.ChosenBottomBar
 import com.example.phinui.ui.components.rememberWaveAnimationState
 import com.example.phinui.ui.navigation.PhinNavHost
 import com.example.phinui.ui.navigation.Routes
@@ -53,6 +56,7 @@ import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.PhinUITheme
+import com.example.phinui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -95,6 +99,10 @@ fun PhinUIApp() {
         shipSpeedDpPerSecond = 43f, // speed of ship
         bobDurationMillis = 2000
     )
+
+    val context = LocalContext.current
+    val settingsViewModel = remember { SettingsViewModel(context) }
+    val bottomBarType by settingsViewModel.bottomBarType.collectAsState()
 
     LaunchedEffect(currentRoute) {
         drawerState.close()
@@ -206,10 +214,21 @@ fun PhinUIApp() {
                 },
                 containerColor = Background,
                 bottomBar = {
-                    CustomBottomBar(
-                        navController = navController,
-                        waveAnimation = waveAnimation
-                    )
+                    when (bottomBarType) {
+
+                        null -> {
+                            // empty spacer equal to bottom bar height to prevent jump
+                            Spacer(modifier = Modifier.height(80.dp))
+                        }
+
+                        else -> {
+                            ChosenBottomBar(
+                                navController,
+                                waveAnimation,
+                                bottomBarType!!
+                            )
+                        }
+                    }
                 }
             ) { innerPadding ->
                 PhinNavHost(
