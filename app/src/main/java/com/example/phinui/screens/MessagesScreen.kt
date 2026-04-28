@@ -46,7 +46,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-//import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -54,7 +53,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.phinui.components.messages.ChatRepository
+//import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
@@ -94,7 +93,9 @@ fun MessagesScreen(
 
     val selectedUser = userListViewModel.selectedUser
     val isLoadingStatus = userListViewModel.isLoading
+
     val autoScrollState = rememberLazyListState()
+    val autoScrollThreshold = 3
     val initialChatOpen = remember { mutableStateOf(true) }
 
     var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
@@ -136,11 +137,17 @@ fun MessagesScreen(
         }
     }
 
-    if (initialChatOpen.value) {
         //Automatic scroll effect
-        LaunchedEffect(messages) {
-            if (messages.isNotEmpty()) {
-                autoScrollState.animateScrollToItem(messages.size - 1)
+    LaunchedEffect(messages) {
+        if (messages.isNotEmpty()) {
+            val lastMessage = messages.size - 1
+            val userIsNearBottomChat = autoScrollState.layoutInfo.visibleItemsInfo.lastOrNull()
+                ?.index
+                ?.let { lastVisibleMessage -> lastMessage - lastVisibleMessage <= autoScrollThreshold }
+                ?: true
+
+            if (initialChatOpen.value || userIsNearBottomChat) {
+                autoScrollState.animateScrollToItem(lastMessage)
                 initialChatOpen.value = false
             }
         }
