@@ -54,7 +54,7 @@ fun EventsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(top = 24.dp)
     ) {
         LazyColumn(
@@ -68,7 +68,7 @@ fun EventsScreen(
                     text = "Events",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = NavText
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -94,14 +94,14 @@ fun EventsScreen(
     if (showDialog && selectedEvent != null) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            containerColor = SoftBackground,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(28.dp),
             title = {
                 Text(
                     text = selectedEvent!!.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             },
             text = {
@@ -113,7 +113,7 @@ fun EventsScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -126,8 +126,8 @@ fun EventsScreen(
                     },
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryRed,
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onBackground
                     )
                 ) {
                     Text(
