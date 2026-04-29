@@ -43,6 +43,9 @@ import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.PrimaryRed
 import com.example.phinui.viewmodel.SettingsViewModel
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 
 enum class BottomBarType {
     ON, OFF, WAVE
@@ -66,6 +69,10 @@ fun SettingsScreen(
     val selectedType = viewModel.bottomBarType
         .collectAsState()
         .value ?: BottomBarType.ON
+
+    val darkModeEnabled = viewModel.darkModeEnabled
+        .collectAsState()
+        .value
 
     val options = listOf(
         BottomBarOption(BottomBarType.ON, "On"),
@@ -92,6 +99,51 @@ fun SettingsScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        // dark mode toggle
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Dark Mode",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = if (darkModeEnabled) "On" else "Off",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    )
+                }
+
+                Switch(
+                    checked = darkModeEnabled,
+                    onCheckedChange = { enabled ->
+                        viewModel.setDarkMode(enabled)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = PrimaryRed
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // toggle bottom bar
         ElevatedCard(
