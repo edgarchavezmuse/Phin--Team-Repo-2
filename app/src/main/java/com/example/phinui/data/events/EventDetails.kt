@@ -52,7 +52,7 @@ fun EventDetails(event: CalendarEvent) {
                 Text(
                     text = date.format(eventDateFormatter),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onTertiary,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -67,7 +67,7 @@ fun EventDetails(event: CalendarEvent) {
             Text(
                 text = formatEventTimeLine(event),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onTertiary
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -82,7 +82,7 @@ fun EventDetails(event: CalendarEvent) {
                 Text(
                     text = "Reminder: $reminderText",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -96,21 +96,21 @@ fun EventDetails(event: CalendarEvent) {
             Text(
                 text = event.location ?: "Location: TBD",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiary
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
         Text(
             text = "Description",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onTertiary,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold
         )
 
         Text(
             text = event.description ?: "No description available.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiary
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
