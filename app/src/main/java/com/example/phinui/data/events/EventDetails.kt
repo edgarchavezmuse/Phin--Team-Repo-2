@@ -47,12 +47,12 @@ fun EventDetails(event: CalendarEvent) {
                 Icon(
                     imageVector = Icons.Default.CalendarToday,
                     contentDescription = "Date",
-                    tint = PrimaryRed
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = date.format(eventDateFormatter),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -62,12 +62,12 @@ fun EventDetails(event: CalendarEvent) {
             Icon(
                 imageVector = Icons.Default.AccessTime,
                 contentDescription = "Time",
-                tint = PrimaryRed
+                tint = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = formatEventTimeLine(event),
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextDark
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -77,12 +77,12 @@ fun EventDetails(event: CalendarEvent) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = "Reminder",
-                    tint = PrimaryRed
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = "Reminder: $reminderText",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextMuted
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -91,26 +91,26 @@ fun EventDetails(event: CalendarEvent) {
             Icon(
                 imageVector = Icons.Default.LocationOn,
                 contentDescription = "Location",
-                tint = PrimaryRed
+                tint = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = event.location ?: "Location: TBD",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextMuted
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
         Text(
             text = "Description",
             style = MaterialTheme.typography.labelLarge,
-            color = TextMuted,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold
         )
 
         Text(
             text = event.description ?: "No description available.",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextMuted
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
