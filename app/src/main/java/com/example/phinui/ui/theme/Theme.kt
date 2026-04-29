@@ -50,6 +50,21 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = DarkTextPrimary
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = DarkHeaderRed,
+    secondary = DarkTextSecondary,
+    tertiary = DarkSelectedPill,
+
+    background = DarkBackground,
+    surface = DarkSurface,
+
+    onPrimary = DarkOnPrimary,
+    onSecondary = DarkTextPrimary,
+    onTertiary = DarkTextPrimary,
+    onBackground = DarkTextPrimary,
+    onSurface = DarkTextPrimary
+)
+
 @Composable
 fun PhinUITheme(
     darkMode: Boolean = false,
