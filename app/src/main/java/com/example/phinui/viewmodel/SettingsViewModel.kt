@@ -13,6 +13,8 @@ import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.compose.runtime.collectAsState
 
 class SettingsViewModel(context: Context) : ViewModel() {
 
@@ -23,11 +25,18 @@ class SettingsViewModel(context: Context) : ViewModel() {
     private val _bottomBarType = MutableStateFlow<BottomBarType?>(null)
     val bottomBarType: StateFlow<BottomBarType?> = _bottomBarType
 
+    private val _darkModeEnabled = MutableStateFlow(false)
+    val darkModeEnabled: StateFlow<Boolean> = _darkModeEnabled
+
     init {
         observeUserChanges()
     }
 
     private fun key(uid: String) = stringPreferencesKey("bottom_bar_$uid")
+
+    // dark mode key
+    private fun darkModeKey(uid: String) =
+        booleanPreferencesKey("dark_mode_$uid")
 
     // main observer
     private fun observeUserChanges() {
@@ -36,6 +45,7 @@ class SettingsViewModel(context: Context) : ViewModel() {
 
             if (uid == null) {
                 _bottomBarType.value = null
+                _darkModeEnabled.value = false
                 return@addAuthStateListener
             }
 
@@ -54,6 +64,9 @@ class SettingsViewModel(context: Context) : ViewModel() {
                 if (value != null) {
                     _bottomBarType.value = value
                 }
+
+                // dark mode local
+                _darkModeEnabled.value = prefs[darkModeKey(uid)] ?: false
             }
         }
     }
@@ -76,6 +89,19 @@ class SettingsViewModel(context: Context) : ViewModel() {
                         }
                     }
                 }
+
+                // dark mode remote
+                val remoteDark = snapshot?.getBoolean("darkModeEnabled")
+
+                if (remoteDark != null && remoteDark != _darkModeEnabled.value) {
+                    _darkModeEnabled.value = remoteDark
+
+                    viewModelScope.launch {
+                        dataStore.edit { prefs ->
+                            prefs[darkModeKey(uid)] = remoteDark
+                        }
+                    }
+                }
             }
     }
 
@@ -94,6 +120,26 @@ class SettingsViewModel(context: Context) : ViewModel() {
             .document(uid)
             .set(
                 mapOf("bottomBarType" to type.name),
+                SetOptions.merge()
+            )
+    }
+
+    // set dark mode
+    fun setDarkMode(enabled: Boolean) {
+        val uid = auth.currentUser?.uid ?: return
+
+        _darkModeEnabled.value = enabled
+
+        viewModelScope.launch {
+            dataStore.edit { prefs ->
+                prefs[darkModeKey(uid)] = enabled
+            }
+        }
+
+        firestore.collection("users")
+            .document(uid)
+            .set(
+                mapOf("darkModeEnabled" to enabled),
                 SetOptions.merge()
             )
     }
