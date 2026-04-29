@@ -61,7 +61,7 @@ exports.sendNewMessageNotification = onDocumentUpdated(
           lastActive && typeof lastActive.toMillis === "function" ?
           lastActive.toMillis() : 0;
         const isInChat = activeChatID === chatId;
-        const isActive = (now - lastActiveTime) < 60000;
+        const isActive = (now - lastActiveTime) < 120000;
 
         // only send if user is not on the chat screen
         if (isInChat && isActive) {
