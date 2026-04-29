@@ -1,6 +1,5 @@
 package com.example.phinui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
@@ -17,25 +16,19 @@ import com.example.phinui.ui.navigation.Routes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.input.pointer.motionEventSpy
-import androidx.lifecycle.viewModelScope
-import com.example.phinui.components.messages.ChatRepository
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
 import com.example.phinui.components.people.RemoveFriendDialog
@@ -44,10 +37,10 @@ import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
-import com.example.phinui.viewmodel.UserListViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import com.example.phinui.ui.components.UserAvatar
 
 
 @Composable
@@ -219,12 +212,12 @@ fun UserListScreen (
             //General tab
             1 -> {
                 val approvedChatsState = chatRepositoryViewModel.getGeneralChats.value
-                val userNameCache = remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
 
                 val alphabetizedChats = getSortedChats(
                     approvedChatsState = approvedChatsState,
                     chatRepositoryViewModel = chatRepositoryViewModel,
-                    userNameCache = userNameCache,
+                    userCache = userCache,
                     currentUserID = currentUserID
                 )
                 Box {
@@ -243,11 +236,10 @@ fun UserListScreen (
 
                             if(otherUserID in hideBlockedUsers) return@items
 
-                            val userName = userNameCache.value[otherUserID] ?: "Loading Chat..."
-
-                            val user = User(
+                            val user = userCache.value[otherUserID] ?: User(
                                 uid = otherUserID,
-                                name = userName
+                                name = "Loading Chat...",
+                                photoUrl = null
                             )
 
                             UserListItem(
@@ -284,7 +276,8 @@ fun UserListScreen (
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    userToAdd = otherUserID to userName
+                                                    userToAdd = otherUserID to user.name
+
                                                 }
                                             )
 
@@ -302,7 +295,7 @@ fun UserListScreen (
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    userToBlock = otherUserID to userName
+                                                    userToBlock = otherUserID to user.name
                                                 }
                                             )
 
@@ -336,12 +329,12 @@ fun UserListScreen (
             2 -> {
                 val messageRequestState = chatRepositoryViewModel.messageRequests.value
 
-                val userNameCache = remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
 
                 val alphabetizedChats = getSortedChats(
                     approvedChatsState = messageRequestState,
                     chatRepositoryViewModel = chatRepositoryViewModel,
-                    userNameCache = userNameCache,
+                    userCache = userCache,
                     currentUserID = currentUserID
                 )
 
@@ -360,11 +353,10 @@ fun UserListScreen (
                                 .mapNotNull { it as? String }
                                 .firstOrNull{ it != currentUserID } ?:return@items
 
-                            val userName = userNameCache.value[otherUserID] ?: "Loading Request..."
-
-                            val user = User(
+                            val user = userCache.value[otherUserID] ?: User(
                                 uid = otherUserID,
-                                name = userName
+                                name = "Loading Request...",
+                                photoUrl = null
                             )
 
                             UserListItem(
@@ -490,24 +482,22 @@ fun UserListScreen (
 
 }
 
-@Composable fun UserListItem(
+@Composable
+fun UserListItem(
     user: User,
     trailingContent: @Composable (() -> Unit)? = null,
-    onClick:(() -> Unit)? = null
+    onClick: (() -> Unit)? = null
 ) {
-    val initial = user.name
-        .trim()
-        .firstOrNull()
-        ?.uppercase() ?: "?"
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
             .then(
-                if (onClick != null) Modifier.clickable {
-                    onClick()
+                if (onClick != null) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
                 }
-                else Modifier
             )
             .shadow(
                 elevation = 4.dp,
@@ -522,24 +512,13 @@ fun UserListScreen (
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
-
         ) {
-            // User Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFEFEF)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initial,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFD32F2F),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                UserAvatar(
+                    name = user.name,
+                    photoUrl = user.photoUrl,
+                    size = 40
+                )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
@@ -552,50 +531,71 @@ fun UserListScreen (
                     )
                 )
             }
+
             trailingContent?.invoke()
         }
     }
 }
 
-@Composable fun getSortedChats(
+@Composable
+fun getSortedChats(
     approvedChatsState: List<Map<String, Any>>,
     chatRepositoryViewModel: ChatRepositoryViewModel,
-    userNameCache: MutableState<Map<String, String>>,
+    userCache: MutableState<Map<String, User>>,
     currentUserID: String
-): List<Map<String,Any>> {
+): List<Map<String, Any>> {
     LaunchedEffect(approvedChatsState) {
         val allUserIds = approvedChatsState.flatMap { chat ->
-            val participants = chat["participants"] as? List<*> ?: return@flatMap emptyList<String>()
+            val participants =
+                chat["participants"] as? List<*> ?: return@flatMap emptyList<String>()
             participants.mapNotNull { it as? String }
         }.distinct()
 
-        val userNamesMap = mutableMapOf<String, String>()
-        val deferredResults = allUserIds.map { otherUserID ->
-            async{
-                try{
-                    val userName = chatRepositoryViewModel.userListRepository.getUserNameByID(otherUserID)
-                    userNamesMap[otherUserID] = userName
+        val userMap = mutableMapOf<String, User>()
 
+        val deferredResults = allUserIds.map { otherUserID ->
+            async {
+                try {
+                    val userName =
+                        chatRepositoryViewModel.userListRepository.getUserNameByID(otherUserID)
+                    val photoUrl =
+                        chatRepositoryViewModel.userListRepository.getUserPhotoUrlByID(otherUserID)
+
+                    userMap[otherUserID] = User(
+                        uid = otherUserID,
+                        name = userName,
+                        photoUrl = photoUrl
+                    )
                 } catch (e: Exception) {
-                    userNamesMap[otherUserID] = "Unknown User"
+                    userMap[otherUserID] = User(
+                        uid = otherUserID,
+                        name = "Unknown User",
+                        photoUrl = null
+                    )
                 }
             }
         }
+
         coroutineScope {
             deferredResults.awaitAll()
         }
-        userNameCache.value = userNamesMap
+
+        userCache.value = userMap
     }
 
-    val sortedChats = approvedChatsState.sortedWith (compareBy<Map<String, Any>> { chat ->
-        val filteredParticipants = chat["participants"] as? List<*> ?: return@compareBy ""
-        val filteredOtherUserID = filteredParticipants
-            .mapNotNull { it as? String }
-            .firstOrNull{ it != currentUserID }
-        val userName = userNameCache.value[filteredOtherUserID] ?: "Unknown User"
-        userName.lowercase()
-    }.thenBy { chat ->
-        chat["chatID"] as? String ?: ""
-    })
+    val sortedChats = approvedChatsState.sortedWith(
+        compareBy<Map<String, Any>> { chat ->
+            val filteredParticipants = chat["participants"] as? List<*> ?: return@compareBy ""
+            val filteredOtherUserID = filteredParticipants
+                .mapNotNull { it as? String }
+                .firstOrNull { it != currentUserID }
+
+            val userName = userCache.value[filteredOtherUserID]?.name ?: "Unknown User"
+            userName.lowercase()
+        }.thenBy { chat ->
+            chat["chatID"] as? String ?: ""
+        }
+    )
+
     return sortedChats
 }

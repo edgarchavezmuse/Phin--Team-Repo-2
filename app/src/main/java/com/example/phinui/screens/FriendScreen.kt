@@ -190,6 +190,7 @@ fun FriendsScreen(
                     items(friends) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
                         Row(
                             modifier = Modifier
@@ -204,12 +205,13 @@ fun FriendsScreen(
                             ) {
                                 UserAvatar(
                                     name = name,
+                                    photoUrl = photoUrl,
                                     size = 44,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
-                                            photoUrl = user["photoUrl"] as? String,
+                                            photoUrl = photoUrl,
                                             major = user["major"] as? String ?: "",
                                             bio = user["bio"] as? String ?: ""
                                         )
@@ -330,6 +332,7 @@ fun FriendsScreen(
 
                         val name = userData?.get("name") as? String ?: req.fromName
                         val email = userData?.get("email") as? String ?: ""
+                        val photoUrl = userData?.get("photoUrl") as? String
 
                         Row(
                             modifier = Modifier
@@ -344,12 +347,13 @@ fun FriendsScreen(
                             ) {
                                 UserAvatar(
                                     name = name,
+                                    photoUrl = photoUrl,
                                     size = 44,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
-                                            photoUrl = userData?.get("photoUrl") as? String,
+                                            photoUrl = photoUrl,
                                             major = userData?.get("major") as? String ?: "",
                                             bio = userData?.get("bio") as? String ?: ""
                                         )
