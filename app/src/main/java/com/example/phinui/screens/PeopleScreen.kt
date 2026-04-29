@@ -248,6 +248,7 @@ fun PeopleScreen() {
                     items(visibleUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
                         Row(
                             modifier = Modifier
@@ -262,12 +263,13 @@ fun PeopleScreen() {
                             ) {
                                 UserAvatar(
                                     name = name,
+                                    photoUrl = photoUrl,
                                     size = 44,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
-                                            photoUrl = user["photoUrl"] as? String,
+                                            photoUrl = photoUrl,
                                             major = user["major"] as? String ?: "",
                                             bio = user["bio"] as? String ?: ""
                                         )
@@ -392,6 +394,7 @@ fun PeopleScreen() {
                     items(blockedUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
                         Row(
                             modifier = Modifier
@@ -406,12 +409,13 @@ fun PeopleScreen() {
                             ) {
                                 UserAvatar(
                                     name = name,
+                                    photoUrl = photoUrl,
                                     size = 44,
                                     modifier = Modifier.clickable {
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
-                                            photoUrl = user["photoUrl"] as? String,
+                                            photoUrl = photoUrl,
                                             major = user["major"] as? String ?: "",
                                             bio = user["bio"] as? String ?: ""
                                         )
