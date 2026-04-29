@@ -44,6 +44,30 @@ class FirebaseCalendarRepository(
         ).await()
     }
 
+    suspend fun updateEvent(event: CalendarEvent) {
+        if (event.id.isBlank()) {
+            throw IllegalArgumentException("Event ID is required for update.")
+        }
+
+        eventsCollection()
+            .document(event.id)
+            .set(
+                mapOf(
+                    "id" to event.id,
+                    "title" to event.title,
+                    "start" to event.start,
+                    "end" to event.end,
+                    "location" to event.location,
+                    "reminderMinutes" to event.reminderMinutes,
+                    "description" to event.description,
+                    "isAllDay" to event.isAllDay,
+                    "colorHex" to event.colorHex,
+                    "source" to event.source.name
+                )
+            )
+            .await()
+    }
+
     suspend fun deleteEvent(eventId: String) {
         eventsCollection()
             .document(eventId)

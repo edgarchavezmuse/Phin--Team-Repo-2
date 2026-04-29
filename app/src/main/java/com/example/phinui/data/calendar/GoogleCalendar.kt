@@ -101,7 +101,7 @@ object GoogleCalendarRepository {
         connection.doOutput = true
 
         try {
-            val requestBody = buildInsertEventBody(event, zone).toString()
+            val requestBody = buildEventBody(event, zone).toString()
 
             connection.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
                 writer.write(requestBody)
@@ -130,6 +130,55 @@ object GoogleCalendarRepository {
         }
     }
 
+    suspend fun updateEvent(
+        accessToken: String,
+        event: CalendarEvent,
+        zone: ZoneId = ZoneId.systemDefault()
+    ): CalendarEvent = withContext(Dispatchers.IO) {
+
+        if (event.id.isBlank()) {
+            throw IllegalArgumentException("Missing Google event ID.")
+        }
+
+        val encodedEventId = Uri.encode(event.id)
+        val url = URL("https://www.googleapis.com/calendar/v3/calendars/primary/events/$encodedEventId")
+        val connection = url.openConnection() as HttpURLConnection
+
+        connection.requestMethod = "PUT"
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+        connection.doOutput = true
+
+        try {
+            val requestBody = buildEventBody(event, zone).toString()
+
+            connection.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(requestBody)
+                writer.flush()
+            }
+
+            val code = connection.responseCode
+            val body = if (code in 200..299) {
+                connection.inputStream.bufferedReader().readText()
+            } else {
+                connection.errorStream?.bufferedReader()?.readText() ?: ""
+            }
+
+            if (code == 401) {
+                throw GoogleCalendarUnauthorizedException()
+            }
+
+            if (code !in 200..299) {
+                throw RuntimeException("Calendar update error ($code): $body")
+            }
+
+            val root = JSONObject(body)
+            parseGoogleEvent(root)
+        } finally {
+            connection.disconnect()
+        }
+    }
     // Builds the full google calendar api url string
     private fun buildEventsRequestUrl(
         timeMin: String,
@@ -155,7 +204,7 @@ object GoogleCalendarRepository {
     }
 
     // Builds the JSON body for inserting an event into Google Calendar
-    private fun buildInsertEventBody(
+    private fun buildEventBody(
         event: CalendarEvent,
         zone: ZoneId
     ): JSONObject {

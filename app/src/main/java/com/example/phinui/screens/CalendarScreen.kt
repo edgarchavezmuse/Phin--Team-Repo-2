@@ -67,7 +67,8 @@ fun CalendarScreen(
     onAddEventClick: () -> Unit,
     selectedEvent: MutableState<CalendarEvent?>,
     showRemoveDialog: MutableState<Boolean>,
-    reminderScheduler: ReminderScheduler
+    reminderScheduler: ReminderScheduler,
+    onEditEventClick: (CalendarEvent) -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -363,14 +364,29 @@ fun CalendarScreen(
             },
             // Canceling the removal of event request
             dismissButton = {
-                TextButton(
-                    onClick = { showRemoveDialog.value = false }
-                ) {
-                    Text(
-                        text = "Cancel",
-                        color = Color.Black,
-                        fontWeight = FontWeight.Medium
-                    )
+                Row {
+                    TextButton(
+                        onClick = {
+                            onEditEventClick(eventToDelete)
+                            showRemoveDialog.value = false
+                        }
+                    ) {
+                        Text(
+                            text = "Edit",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    TextButton(
+                        onClick = { showRemoveDialog.value = false }
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         )
