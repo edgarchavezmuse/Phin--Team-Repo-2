@@ -82,7 +82,7 @@ fun ScheduleScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(top = 24.dp)
     ) {
         LazyColumn(
@@ -100,14 +100,14 @@ fun ScheduleScreen() {
                     Text(
                         text = "Schedule",
                         fontSize = 28.sp,
-                        color = NavText,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
                         text = "Your weekly class schedule",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -124,11 +124,11 @@ fun ScheduleScreen() {
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, accentRed)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         Text(
                             text = "+ Add Class",
-                            color = accentRed,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -140,7 +140,7 @@ fun ScheduleScreen() {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         shadowElevation = 4.dp
                     ) {
                         Text(
@@ -166,7 +166,7 @@ fun ScheduleScreen() {
                                 text = day,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onBackground
                             )
 
                             if (dayClasses.isNotEmpty()) {

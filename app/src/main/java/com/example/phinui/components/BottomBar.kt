@@ -72,7 +72,7 @@ fun CustomBottomBar(
             .fillMaxWidth()
             .navigationBarsPadding(),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        color = Background,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp
     ) {
         Box(
@@ -146,8 +146,8 @@ fun BottomBarItem(
     onClick: () -> Unit
 ) {
     val activeBackground = Color(0xFFFFE3E3)
-    val activeColor = Color(0xFFD62828)
-    val inactiveColor = Color(0xFF2C2C2C)
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.secondary
 
     Column(
         modifier = Modifier
