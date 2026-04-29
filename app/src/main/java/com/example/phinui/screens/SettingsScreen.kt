@@ -86,7 +86,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(Background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -95,7 +95,7 @@ fun SettingsScreen(
             text = "Settings",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onTertiary
+            color = NavText
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -120,13 +120,13 @@ fun SettingsScreen(
                     Text(
                         text = "Dark Mode",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onTertiary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Text(
                         text = if (darkModeEnabled) "On" else "Off",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.65f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                     )
                 }
 
@@ -136,8 +136,8 @@ fun SettingsScreen(
                         viewModel.setDarkMode(enabled)
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onTertiary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = PrimaryRed
                     )
                 )
             }
@@ -161,7 +161,6 @@ fun SettingsScreen(
                 Text(
                     text = "Bottom Bar",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onTertiary,
                     textAlign = TextAlign.Left
                 )
 
@@ -194,8 +193,8 @@ fun SettingsScreen(
                 .height(48.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.surface
+                containerColor = PrimaryRed,
+                contentColor = Color.White
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {

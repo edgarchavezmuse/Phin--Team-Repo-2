@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
             val darkModeEnabled by settingsViewModel.darkModeEnabled.collectAsState()
 
             PhinUITheme(darkMode = darkModeEnabled) {
-                PhinUIApp(settingsViewModel, darkModeEnabled)
+                PhinUIApp(settingsViewModel)
             }
         }
     }
@@ -84,8 +84,7 @@ class MainActivity : ComponentActivity() {
 //@PreviewScreenSizes
 @Composable
 fun PhinUIApp(
-    settingsViewModel: SettingsViewModel,
-    darkModeEnabled: Boolean
+    settingsViewModel: SettingsViewModel
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -101,7 +100,7 @@ fun PhinUIApp(
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
     val isInMessages = currentRoute?.startsWith(Routes.MESSAGES) == true
 
-    val showAuthWaves = true // turns waves and ship on and off in Login and Register screens
+    val showAuthWaves = false // turns waves and ship on and off in Login and Register screens
     val waveAnimation = rememberWaveAnimationState(
         frontDurationMillis = 4200, // speed of wave
         backDurationMillis = 3500, // speed of wave
@@ -122,40 +121,37 @@ fun PhinUIApp(
     NotificationPermissionRequest()
 
     if (hideNavigationUi) {
-        PhinUITheme(darkMode = false) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.background
-            ) { innerPadding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    if (showAuthWaves) {
-                        AnimatedWaves(
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                            waveColor = MaterialTheme.colorScheme.primary,
-                            height = 110.dp,
-                            showShip = true,
-                            shipSize = 20.dp,
-                            shipVerticalOffset = 18f,
-                            frontPhase = waveAnimation.frontPhase,
-                            backPhase = waveAnimation.backPhase,
-                            shipProgress = waveAnimation.shipProgress,
-                            bobPhase = waveAnimation.bobPhase
-                        )
-                    }
-
-                    PhinNavHost(
-                        navController = navController,
-                        modifier = Modifier.fillMaxSize(),
-                        darkModeEnabled = darkModeEnabled,
-                        setTopBarTitle = { title, isMessages ->
-                            mainActivityViewModel.setTitle(title, isMessages)
-                        }
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                if (showAuthWaves) {
+                    AnimatedWaves(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        waveColor = MaterialTheme.colorScheme.primary,
+                        height = 110.dp,
+                        showShip = true,
+                        shipSize = 20.dp,
+                        shipVerticalOffset = 18f,
+                        frontPhase = waveAnimation.frontPhase,
+                        backPhase = waveAnimation.backPhase,
+                        shipProgress = waveAnimation.shipProgress,
+                        bobPhase = waveAnimation.bobPhase
                     )
                 }
+
+                PhinNavHost(
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize(),
+                    setTopBarTitle = { title, isMessages ->
+                        mainActivityViewModel.setTitle(title, isMessages)
+                    }
+                )
             }
         }
     } else {
@@ -222,7 +218,7 @@ fun PhinUIApp(
                         )
                     )
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     when (bottomBarType) {
 
@@ -244,7 +240,6 @@ fun PhinUIApp(
                 PhinNavHost(
                     navController = navController,
                     modifier = Modifier.padding(innerPadding),
-                    darkModeEnabled = darkModeEnabled,
                     setTopBarTitle = { title, isMessages ->
                         mainActivityViewModel.setTitle(title, isMessages)
                     }
@@ -260,8 +255,7 @@ fun PhinUIAppPreview() {
     val context = LocalContext.current
     val settingsViewModel = remember { SettingsViewModel(context) }
 
-    PhinUIApp(
-        settingsViewModel = settingsViewModel,
-        darkModeEnabled = false
-    )
+    PhinUITheme(darkMode = false) {
+        PhinUIApp(settingsViewModel)
+    }
 }
