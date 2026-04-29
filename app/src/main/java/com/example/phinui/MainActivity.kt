@@ -218,7 +218,7 @@ fun PhinUIApp(
                         )
                     )
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     when (bottomBarType) {
 
