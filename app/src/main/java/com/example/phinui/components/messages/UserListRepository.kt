@@ -10,7 +10,8 @@ import kotlin.coroutines.suspendCoroutine
 
 data class User(
     val uid: String,
-    val name: String
+    val name: String,
+    val photoUrl: String? = null
 )
 
 class UserListRepository {
@@ -27,12 +28,18 @@ class UserListRepository {
                 .orderBy("name")
                 .get()
                 .await()
+
             snapshot.documents
                 .mapNotNull { document ->
                     val uid = document.id
                     val name = document.getString("name") ?: return@mapNotNull null
-                    if (uid != currentUserID) User(uid, name)
-                    else null
+                    val photoUrl = document.getString("photoUrl")
+
+                    if (uid != currentUserID) {
+                        User(uid = uid, name = name, photoUrl = photoUrl)
+                    } else {
+                        null
+                    }
                 }
         } catch (e: Exception) {
             emptyList()
@@ -40,12 +47,20 @@ class UserListRepository {
     }
 
     suspend fun getUserByID(userID: String): User? {
-        return try{
-            val document = usersCollection.document(userID)
+        return try {
+            val document = usersCollection
+                .document(userID)
                 .get()
                 .await()
+
             val userName = document.getString("name") ?: return null
-            User(userID, userName)
+            val photoUrl = document.getString("photoUrl")
+
+            User(
+                uid = userID,
+                name = userName,
+                photoUrl = photoUrl
+            )
         } catch (e: Exception) {
             null
         }
@@ -88,6 +103,24 @@ class UserListRepository {
                     }
                 }.addOnFailureListener { exception ->
                     continuation.resume("Unknown User")
+                }
+        }
+    }
+
+    suspend fun getUserPhotoUrlByID(userID: String): String? {
+        return suspendCancellableCoroutine { continuation ->
+            database.collection("users")
+                .document(userID)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        continuation.resume(document.getString("photoUrl"))
+                    } else {
+                        continuation.resume(null)
+                    }
+                }
+                .addOnFailureListener {
+                    continuation.resume(null)
                 }
         }
     }
