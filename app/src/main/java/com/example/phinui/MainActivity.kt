@@ -31,8 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +43,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.phinui.components.SideMenu
@@ -52,7 +53,6 @@ import com.example.phinui.ui.components.rememberWaveAnimationState
 import com.example.phinui.ui.navigation.PhinNavHost
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.PhinUITheme
-import com.example.phinui.viewmodel.MainActivityViewModel
 import com.example.phinui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -91,14 +91,12 @@ fun PhinUIApp(
     val scope = rememberCoroutineScope()
     val currentBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry.value?.destination?.route
-    val mainActivityViewModel: MainActivityViewModel = viewModel()
 
-    val topBarTitle = mainActivityViewModel.topBarTitle
-    val isMessages = mainActivityViewModel.isMessagesScreen
+    var topBarTitle by remember { mutableStateOf("") }
+    var isMessagesScreen by remember { mutableStateOf(false) }
 
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
-    val isInMessages = currentRoute?.startsWith(Routes.MESSAGES) == true
 
     val showAuthWaves = false // turns waves and ship on and off in Login and Register screens
     val waveAnimation = rememberWaveAnimationState(
@@ -113,8 +111,9 @@ fun PhinUIApp(
     LaunchedEffect(currentRoute) {
         drawerState.close()
 
-        if (!isInMessages) {
-            mainActivityViewModel.setTitle("", false)
+        if (currentRoute != Routes.MESSAGES) {
+            topBarTitle = ""
+            isMessagesScreen = false
         }
     }
 
@@ -148,8 +147,9 @@ fun PhinUIApp(
                 PhinNavHost(
                     navController = navController,
                     modifier = Modifier.fillMaxSize(),
-                    setTopBarTitle = { title, isMessages ->
-                        mainActivityViewModel.setTitle(title, isMessages)
+                    setTopBarTitle = { title, messagesScreen ->
+                        topBarTitle = title
+                        isMessagesScreen = messagesScreen
                     }
                 )
             }
@@ -183,9 +183,9 @@ fun PhinUIApp(
                             ) {
                                 Text(
                                     topBarTitle,
-                                    fontSize = if (isMessages) 18.sp
+                                    fontSize = if (isMessagesScreen) 18.sp
                                     else MaterialTheme.typography.titleLarge.fontSize,
-                                    fontWeight = if (isMessages) FontWeight.Bold
+                                    fontWeight = if (isMessagesScreen) FontWeight.Bold
                                     else FontWeight.Normal,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
@@ -218,7 +218,7 @@ fun PhinUIApp(
                         )
                     )
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     when (bottomBarType) {
 
@@ -240,8 +240,9 @@ fun PhinUIApp(
                 PhinNavHost(
                     navController = navController,
                     modifier = Modifier.padding(innerPadding),
-                    setTopBarTitle = { title, isMessages ->
-                        mainActivityViewModel.setTitle(title, isMessages)
+                    setTopBarTitle = { title, messagesScreen ->
+                        topBarTitle = title
+                        isMessagesScreen = messagesScreen
                     }
                 )
             }

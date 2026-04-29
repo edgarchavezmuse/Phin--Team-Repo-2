@@ -86,7 +86,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(Background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -95,7 +95,7 @@ fun SettingsScreen(
             text = "Settings",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimary
+            color = NavText
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -136,8 +136,8 @@ fun SettingsScreen(
                         viewModel.setDarkMode(enabled)
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onSurface,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = PrimaryRed
                     )
                 )
             }
@@ -193,8 +193,8 @@ fun SettingsScreen(
                 .height(48.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = PrimaryRed,
+                contentColor = Color.White
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {
