@@ -101,6 +101,7 @@ fun ScheduleScreen() {
                         text = "Schedule",
                         fontSize = 28.sp,
                         color = MaterialTheme.colorScheme.onTertiary,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
 
