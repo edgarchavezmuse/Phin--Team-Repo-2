@@ -15,4 +15,5 @@ object Routes {
     const val USERLIST = "userList"
     const val FRIENDS = "friends"
     const val PEOPLE = "people"
+    const val SETTINGS = "settings"
 }

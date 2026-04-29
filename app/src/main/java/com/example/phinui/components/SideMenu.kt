@@ -44,6 +44,8 @@ import com.example.phinui.ui.navigation.Routes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.LaunchedEffect
 import com.example.phinui.notifications.FCMTokenManager.clearToken
 import com.example.phinui.notifications.FCMTokenManager.deleteDeviceToken
 
@@ -78,17 +80,23 @@ fun SideMenu(
 
     var name by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
+    var photoUrl by remember { mutableStateOf<String?>(null) }
 
-    user?.uid?.let { uid ->
-        db.collection("users")
-            .document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                name = document.getString("name") ?: "No Name"
-                if (name != "No Name") {
-                    firstName = name.substringBefore(" ")
+    LaunchedEffect(user?.uid) {
+        user?.uid?.let { uid ->
+            db.collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { document ->
+                    name = document.getString("name") ?: "No Name"
+                    firstName = if (name != "No Name") {
+                        name.substringBefore(" ")
+                    } else {
+                        ""
+                    }
+                    photoUrl = document.getString("photoUrl")
                 }
-            }
+        }
     }
 
     Column(modifier = Modifier.padding(16.dp)) {
@@ -104,7 +112,11 @@ fun SideMenu(
                 onItemClick()
             })
         ) {
-            UserAvatar(name = name, size = 35)
+            UserAvatar(
+                name = name,
+                photoUrl = photoUrl,
+                size = 35
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -146,23 +158,17 @@ fun SideMenu(
             modifier = Modifier
                 .clickable(
                     onClick = {
-                        clearToken()
-                        deleteDeviceToken()
-                        auth.signOut()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.HOME) { inclusive = true }
-                            launchSingleTop = true
-                        }
+                        navController.navigate(Routes.SETTINGS)
                     }
                 )
         ) {
             Icon(
-                imageVector = Icons.Default.Logout,
-                contentDescription = "Log out"
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings"
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Log Out",
+                text = "Settings",
                 style = MaterialTheme.typography.titleMedium
             )
         }
