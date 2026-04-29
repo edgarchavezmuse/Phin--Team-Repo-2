@@ -52,9 +52,6 @@ import com.example.phinui.ui.components.ChosenBottomBar
 import com.example.phinui.ui.components.rememberWaveAnimationState
 import com.example.phinui.ui.navigation.PhinNavHost
 import com.example.phinui.ui.navigation.Routes
-import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.HeaderRed
-import com.example.phinui.ui.theme.HeaderText
 import com.example.phinui.ui.theme.PhinUITheme
 import com.example.phinui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
@@ -64,8 +61,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PhinUITheme {
-                PhinUIApp()
+
+            val context = LocalContext.current
+            val settingsViewModel = remember { SettingsViewModel(context) }
+
+            // dark mode state
+            val darkModeEnabled by settingsViewModel.darkModeEnabled.collectAsState()
+
+            PhinUITheme(darkMode = darkModeEnabled) {
+                PhinUIApp(settingsViewModel)
             }
         }
     }
@@ -77,9 +81,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@PreviewScreenSizes
+//@PreviewScreenSizes
 @Composable
-fun PhinUIApp() {
+fun PhinUIApp(
+    settingsViewModel: SettingsViewModel
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -100,8 +106,6 @@ fun PhinUIApp() {
         bobDurationMillis = 2000
     )
 
-    val context = LocalContext.current
-    val settingsViewModel = remember { SettingsViewModel(context) }
     val bottomBarType by settingsViewModel.bottomBarType.collectAsState()
 
     LaunchedEffect(currentRoute) {
@@ -118,7 +122,7 @@ fun PhinUIApp() {
     if (hideNavigationUi) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = Background
+            containerColor = MaterialTheme.colorScheme.background
         ) { innerPadding ->
             Box(
                 modifier = Modifier
@@ -128,7 +132,7 @@ fun PhinUIApp() {
                 if (showAuthWaves) {
                     AnimatedWaves(
                         modifier = Modifier.align(Alignment.BottomCenter),
-                        waveColor = HeaderRed,
+                        waveColor = MaterialTheme.colorScheme.primary,
                         height = 110.dp,
                         showShip = true,
                         shipSize = 20.dp,
@@ -157,8 +161,8 @@ fun PhinUIApp() {
             drawerContent = {
                 ModalDrawerSheet(
                     drawerShape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
-                    drawerContainerColor = HeaderRed,
-                    drawerContentColor = HeaderText
+                    drawerContainerColor = MaterialTheme.colorScheme.primary,
+                    drawerContentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     SideMenu(
                         navController = navController,
@@ -183,7 +187,7 @@ fun PhinUIApp() {
                                     else MaterialTheme.typography.titleLarge.fontSize,
                                     fontWeight = if (isMessagesScreen) FontWeight.Bold
                                     else FontWeight.Normal,
-                                    color = HeaderText
+                                    color = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
                         },
@@ -194,7 +198,7 @@ fun PhinUIApp() {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = "Menu",
-                                    tint = Background
+                                    tint = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
                         },
@@ -205,14 +209,16 @@ fun PhinUIApp() {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Back",
-                                    tint = Background
+                                    tint = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = HeaderRed)
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
                     )
                 },
-                containerColor = Background,
+                containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     when (bottomBarType) {
 
@@ -247,7 +253,10 @@ fun PhinUIApp() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PhinUIAppPreview() {
-    PhinUITheme {
-        PhinUIApp()
+    val context = LocalContext.current
+    val settingsViewModel = remember { SettingsViewModel(context) }
+
+    PhinUITheme(darkMode = false) {
+        PhinUIApp(settingsViewModel)
     }
 }
