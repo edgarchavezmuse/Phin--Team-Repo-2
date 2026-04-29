@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 
 class ChatRepository {
 
@@ -51,6 +52,8 @@ class ChatRepository {
                 )
             )
         }
+
+        setActiveChat(senderUserID, messageProperties.chatID)
     }
 
     fun sendStudySessionInvitation(
@@ -79,6 +82,9 @@ class ChatRepository {
         )
 
         messageProperties.messageReference.add(studySessionInvitation)
+
+        setActiveChat(senderUserID, messageProperties.chatID)
+
     }
 
     fun respondStudySessionInvitation(
@@ -92,6 +98,9 @@ class ChatRepository {
             .collection("messages")
             .document(messageID)
             .update("participants.$senderUserID", invitationResponse)
+
+        setActiveChat(senderUserID, chatID)
+
     }
 
     fun deleteMessage(chatID: String, messageID: String) {
@@ -205,7 +214,7 @@ class ChatRepository {
         userRef.set(
             mapOf(
                 "activeChatID" to chatID,
-                "lastActive" to com.google.firebase.Timestamp.now()
+                "lastActive" to FieldValue.serverTimestamp()
             ),
             SetOptions.merge()
         )
