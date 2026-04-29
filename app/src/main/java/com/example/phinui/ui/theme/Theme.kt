@@ -19,12 +19,34 @@ private val LightColorScheme = lightColorScheme(
     onSurface = NavText
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = DarkHeaderRed,
+    secondary = DarkTextSecondary,
+    tertiary = DarkSelectedPill,
+
+    background = DarkBackground,
+    surface = DarkSurface,
+
+    onPrimary = DarkOnPrimary,
+    onSecondary = DarkTextPrimary,
+    onTertiary = DarkTextPrimary,
+    onBackground = DarkTextPrimary,
+    onSurface = DarkTextPrimary
+)
+
 @Composable
 fun PhinUITheme(
+    darkMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val colorScheme = if (darkMode) {
+        DarkColorScheme
+    } else {
+        LightColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )
