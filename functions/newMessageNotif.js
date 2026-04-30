@@ -7,9 +7,6 @@ exports.sendNewMessageNotification = onDocumentCreated(
       document: "chats/{chatId}/messages/{messageId}",
     },
     async (event) => {
-      // const before = event.data.before.data();
-      // const after = event.data.after.data();
-
       const message = event.data.data();
       if (!message) return null;
 
@@ -20,26 +17,6 @@ exports.sendNewMessageNotification = onDocumentCreated(
       if (deleted) return null;
 
       if (!senderID || !text) return null;
-
-      // if (!before || !after) return null;
-
-      // only send if timestamp has changed
-      // if (before.lastTimestamp == after.lastTimestamp) {
-      //  return null;
-      // }
-
-      // only send if new message is not blank
-      // if (after.lastMessage == "") {
-      //   return null;
-      // }
-
-      // const senderId = after.participants[0]; // who sent the message
-      // const accepterId = after.participants[1]; // who is receiving the notif
-
-      // if (!senderId) {
-      //   console.log("Missing fromUid");
-      //   return null;
-      // }
 
       try {
         const db = admin.firestore();
@@ -62,22 +39,6 @@ exports.sendNewMessageNotification = onDocumentCreated(
         const activeChatID = receiverData ? receiverData.activeChatID : null;
         const lastActive = receiverData ? receiverData.lastActive : null;
 
-        // data for who sent the message
-        // const senderDoc = await db.collection("users").doc(senderId).get();
-        // const senderData = senderDoc.data();
-        // const senderName = (senderData && senderData.name) ?
-        //        senderData.name : "Someone";
-
-        // data for who received the message
-        // const accepterDoc = await db.collection("users")
-        // .doc(accepterId).get();
-        // const accepterData = accepterDoc.data();
-        // const fcmToken = accepterData && accepterData.fcmToken ?
-        //         accepterData.fcmToken : null;
-
-        // const activeChatID = accepterData ? accepterData.activeChatID : null;
-        // const lastActive = accepterData ? accepterData.lastActive : null;
-
         if (!fcmToken) {
           console.log("No FCM token for receiving user");
           return null;
@@ -88,7 +49,6 @@ exports.sendNewMessageNotification = onDocumentCreated(
         const senderDoc = await db.collection("users").doc(senderID).get();
         const senderName = senderDoc.data() ? senderDoc.data().name : "Someone";
 
-        // const chatId = event.params.requestId;
         const now = Date.now();
         const lastActiveTime =
           lastActive && typeof lastActive.toMillis === "function" ?
@@ -108,10 +68,9 @@ exports.sendNewMessageNotification = onDocumentCreated(
           data: {
             type: "NEW_MESSAGE",
             title: "New Message",
-            // fromUid: senderId,
             fromUid: senderID,
             body: `${senderName} sent you a message`,
-            uri: `phin://messages/${senderID}`, // need to update this to route properly
+            uri: `phin://messages/${senderID}`,
           },
         });
 
