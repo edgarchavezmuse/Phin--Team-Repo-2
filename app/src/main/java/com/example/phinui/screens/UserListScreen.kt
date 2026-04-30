@@ -1,9 +1,6 @@
 package com.example.phinui.screens
 
-import android.util.Log
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
@@ -32,9 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.input.pointer.pointerInput
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
 import com.example.phinui.components.people.RemoveFriendDialog
@@ -74,7 +69,7 @@ fun UserListScreen (
 
     var showDeleteDialog = remember { mutableStateOf(false) }
     var selectedChatID = remember { mutableStateOf<String?>(null) }
-    val friendChats = chatRepositoryViewModel.getFriendChats.value
+
 
     LaunchedEffect(Unit) {
         usersDataBase.collection("users").document(currentUserID).get()
@@ -110,7 +105,6 @@ fun UserListScreen (
             text = { Text("This chat will be deleted from your current chat list.") },
             confirmButton = {
                 TextButton(onClick = {
-                    Log.d("DELETE_DEBUG", "chatID = ${selectedChatID.value}")
                     chatRepositoryViewModel.onDeleteChat(
                         userID = currentUserID,
                         chatID = selectedChatID.value!!
@@ -160,6 +154,16 @@ fun UserListScreen (
 
             //Friends tab
             0 -> {
+                val friendChats = chatRepositoryViewModel.getFriendChats.value
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+
+                val sortedFriendChats = getSortedChats(
+                    approvedChatsState = friendChats,
+                    chatRepositoryViewModel = chatRepositoryViewModel,
+                    userCache = userCache,
+                    currentUserID = currentUserID
+                )
+
                 Box {
                     LazyColumn(
                         modifier = Modifier
@@ -168,7 +172,7 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // changed Friends Tab to be chats based instead of users based
-                        items(friendChats) { chat ->
+                        items(sortedFriendChats) { chat ->
                             val chatID = chat["chatID"] as String
                             val participants = chat["participants"] as List<String>
                             val friendId = participants.first { it != currentUserID }

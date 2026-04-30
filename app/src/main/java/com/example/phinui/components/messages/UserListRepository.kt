@@ -12,7 +12,6 @@ data class User(
     val uid: String,
     val name: String,
     val photoUrl: String? = null,
-    //val chatID: String? = null
 )
 
 class UserListRepository {
