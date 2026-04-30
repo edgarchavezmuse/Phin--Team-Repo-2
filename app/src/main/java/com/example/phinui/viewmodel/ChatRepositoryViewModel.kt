@@ -32,6 +32,20 @@ class ChatRepositoryViewModel (
     // FOR FILTERING FRIENDS FROM GENERAL
     val friendsList = mutableStateOf<List<User>>(emptyList())
 
+    val getFriendChats = derivedStateOf {
+        val friendIDs = friendsList.value.map { it.uid }.toSet()
+
+        approvedChats.value.filter { chat ->
+            val participants = chat["participants"] as? List<*> ?: return@filter false
+
+            val otherUserID = participants
+                .mapNotNull { it as? String }
+                .firstOrNull { it != currentUserID }
+
+            otherUserID != null && otherUserID in friendIDs
+        }
+    }
+
     init {
         friendRepository.listenFriends(
             onResult = { friends ->
@@ -41,6 +55,7 @@ class ChatRepositoryViewModel (
                         name = it.second["name"] as? String ?: "Unknown"
                     )
                 }
+                    .sortedBy { it.name.lowercase() }
             }, onError = { exception -> Log.e("Friends", "Error", exception) }
         )
     }
@@ -217,6 +232,10 @@ class ChatRepositoryViewModel (
 
     fun onChatClosed(userID: String) {
         chatRepository.setActiveChat(userID, null)
+    }
+
+    fun onDeleteChat(userID: String, chatID: String) {
+        chatRepository.deleteChat(userID, chatID)
     }
 
 }

@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.FieldValue
 
 class ChatRepository {
 
@@ -21,6 +23,10 @@ class ChatRepository {
     fun sendMessage(senderUserID: String, receiverUserID: String, messageText: String) {
         val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
 
+        val batch = database.batch()
+        val chatRef = messageProperties.chatReference
+        val messagesRef = messageProperties.messageReference.document()
+
         val message = hashMapOf(
             "type" to "text",
             "senderID" to senderUserID,
@@ -29,28 +35,30 @@ class ChatRepository {
             "deleted" to false
         )
 
-        //Store message in the chats collection in firebase
-        messageProperties.messageReference.add(message)
+        // chat metadata
+        val chatData = hashMapOf(
+            "lastMessage" to messageText,
+            "lastTimestamp" to messageProperties.currentTime,
+            "messageRequestApproved" to true,
+            "participants" to listOf(senderUserID, receiverUserID)
+        )
 
-        //Preview message
-        messageProperties.chatReference.update(
-            mapOf(
-                "lastMessage" to messageText,
-                "lastTimestamp" to messageProperties.currentTime,
-                "participants" to listOf(senderUserID, receiverUserID),
-                "messageRequestApproved" to true
-            )
-        //Default info if chat between users doesn't exist yet
-        ).addOnFailureListener {
-            messageProperties.chatReference.set(
-                mapOf(
-                    "lastMessage" to messageText,
-                    "lastTimestamp" to messageProperties.currentTime,
-                    "participants" to listOf(senderUserID, receiverUserID),
-                    "messageRequestApproved" to true
-                )
-            )
-        }
+        // create message
+        batch.set(messagesRef, message)
+
+        // create/update chat
+        batch.set(chatRef, chatData, SetOptions.merge())
+        
+        // ensure sender's deleted chat state is removed
+        batch.update(
+            chatRef,
+            "deletedBy",
+            FieldValue.arrayRemove(senderUserID, receiverUserID)
+        )
+
+        // commit everything atomically
+        batch.commit()
+
     }
 
     fun sendStudySessionInvitation(
@@ -191,6 +199,10 @@ class ChatRepository {
                 if (error != null || snapshot == null) return@addSnapshotListener
                 val chats = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
+                    val deletedBy = data["deletedBy"] as? List<String> ?: emptyList()
+
+                    if (deletedBy.contains(userID)) return@mapNotNull null
+
                     data + mapOf("chatID" to doc.id)
                 }
                 onResult(chats)
@@ -210,6 +222,15 @@ class ChatRepository {
             SetOptions.merge()
         )
 
+    }
+
+    fun deleteChat(userID: String, chatID: String) {
+        chatsCollection
+            .document(chatID)
+            .update(
+                "deletedBy",
+                FieldValue.arrayUnion(userID)
+            )
     }
 
     data class MessageInfo(
