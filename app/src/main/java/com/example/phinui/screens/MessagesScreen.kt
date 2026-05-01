@@ -23,7 +23,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
@@ -53,7 +52,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-//import com.example.phinui.components.messages.ChatRepository
+import com.example.phinui.components.messages.UserState
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
@@ -76,7 +75,7 @@ fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
     userListViewModel: UserListViewModel = viewModel(),
-    setTopBarTitle: (String) -> Unit
+    setTopBarTitle: (String, Boolean) -> Unit
 ) {
     val chatRepositoryViewModel = remember { ChatRepositoryViewModel() }
     val context = LocalContext.current
@@ -90,10 +89,7 @@ fun MessagesScreen(
 
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-
-    val selectedUser = userListViewModel.selectedUser
-    val isLoadingStatus = userListViewModel.isLoading
-
+    
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
     val initialChatOpen = remember { mutableStateOf(true) }
@@ -110,9 +106,14 @@ fun MessagesScreen(
     var selectedStudyStartTime by remember { mutableStateOf<LocalTime?>(null) }
     var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null)}
 
-    LaunchedEffect(selectedUser) {
-        selectedUser?.name?.let { userName ->
-            setTopBarTitle("Chatting with $userName")}
+    val state = userListViewModel.userState
+
+    LaunchedEffect(state) {
+        when (state) {
+            is UserState.Loading -> setTopBarTitle("Loading...", true)
+            is UserState.Loaded -> setTopBarTitle("Chatting with ${state.user.name}", true)
+            else -> {}
+        }
     }
 
     LaunchedEffect(senderUserID, receiverUserID) {
@@ -134,10 +135,12 @@ fun MessagesScreen(
     DisposableEffect(Unit) {
         onDispose {
             chatRepositoryViewModel.onChatClosed(senderUserID)
+            setTopBarTitle("", false)
+
         }
     }
 
-        //Automatic scroll effect
+    //Automatic scroll effect
     LaunchedEffect(messages) {
         if (messages.isNotEmpty()) {
             val lastMessage = messages.size - 1
@@ -158,11 +161,6 @@ fun MessagesScreen(
         .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        if (isLoadingStatus) {
-            CircularProgressIndicator()
-        }
-
         if (showDeleteDialog.value && selectedMessage.value != null) {
             AlertDialog(
                 onDismissRequest = {

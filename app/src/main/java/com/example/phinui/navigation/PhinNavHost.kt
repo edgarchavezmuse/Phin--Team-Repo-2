@@ -51,7 +51,9 @@ import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
+import androidx.privacysandbox.ads.adservices.topics.Topic
 import com.example.phinui.screens.SettingsScreen
+import com.example.phinui.viewmodel.MainActivityViewModel
 
 @Composable
 fun PhinNavHost(
@@ -66,6 +68,7 @@ fun PhinNavHost(
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { FirebaseAuth.getInstance() }
     var currentUserId by remember { mutableStateOf(auth.currentUser?.uid) }
+    val eventBeingEdited = remember { mutableStateOf<CalendarEvent?>(null) }
 
     DisposableEffect(auth) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -236,7 +239,9 @@ fun PhinNavHost(
             MessagesScreen(
                 senderUserID = currentUserID,
                 receiverUserID = receiverID,
-                setTopBarTitle = { title -> setTopBarTitle(title, true)}
+                setTopBarTitle = { title, isMessages ->
+                    setTopBarTitle(title, isMessages)
+                    }
             )
         }
 
@@ -380,6 +385,12 @@ fun PhinNavHost(
                     showRemoveDialog.value = true
                 },
                 onAddEventClick = {
+                    eventBeingEdited.value = null
+                    navController.navigate(Routes.ADD_EVENT)
+                },
+                onEditEventClick = { event ->
+                    eventBeingEdited.value = event
+                    showRemoveDialog.value = false
                     navController.navigate(Routes.ADD_EVENT)
                 },
                 onConnectClick = {
@@ -409,6 +420,7 @@ fun PhinNavHost(
                         )
                     }
                 },
+
                 selectedEvent = selectedEvent,
                 showRemoveDialog = showRemoveDialog,
                 reminderScheduler = reminderScheduler
@@ -418,39 +430,65 @@ fun PhinNavHost(
         composable(Routes.ADD_EVENT) {
 
             AddEventScreen(
+                existingEvent = eventBeingEdited.value,
                 onSaveEvent = { newEvent ->
                     coroutineScope.launch {
                         try {
-                            when (val result = calendarViewModel.addEventToAppropriateCalendar(newEvent)) {
-                                is AddEventResult.ShouldSaveLocally -> {
-                                    if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
-                                        allEvents.add(newEvent)
+                            val isEditing = eventBeingEdited.value != null
+
+                            if (isEditing) {
+                                when (newEvent.source) {
+                                    CalendarSource.GOOGLE -> {
+                                        calendarViewModel.updateGoogleEvent(newEvent)
+
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} updated in Google Calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
 
-                                    val localEvent = newEvent.copy(source = CalendarSource.LOCAL)
+                                    CalendarSource.LOCAL -> {
+                                        calendarViewModel.updateLocalEventInFirebase(newEvent)
 
-                                    calendarViewModel.saveLocalEventToFirebase(localEvent)
-
-                                    Toast.makeText(
-                                        context,
-                                        "${newEvent.title} added to your local calendar.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    navController.popBackStack()
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} updated in your local calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
+                            } else {
+                                when (val result = calendarViewModel.addEventToAppropriateCalendar(newEvent)) {
+                                    is AddEventResult.ShouldSaveLocally -> {
+                                        if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
+                                            allEvents.add(newEvent)
+                                        }
 
-                                is AddEventResult.AddedToGoogle -> {
+                                        val localEvent = newEvent.copy(source = CalendarSource.LOCAL)
 
-                                    Toast.makeText(
-                                        context,
-                                        "${newEvent.title} added to your Google Calendar.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                        calendarViewModel.saveLocalEventToFirebase(localEvent)
 
-                                    navController.popBackStack()
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} added to your local calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                    is AddEventResult.AddedToGoogle -> {
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} added to your Google Calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
                             }
+
+                            eventBeingEdited.value = null
+                            navController.popBackStack()
+
                         } catch (e: Exception) {
                             Toast.makeText(
                                 context,
@@ -461,6 +499,7 @@ fun PhinNavHost(
                     }
                 },
                 onBackClick = {
+                    eventBeingEdited.value = null
                     navController.popBackStack()
                 }
             )
