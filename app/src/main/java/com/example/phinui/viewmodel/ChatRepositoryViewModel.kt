@@ -144,9 +144,9 @@ class ChatRepositoryViewModel (
                 senderUserID in userIDs && receiverUserID in userIDs
             }
 
-            val isMessageRequestApproved =
-                checkChat?.get("messageRequestApproved") as? Boolean ?: false
-            if (isMessageRequestApproved) {
+            val requestState = checkChat?.get("requestState") as? String
+
+            if (requestState == "approved" || requestState == "pending") {
                 return@runTransaction "CHAT_EXISTS"
             }
 

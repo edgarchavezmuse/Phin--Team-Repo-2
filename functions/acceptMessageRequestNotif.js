@@ -21,7 +21,9 @@ exports.sendAcceptMessageRequestNotification = onDocumentUpdated(
       }
 
       // only send if messageRequestApproved changes TO accepted
-      if (before.messageRequestApproved || !after.messageRequestApproved) {
+      if (before.requestState === "approved" ||
+        after.requestState !== "approved"
+      ) {
         return null;
       }
 
