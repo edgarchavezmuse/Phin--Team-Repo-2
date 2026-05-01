@@ -51,7 +51,9 @@ import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
+import androidx.privacysandbox.ads.adservices.topics.Topic
 import com.example.phinui.screens.SettingsScreen
+import com.example.phinui.viewmodel.MainActivityViewModel
 
 @Composable
 fun PhinNavHost(
@@ -237,7 +239,9 @@ fun PhinNavHost(
             MessagesScreen(
                 senderUserID = currentUserID,
                 receiverUserID = receiverID,
-                setTopBarTitle = { title -> setTopBarTitle(title, true)}
+                setTopBarTitle = { title, isMessages ->
+                    setTopBarTitle(title, isMessages)
+                    }
             )
         }
 
