@@ -33,7 +33,7 @@ class ReminderScheduler(private val context: Context) {
         }
 
         // cancel any existing jobs for the event
-        cancelReminder(event.id, event.reminderMinutes)
+        cancelReminder(event.id)
 
         // save reminder minutes
         remindersMap[event.id] = event.reminderMinutes
@@ -90,13 +90,12 @@ class ReminderScheduler(private val context: Context) {
     }
 
     fun cancelReminder(
-        eventId: String,
-        reminderMinutes: List<Int>? = null
+        eventId: String
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         // get reminder minutes for the event
-        val minutesList = reminderMinutes ?: remindersMap[eventId] ?: return
+        val minutesList = remindersMap[eventId] ?: return
 
         minutesList.forEach { minutesBefore ->
             val requestCode = (eventId.hashCode() * 31) + minutesBefore
