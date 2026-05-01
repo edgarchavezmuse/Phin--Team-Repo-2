@@ -38,8 +38,8 @@ class ChatRepository {
         val chatData = hashMapOf(
             "lastMessage" to messageText,
             "lastTimestamp" to messageProperties.currentTime,
-            "messageRequestApproved" to true,
-            "participants" to listOf(senderUserID, receiverUserID)
+            "participants" to listOf(senderUserID, receiverUserID),
+            "requestState" to "approved"
         )
 
         // create message
@@ -129,8 +129,9 @@ class ChatRepository {
                 "lastMessage" to "",
                 "lastTimestamp" to messageProperties.currentTime,
                 "participants" to listOf(senderUserID, receiverUserID),
-                "messageRequestApproved" to false,
-                "senderID" to senderUserID
+                "senderID" to senderUserID,
+                "isFriendChat" to false,
+                "requestState" to "pending"
             )
         ).addOnFailureListener {
             messageProperties.chatReference.set(
@@ -138,21 +139,31 @@ class ChatRepository {
                     "lastMessage" to "",
                     "lastTimestamp" to messageProperties.currentTime,
                     "participants" to listOf(senderUserID, receiverUserID),
-                    "messageRequestApproved" to false,
-                    "senderID" to senderUserID
+                    "senderID" to senderUserID,
+                    "isFriendChat" to false,
+                    "requestState" to "pending"
                 )
             )
         }
     }
 
-    fun approveMessageRequest(chatID: String) {
+    fun approveMessageRequest(
+        chatID: String,
+        senderUserID: String,
+        receiverUserID: String
+    ) {
         chatsCollection.document(chatID)
-            .update("messageRequestApproved", true)
+            .update(
+                mapOf(
+                    "requestState" to "approved",
+                    "deletedBy" to FieldValue.arrayRemove(senderUserID, receiverUserID)
+                )
+            )
     }
 
     fun denyMessageRequest(chatID: String) {
         chatsCollection.document(chatID)
-            .delete()
+            .update(mapOf("requestState" to "none"))
     }
 
     fun checkForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
@@ -179,7 +190,7 @@ class ChatRepository {
     ) {
         chatsCollection
             .whereArrayContains("participants", userID)
-            .whereEqualTo("messageRequestApproved", false)
+            .whereEqualTo("requestState", "pending")
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
                 val messageRequest = snapshot.documents.mapNotNull { doc ->
@@ -200,7 +211,7 @@ class ChatRepository {
     ) {
         chatsCollection
             .whereArrayContains("participants", userID)
-            .whereEqualTo("messageRequestApproved", true)
+            .whereEqualTo("requestState", "approved")
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
                 val chats = snapshot.documents.mapNotNull { doc ->
@@ -231,12 +242,23 @@ class ChatRepository {
     }
 
     fun deleteChat(userID: String, chatID: String) {
-        chatsCollection
-            .document(chatID)
-            .update(
-                "deletedBy",
-                FieldValue.arrayUnion(userID)
-            )
+        val chatRef = chatsCollection.document(chatID)
+
+        chatRef.update("deletedBy", FieldValue.arrayUnion(userID))
+            .addOnSuccessListener {
+                chatRef.get().addOnSuccessListener { snapshot ->
+
+                    val deletedBy = snapshot.get("deletedBy") as? List<String> ?: emptyList()
+                    val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+                    val isFriendChat = snapshot.getBoolean("isFriendChat") ?: false
+
+                    val bothDeleted = participants.all { deletedBy.contains(it) }
+
+                    if (bothDeleted && !isFriendChat) {
+                        chatRef.update("requestState", "none")
+                    }
+                }
+            }
     }
 
     data class MessageInfo(

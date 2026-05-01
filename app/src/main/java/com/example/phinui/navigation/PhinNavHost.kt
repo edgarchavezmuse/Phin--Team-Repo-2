@@ -273,7 +273,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.PEOPLE) {
-            PeopleScreen()
+            PeopleScreen(navController = navController)
         }
 
         composable(

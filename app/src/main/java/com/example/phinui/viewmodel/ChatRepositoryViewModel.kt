@@ -144,9 +144,9 @@ class ChatRepositoryViewModel (
                 senderUserID in userIDs && receiverUserID in userIDs
             }
 
-            val isMessageRequestApproved =
-                checkChat?.get("messageRequestApproved") as? Boolean ?: false
-            if (isMessageRequestApproved) {
+            val requestState = checkChat?.get("requestState") as? String
+
+            if (requestState == "approved" || requestState == "pending") {
                 return@runTransaction "CHAT_EXISTS"
             }
 
@@ -205,8 +205,12 @@ class ChatRepositoryViewModel (
         chatRepository.respondStudySessionInvitation(chatID, messageID, senderUserID, invitationResponse)
     }
 
-    fun approveRequest(chatID: String) {
-        chatRepository.approveMessageRequest(chatID)
+    fun approveRequest(
+        chatID: String,
+        senderUserID: String,
+        receiverUserID: String
+    ) {
+        chatRepository.approveMessageRequest(chatID, senderUserID, receiverUserID)
     }
 
     fun denyRequest(chatID: String) {
