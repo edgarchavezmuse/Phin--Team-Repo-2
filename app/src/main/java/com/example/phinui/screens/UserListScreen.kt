@@ -1,6 +1,7 @@
 package com.example.phinui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.*
@@ -66,6 +67,9 @@ fun UserListScreen (
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
 
+    var showDeleteDialog = remember { mutableStateOf(false) }
+    var selectedChatID = remember { mutableStateOf<String?>(null) }
+
 
     LaunchedEffect(Unit) {
         usersDataBase.collection("users").document(currentUserID).get()
@@ -91,6 +95,38 @@ fun UserListScreen (
     val blockedByOtherUsersList = chatRepositoryViewModel.userListRepository.blockedByOtherUsersList.value
     val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
 
+    if (showDeleteDialog.value && selectedChatID.value != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog.value = false
+                selectedChatID.value = null
+            },
+            title = { Text("Delete chat?") },
+            text = { Text("This chat will be deleted from your current chat list.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    chatRepositoryViewModel.onDeleteChat(
+                        userID = currentUserID,
+                        chatID = selectedChatID.value!!
+                    )
+                    showDeleteDialog.value = false
+                    selectedChatID.value = null
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog.value = false
+                        selectedChatID.value = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -118,6 +154,16 @@ fun UserListScreen (
 
             //Friends tab
             0 -> {
+                val friendChats = chatRepositoryViewModel.getFriendChats.value
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+
+                val sortedFriendChats = getSortedChats(
+                    approvedChatsState = friendChats,
+                    chatRepositoryViewModel = chatRepositoryViewModel,
+                    userCache = userCache,
+                    currentUserID = currentUserID
+                )
+
                 Box {
                     LazyColumn(
                         modifier = Modifier
@@ -125,10 +171,18 @@ fun UserListScreen (
                             .padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(friendList) { friend ->
-                            if(friend.uid in hideBlockedUsers) return@items
+                        // changed Friends Tab to be chats based instead of users based
+                        items(sortedFriendChats) { chat ->
+                            val chatID = chat["chatID"] as String
+                            val participants = chat["participants"] as List<String>
+                            val friendId = participants.first { it != currentUserID }
+
+                            if(friendId in hideBlockedUsers) return@items
+
+                            val friendUser = friendList.first { it.uid == friendId }
+
                             UserListItem(
-                                user = friend,
+                                user = friendUser,
                                 trailingContent = {
                                     var showMenu by remember { mutableStateOf(false) }
                                     Box {
@@ -161,7 +215,7 @@ fun UserListScreen (
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    friendToRemove = friend.uid to friend.name
+                                                    friendToRemove = friendId to friendUser.name
                                                 }
                                             )
 
@@ -179,7 +233,7 @@ fun UserListScreen (
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    friendToBlock = friend.uid to friend.name
+                                                    friendToBlock = friendId to friendUser.name
                                                 }
                                             )
 
@@ -200,7 +254,11 @@ fun UserListScreen (
                                     }
                                 },
                                 onClick = {
-                                    navController.navigate(Routes.MESSAGES + "/${friend.uid}")
+                                    navController.navigate(Routes.MESSAGES + "/${friendId}")
+                                },
+                                onLongPress = {
+                                    selectedChatID.value = chatID
+                                    showDeleteDialog.value = true
                                 }
                             )
                             Spacer(modifier = Modifier.height(5.dp))
@@ -228,6 +286,8 @@ fun UserListScreen (
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(alphabetizedChats) { chat ->
+                            val chatID = chat["chatID"] as? String ?: return@items
+
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants
@@ -317,6 +377,10 @@ fun UserListScreen (
                                 },
                                 onClick = {
                                     navController.navigate(Routes.MESSAGES + "/${user.uid}")
+                                },
+                                onLongPress = {
+                                    selectedChatID.value = chatID
+                                    showDeleteDialog.value = true
                                 }
                             )
                             Spacer(modifier = Modifier.height(5.dp))
@@ -486,18 +550,20 @@ fun UserListScreen (
 fun UserListItem(
     user: User,
     trailingContent: @Composable (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    onLongPress: (() -> Unit)? = null
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable { onClick() }
-                } else {
-                    Modifier
-                }
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = { onClick?.invoke() },
+                onLongClick = { onLongPress?.invoke() }
             )
             .shadow(
                 elevation = 4.dp,
