@@ -205,8 +205,12 @@ class ChatRepositoryViewModel (
         chatRepository.respondStudySessionInvitation(chatID, messageID, senderUserID, invitationResponse)
     }
 
-    fun approveRequest(chatID: String) {
-        chatRepository.approveMessageRequest(chatID)
+    fun approveRequest(
+        chatID: String,
+        senderUserID: String,
+        receiverUserID: String
+    ) {
+        chatRepository.approveMessageRequest(chatID, senderUserID, receiverUserID)
     }
 
     fun denyRequest(chatID: String) {

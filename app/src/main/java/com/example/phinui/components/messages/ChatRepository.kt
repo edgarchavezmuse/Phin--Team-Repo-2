@@ -145,9 +145,18 @@ class ChatRepository {
         }
     }
 
-    fun approveMessageRequest(chatID: String) {
+    fun approveMessageRequest(
+        chatID: String,
+        senderUserID: String,
+        receiverUserID: String
+    ) {
         chatsCollection.document(chatID)
-            .update("messageRequestApproved", true)
+            .update(
+                mapOf(
+                    "messageRequestApproved" to true,
+                    "deletedBy" to FieldValue.arrayRemove(senderUserID, receiverUserID)
+                )
+            )
     }
 
     fun denyMessageRequest(chatID: String) {

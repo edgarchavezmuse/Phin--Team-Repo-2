@@ -434,7 +434,9 @@ fun UserListScreen (
                                         IconButton(
                                             onClick = {
                                                 chatRepositoryViewModel.approveRequest(
-                                                    chatID
+                                                    chatID,
+                                                    currentUserID,
+                                                    otherUserID
                                                 )
                                             }
                                         ) {
