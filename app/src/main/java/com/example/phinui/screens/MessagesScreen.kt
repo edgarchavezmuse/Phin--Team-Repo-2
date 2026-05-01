@@ -60,7 +60,6 @@ import com.example.phinui.ui.theme.*
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
-import com.example.phinui.viewmodel.MainActivityViewModel
 import com.example.phinui.viewmodel.UserListViewModel
 import com.google.firebase.Timestamp
 import java.time.*
@@ -79,7 +78,6 @@ fun MessagesScreen(
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
     val chatRepositoryViewModel = remember { ChatRepositoryViewModel() }
-//    val mainActivityViewModel: MainActivityViewModel = viewModel()
     val context = LocalContext.current
     val reminderScheduler = remember { ReminderScheduler(context) }
     val calendarViewModel: CalendarViewModel = viewModel(
@@ -91,10 +89,7 @@ fun MessagesScreen(
 
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-
-//    val selectedUser = userListViewModel.selectedUser
-//    val isLoadingStatus = userListViewModel.isLoading
-
+    
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
     val initialChatOpen = remember { mutableStateOf(true) }
