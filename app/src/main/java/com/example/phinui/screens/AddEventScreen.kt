@@ -538,13 +538,6 @@ fun AddEventScreen(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        TextButton(
-            onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Cancel")
-        }
     }
 
     if (showStartPicker) {
