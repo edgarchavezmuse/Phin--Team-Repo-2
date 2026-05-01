@@ -238,7 +238,6 @@ class CalendarViewModel(
 
     suspend fun saveLocalEventToFirebase(event: CalendarEvent) {
         firebaseCalendarRepository.saveEvent(event)
-        reminderScheduler.scheduleReminder(event)
         loadEventsForCurrentWeek()
     }
 
@@ -262,7 +261,7 @@ class CalendarViewModel(
 
     suspend fun deleteLocalEventFromFirebase(event: CalendarEvent) {
         firebaseCalendarRepository.deleteEvent(event.id)
-        reminderScheduler.cancelReminder(event.id, event.reminderMinutes)
+        reminderScheduler.cancelReminder(event.id)
         loadEventsForCurrentWeek()
     }
 
@@ -476,11 +475,9 @@ class CalendarViewModel(
 
     suspend fun updateLocalEventInFirebase(event: CalendarEvent) {
         firebaseCalendarRepository.updateEvent(event)
-        reminderScheduler.cancelReminder(event.id, event.reminderMinutes)
-        reminderScheduler.scheduleReminder(event)
+        reminderScheduler.cancelReminder(event.id)
         loadEventsForCurrentWeek()
     }
-
     suspend fun updateGoogleEvent(event: CalendarEvent) {
         val token = googleAccessToken
             ?: throw IllegalStateException("Not signed in to Google Calendar.")
@@ -500,7 +497,7 @@ class CalendarViewModel(
                 zone = ZoneId.systemDefault()
             )
 
-            reminderScheduler.cancelReminder(event.id, event.reminderMinutes)
+            reminderScheduler.cancelReminder(event.id)
             reminderScheduler.scheduleReminder(event)
             loadEventsForCurrentWeek()
 
