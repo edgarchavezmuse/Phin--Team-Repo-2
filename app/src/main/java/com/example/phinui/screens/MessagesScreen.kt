@@ -89,10 +89,13 @@ fun MessagesScreen(
 
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-    
+    var previousLastMessageID by remember { mutableStateOf<String?>(null) }
+    var showTimestampOnMessageID by remember { mutableStateOf<String?>(null) }
+
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
-    val initialChatOpen = remember { mutableStateOf(true) }
+    var hasInitialChatLoaded by remember { mutableStateOf(false) }
+
 
     var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     var showDeleteDialog = remember { mutableStateOf(false) }
@@ -142,18 +145,28 @@ fun MessagesScreen(
 
     //Automatic scroll effect
     LaunchedEffect(messages) {
-        if (messages.isNotEmpty()) {
-            val lastMessage = messages.size - 1
-            val userIsNearBottomChat = autoScrollState.layoutInfo.visibleItemsInfo.lastOrNull()
-                ?.index
-                ?.let { lastVisibleMessage -> lastMessage - lastVisibleMessage <= autoScrollThreshold }
-                ?: true
+        val bottomOfScreen = messages.size - 1
+        val lastMessage = messages.lastOrNull()
+        val lastMessageID = lastMessage?.get("messageID") as? String
 
-            if (initialChatOpen.value || userIsNearBottomChat) {
-                autoScrollState.animateScrollToItem(lastMessage)
-                initialChatOpen.value = false
-            }
+        val lastVisibleMessage = autoScrollState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        val isNearBottomChat = lastVisibleMessage == null || lastVisibleMessage >= messages.size - autoScrollThreshold
+
+        val isNewMessage = lastMessageID != previousLastMessageID
+
+        if (!hasInitialChatLoaded && messages.isNotEmpty()) {
+            autoScrollState.scrollToItem(bottomOfScreen)
+            previousLastMessageID = lastMessageID
+            hasInitialChatLoaded = true
+            return@LaunchedEffect
+
         }
+
+        if (isNewMessage && isNearBottomChat) {
+            autoScrollState.animateScrollToItem(bottomOfScreen)
+        }
+
+        previousLastMessageID = lastMessageID
     }
 
     Column(modifier = Modifier
@@ -211,6 +224,7 @@ fun MessagesScreen(
                 val chatID = message["chatID"] as? String ?: ""
                 val startTime = message["startTime"] as? Timestamp
                 val endTime = message["endTime"] as? Timestamp
+                val timeStamp = message["timestamp"] as? Timestamp
                 val isMyMessage = senderID == senderUserID
 
                 val studySessionTitle = message["title"] as? String ?: "Study Session"
@@ -224,186 +238,226 @@ fun MessagesScreen(
                 val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
                 val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
                 val displayEndTime = endTime?.toDate()?.let {convertTime.format(it) } ?: ""
+                val formattedTimeStamp = timeStamp?.toDate()?.let {
+                    SimpleDateFormat("MMM dd yyyy - h:mm a", Locale.getDefault()).format(it)
+                } ?: ""
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp),
-                    horizontalArrangement = if (isMyMessage) Arrangement.End
-                    else Arrangement.Start,
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment =
+                        if(isMyMessage) {
+                        Alignment.End
+                        }
+                        else {
+                            Alignment.Start
+                        }
                 ) {
-                    Box(
+                    if (showTimestampOnMessageID == messageID && formattedTimeStamp.isNotEmpty()) {
+                        Text(
+                            text = formattedTimeStamp,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Row(
                         modifier = Modifier
-                            .widthIn(max = 250.dp)
-                            .background(
-                                color = when {
-                                    isDeleted -> DeletedMessageColor
-                                    isMyMessage -> SenderUserColor
-                                    else -> ReceiverUserColor
-                                }
-                            )
-                            .padding(12.dp)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onLongPress = {
-                                        if (isMyMessage && !isDeleted) {
-                                            selectedMessage.value = message
-                                            showDeleteDialog.value = true
-                                        }
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        horizontalArrangement = if (isMyMessage) Arrangement.End
+                        else Arrangement.Start,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .widthIn(max = 250.dp)
+                                .background(
+                                    color = when {
+                                        isDeleted -> DeletedMessageColor
+                                        isMyMessage -> SenderUserColor
+                                        else -> ReceiverUserColor
                                     }
                                 )
-                            }
-                    ) {
-
-                        if (isDeleted) {
-                            Text(
-                                text = "This message was deleted",
-                                fontStyle = FontStyle.Italic
-                            )
-                        }
-
-                        else {
-                            when (type) {
-                                "text" -> {
-                                    Text(
-                                        text = text,
-                                        fontWeight = FontWeight.Bold
+                                .padding(12.dp)
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onLongPress = {
+                                            if (isMyMessage && !isDeleted) {
+                                                selectedMessage.value = message
+                                                showDeleteDialog.value = true
+                                            }
+                                        },
+                                        onTap = {
+                                            showTimestampOnMessageID =
+                                                if (showTimestampOnMessageID == messageID) {
+                                                    null
+                                                } else {
+                                                    messageID
+                                                }
+                                        }
                                     )
                                 }
+                        ) {
 
-                                "invitation" -> {
-                                    Column {
+                            if (isDeleted) {
+                                Text(
+                                    text = "This message was deleted",
+                                    fontStyle = FontStyle.Italic
+                                )
+                            } else {
+                                when (type) {
+                                    "text" -> {
                                         Text(
-                                            text = studySessionTitle,
+                                            text = text,
                                             fontWeight = FontWeight.Bold
                                         )
+                                    }
 
-                                        if (studySessionDescription.isNotEmpty()) {
+                                    "invitation" -> {
+                                        Column {
                                             Text(
-                                                text = studySessionDescription
+                                                text = studySessionTitle,
+                                                fontWeight = FontWeight.Bold
                                             )
-                                        }
 
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        Text("Date: " + displayDate)
-                                        Text("Start time: " + displayStartTime)
-                                        Text("End time: " + displayEndTime)
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        when (myStatus) {
-                                            "PENDING" -> {
-                                                if (!isMyMessage) {
-                                                    Row {
-                                                        Button(
-                                                            onClick = {
-                                                                //Set up for adding event to local calendar for receiver user
-                                                                val createStudySessionEventTitle = message["title"] as? String ?: "Study Session"
-                                                                val createStudySessionEventDescription = message["description"] as? String ?: ""
-                                                                val createStudySessionEventStartTime = message["startTime"] as? Timestamp
-                                                                val createStudySessionEventEndTime = message["endTime"] as? Timestamp
-
-                                                                if (createStudySessionEventStartTime == null || createStudySessionEventEndTime == null) {
-                                                                    return@Button
-                                                                }
-
-                                                                val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                                                val convertStudySessionEventStartTime = createStudySessionEventStartTime
-                                                                    .toDate()
-                                                                    .toInstant()
-                                                                    .atZone(ZoneId.systemDefault())
-                                                                    .toLocalDateTime()
-                                                                    .format(timeFormatter)
-
-                                                                val convertStudySessionEventEndTime = createStudySessionEventEndTime
-                                                                    .toDate()
-                                                                    .toInstant()
-                                                                    .atZone(ZoneId.systemDefault())
-                                                                    .toLocalDateTime()
-                                                                    .format(timeFormatter)
-
-                                                                val createStudySessionEvent = CalendarEvent(
-                                                                    id = "",
-                                                                    title = createStudySessionEventTitle,
-                                                                    description = createStudySessionEventDescription,
-                                                                    start = convertStudySessionEventStartTime,
-                                                                    end = convertStudySessionEventEndTime,
-                                                                    location = null,
-                                                                    reminderMinutes = emptyList(),
-                                                                    isAllDay = false,
-                                                                    colorHex = "0xFFE53935",
-                                                                    source = CalendarSource.LOCAL
-                                                                )
-
-                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = chatID,
-                                                                    messageID = messageID,
-                                                                    senderUserID = senderUserID,
-                                                                    invitationResponse = "ACCEPTED"
-                                                                )
-
-                                                                //Event gets created for receiver user
-                                                                calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
-                                                                    if (success) {
-                                                                        Toast.makeText(
-                                                                            context,
-                                                                            "$createStudySessionEventTitle added to your local calendar",
-                                                                            Toast.LENGTH_SHORT).show()
-                                                                    }
-                                                                    else {
-                                                                        Toast.makeText(
-                                                                            context,
-                                                                            "Failed to add $createStudySessionEventTitle to your local calendar",
-                                                                            Toast.LENGTH_SHORT).show()
-                                                                    }
-                                                                }
-                                                            }
-                                                        ) {
-                                                            Text("Accept")
-                                                        }
-
-                                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                                        Button(
-                                                            onClick = {
-                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = chatID,
-                                                                    messageID = messageID,
-                                                                    senderUserID = senderUserID,
-                                                                    invitationResponse = "DECLINED"
-                                                                )
-                                                            }
-                                                        ) {
-                                                            Text("Decline")
-                                                        }
-                                                    }
-                                                } else {
-                                                    Text("Pending response...")
-                                                }
+                                            if (studySessionDescription.isNotEmpty()) {
+                                                Text(
+                                                    text = studySessionDescription
+                                                )
                                             }
 
-                                            "ACCEPTED" -> {
-                                                when (receiverStatus) {
-                                                    "PENDING" -> {
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            Text("Date: " + displayDate)
+                                            Text("Start time: " + displayStartTime)
+                                            Text("End time: " + displayEndTime)
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            when (myStatus) {
+                                                "PENDING" -> {
+                                                    if (!isMyMessage) {
+                                                        Row {
+                                                            Button(
+                                                                onClick = {
+                                                                    //Set up for adding event to local calendar for receiver user
+                                                                    val createStudySessionEventTitle =
+                                                                        message["title"] as? String
+                                                                            ?: "Study Session"
+                                                                    val createStudySessionEventDescription =
+                                                                        message["description"] as? String
+                                                                            ?: ""
+                                                                    val createStudySessionEventStartTime =
+                                                                        message["startTime"] as? Timestamp
+                                                                    val createStudySessionEventEndTime =
+                                                                        message["endTime"] as? Timestamp
+
+                                                                    if (createStudySessionEventStartTime == null || createStudySessionEventEndTime == null) {
+                                                                        return@Button
+                                                                    }
+
+                                                                    val timeFormatter =
+                                                                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                                                                    val convertStudySessionEventStartTime =
+                                                                        createStudySessionEventStartTime
+                                                                            .toDate()
+                                                                            .toInstant()
+                                                                            .atZone(ZoneId.systemDefault())
+                                                                            .toLocalDateTime()
+                                                                            .format(timeFormatter)
+
+                                                                    val convertStudySessionEventEndTime =
+                                                                        createStudySessionEventEndTime
+                                                                            .toDate()
+                                                                            .toInstant()
+                                                                            .atZone(ZoneId.systemDefault())
+                                                                            .toLocalDateTime()
+                                                                            .format(timeFormatter)
+
+                                                                    val createStudySessionEvent =
+                                                                        CalendarEvent(
+                                                                            id = "",
+                                                                            title = createStudySessionEventTitle,
+                                                                            description = createStudySessionEventDescription,
+                                                                            start = convertStudySessionEventStartTime,
+                                                                            end = convertStudySessionEventEndTime,
+                                                                            location = null,
+                                                                            reminderMinutes = emptyList(),
+                                                                            isAllDay = false,
+                                                                            colorHex = "0xFFE53935",
+                                                                            source = CalendarSource.LOCAL
+                                                                        )
+
+                                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                                        chatID = chatID,
+                                                                        messageID = messageID,
+                                                                        senderUserID = senderUserID,
+                                                                        invitationResponse = "ACCEPTED"
+                                                                    )
+
+                                                                    //Event gets created for receiver user
+                                                                    calendarViewModel.saveStudySessionEvent(
+                                                                        createStudySessionEvent
+                                                                    ) { success ->
+                                                                        if (success) {
+                                                                            Toast.makeText(
+                                                                                context,
+                                                                                "$createStudySessionEventTitle added to your local calendar",
+                                                                                Toast.LENGTH_SHORT
+                                                                            ).show()
+                                                                        } else {
+                                                                            Toast.makeText(
+                                                                                context,
+                                                                                "Failed to add $createStudySessionEventTitle to your local calendar",
+                                                                                Toast.LENGTH_SHORT
+                                                                            ).show()
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ) {
+                                                                Text("Accept")
+                                                            }
+
+                                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                                            Button(
+                                                                onClick = {
+                                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                                        chatID = chatID,
+                                                                        messageID = messageID,
+                                                                        senderUserID = senderUserID,
+                                                                        invitationResponse = "DECLINED"
+                                                                    )
+                                                                }
+                                                            ) {
+                                                                Text("Decline")
+                                                            }
+                                                        }
+                                                    } else {
                                                         Text("Pending response...")
                                                     }
-                                                    "ACCEPTED" -> {
-                                                        Text("Accepted")
+                                                }
+
+                                                "ACCEPTED" -> {
+                                                    when (receiverStatus) {
+                                                        "PENDING" -> {
+                                                            Text("Pending response...")
+                                                        }
+
+                                                        "ACCEPTED" -> {
+                                                            Text("Accepted")
+                                                        }
+
+                                                        "DECLINED" -> {
+                                                            Text("Declined")
+                                                        }
                                                     }
-                                                    "DECLINED" -> {
+                                                }
+
+                                                // This one may never fire
+                                                "DECLINED" -> {
+                                                    if (receiverStatus == "PENDING") {
+                                                        Text("Pending response...")
+                                                    } else {
                                                         Text("Declined")
                                                     }
-                                                }
-                                            }
-
-                                            // This one may never fire
-                                            "DECLINED" -> {
-                                                if (receiverStatus == "PENDING"){
-                                                    Text("Pending response...")
-                                                }
-                                                else {
-                                                    Text("Declined")
                                                 }
                                             }
                                         }
