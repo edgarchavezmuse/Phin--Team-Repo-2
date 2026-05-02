@@ -111,7 +111,7 @@ fun WaveBottomBar(waveAnimation: WaveAnimationState) {
             .fillMaxWidth()
             .navigationBarsPadding(),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        color = Background,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp
     ) {
         Box(
@@ -123,7 +123,7 @@ fun WaveBottomBar(waveAnimation: WaveAnimationState) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter),
-                waveColor = HeaderRed,
+                waveColor = MaterialTheme.colorScheme.primary,
                 height = 90.dp,
                 showShip = true,
                 shipSize = 18.dp,
@@ -145,7 +145,7 @@ fun BottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeBackground = Color(0xFFFFE3E3)
+    val activeBackground = MaterialTheme.colorScheme.surfaceVariant
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.secondary
 

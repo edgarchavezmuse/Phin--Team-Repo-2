@@ -15,10 +15,9 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = HeaderText,
     onSecondary = HeaderText,
     onTertiary = NavText,
-    onBackground = DeletedMessageColor,
+    onBackground = NavText,
     onSurface = NavText,
-    surfaceVariant = LightPink,
-    primaryContainer = DarkHeaderRed
+    surfaceVariant = LightPink
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -32,24 +31,8 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = DarkTextPrimary,
     onBackground = DarkTextPrimary,
     onSurface = DarkTextPrimary,
-    surfaceVariant = DarkLightPink,
-    primaryContainer = DarkHeaderRed
+    surfaceVariant = DarkLightPink
 
-)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = DarkHeaderRed,
-    secondary = DarkTextSecondary,
-    tertiary = DarkSelectedPill,
-
-    background = DarkBackground,
-    surface = DarkSurface,
-
-    onPrimary = DarkOnPrimary,
-    onSecondary = DarkTextPrimary,
-    onTertiary = DarkTextPrimary,
-    onBackground = DarkTextPrimary,
-    onSurface = DarkTextPrimary
 )
 
 @Composable
