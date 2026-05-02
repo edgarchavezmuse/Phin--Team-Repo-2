@@ -11,6 +11,7 @@ import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
+import com.example.phinui.data.CampusLocation
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -240,6 +241,18 @@ class ChatRepositoryViewModel (
 
     fun onDeleteChat(userID: String, chatID: String) {
         chatRepository.deleteChat(userID, chatID)
+    }
+
+    fun callSendPinMessage(
+        senderUserID: String,
+        receiverUserID: String,
+        location: CampusLocation
+    ) {
+        chatRepository.sendPinMessage(
+            senderUserID = senderUserID,
+            receiverUserID = receiverUserID,
+            location = location
+        )
     }
 
 }

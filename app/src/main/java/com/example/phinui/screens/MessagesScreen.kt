@@ -4,31 +4,43 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AlarmOff
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TimeInput
@@ -36,48 +48,61 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.phinui.components.messages.UserState
+import com.example.phinui.data.CampusLocation
+import com.example.phinui.data.fetchCampusLocations
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
-import com.example.phinui.ui.theme.*
+import com.example.phinui.ui.navigation.Routes
+import com.example.phinui.ui.theme.DeletedMessageColor
+import com.example.phinui.ui.theme.MessageBox
+import com.example.phinui.ui.theme.ReceiverUserColor
+import com.example.phinui.ui.theme.SenderUserColor
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.UserListViewModel
 import com.google.firebase.Timestamp
-import java.time.*
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-
 @Composable
 fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
+    navController: NavController,
     userListViewModel: UserListViewModel = viewModel(),
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
-    val chatRepositoryViewModel = remember { ChatRepositoryViewModel() }
+    val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
     val context = LocalContext.current
     val reminderScheduler = remember { ReminderScheduler(context) }
     val calendarViewModel: CalendarViewModel = viewModel(
@@ -89,13 +114,17 @@ fun MessagesScreen(
 
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-    
+
+    var showPinPickerDialog by remember { mutableStateOf(false) }
+    var campusPins by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
+    var showAttachMenu by remember { mutableStateOf(false) }
+
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
     val initialChatOpen = remember { mutableStateOf(true) }
 
-    var selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
-    var showDeleteDialog = remember { mutableStateOf(false) }
+    val selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
+    val showDeleteDialog = remember { mutableStateOf(false) }
     val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -104,7 +133,9 @@ fun MessagesScreen(
 
     var selectedStudyDate by remember { mutableStateOf("") }
     var selectedStudyStartTime by remember { mutableStateOf<LocalTime?>(null) }
-    var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null)}
+    var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null) }
+
+    var showStudySessionInviteDialog by remember { mutableStateOf(false) }
 
     val state = userListViewModel.userState
 
@@ -117,10 +148,13 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(senderUserID, receiverUserID) {
-        chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) {
-                newMessages ->
+        chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) { newMessages ->
             messages = newMessages
         }
+    }
+
+    LaunchedEffect(Unit) {
+        campusPins = fetchCampusLocations()
     }
 
     LaunchedEffect(receiverUserID) {
@@ -131,16 +165,13 @@ fun MessagesScreen(
         chatRepositoryViewModel.onChatOpened(senderUserID, chatID)
     }
 
-
     DisposableEffect(Unit) {
         onDispose {
             chatRepositoryViewModel.onChatClosed(senderUserID)
             setTopBarTitle("", false)
-
         }
     }
 
-    //Automatic scroll effect
     LaunchedEffect(messages) {
         if (messages.isNotEmpty()) {
             val lastMessage = messages.size - 1
@@ -156,9 +187,10 @@ fun MessagesScreen(
         }
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (showDeleteDialog.value && selectedMessage.value != null) {
@@ -170,15 +202,17 @@ fun MessagesScreen(
                 title = { Text("Delete message?") },
                 text = { Text("This message will be deleted for everyone.") },
                 confirmButton = {
-                    TextButton(onClick = {
-                        val message = selectedMessage.value ?: return@TextButton
-                        chatRepositoryViewModel.onDeleteMessage(
-                            message = message,
-                            chatID = chatID
-                        )
-                        showDeleteDialog.value = false
-                        selectedMessage.value = null
-                    }) {
+                    TextButton(
+                        onClick = {
+                            val message = selectedMessage.value ?: return@TextButton
+                            chatRepositoryViewModel.onDeleteMessage(
+                                message = message,
+                                chatID = chatID
+                            )
+                            showDeleteDialog.value = false
+                            selectedMessage.value = null
+                        }
+                    ) {
                         Text("Delete")
                     }
                 },
@@ -202,13 +236,13 @@ fun MessagesScreen(
             verticalArrangement = Arrangement.Top
         ) {
             items(messages) { message ->
-                val type = message["type"] as? String?: "text"
+                val type = message["type"] as? String ?: "text"
                 val text = message["text"] as? String ?: ""
 
                 val senderID = message["senderID"] as? String ?: ""
                 val isDeleted = message["deleted"] as? Boolean ?: false
                 val messageID = message["messageID"] as? String ?: ""
-                val chatID = message["chatID"] as? String ?: ""
+                val messageChatID = message["chatID"] as? String ?: ""
                 val startTime = message["startTime"] as? Timestamp
                 val endTime = message["endTime"] as? Timestamp
                 val isMyMessage = senderID == senderUserID
@@ -223,14 +257,13 @@ fun MessagesScreen(
                 val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
                 val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
                 val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
-                val displayEndTime = endTime?.toDate()?.let {convertTime.format(it) } ?: ""
+                val displayEndTime = endTime?.toDate()?.let { convertTime.format(it) } ?: ""
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(4.dp),
-                    horizontalArrangement = if (isMyMessage) Arrangement.End
-                    else Arrangement.Start,
+                    horizontalArrangement = if (isMyMessage) Arrangement.End else Arrangement.Start
                 ) {
                     Box(
                         modifier = Modifier
@@ -254,21 +287,72 @@ fun MessagesScreen(
                                 )
                             }
                     ) {
-
                         if (isDeleted) {
                             Text(
                                 text = "This message was deleted",
                                 fontStyle = FontStyle.Italic
                             )
-                        }
-
-                        else {
+                        } else {
                             when (type) {
                                 "text" -> {
                                     Text(
                                         text = text,
                                         fontWeight = FontWeight.Bold
                                     )
+                                }
+
+                                "pin" -> {
+                                    val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
+
+                                    val pinId = pin["id"] as? String ?: ""
+                                    val pinName = pin["name"] as? String ?: "Shared Pin"
+                                    val pinCategory = pin["category"] as? String ?: ""
+                                    val pinBuilding = pin["building"] as? String ?: ""
+                                    val pinDescription = pin["description"] as? String ?: ""
+                                    val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
+                                    val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
+
+                                    Column {
+                                        Text(
+                                            text = pinName,
+                                            fontWeight = FontWeight.Bold
+                                        )
+
+                                        if (pinCategory.isNotBlank()) {
+                                            Text(
+                                                text = pinCategory.replaceFirstChar { it.uppercase() }
+                                            )
+                                        }
+
+                                        if (pinBuilding.isNotBlank()) {
+                                            Text(text = "Building: $pinBuilding")
+                                        }
+
+                                        if (pinDescription.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(text = pinDescription)
+                                        }
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        Button(
+                                            onClick = {
+                                                navController.navigate(
+                                                    Routes.mapRouteWithPin(
+                                                        pinId = pinId,
+                                                        pinName = pinName,
+                                                        pinCategory = pinCategory,
+                                                        pinLatitude = pinLatitude,
+                                                        pinLongitude = pinLongitude,
+                                                        pinBuilding = pinBuilding,
+                                                        pinDescription = pinDescription
+                                                    )
+                                                )
+                                            }
+                                        ) {
+                                            Text("Open Pin")
+                                        }
+                                    }
                                 }
 
                                 "invitation" -> {
@@ -279,16 +363,14 @@ fun MessagesScreen(
                                         )
 
                                         if (studySessionDescription.isNotEmpty()) {
-                                            Text(
-                                                text = studySessionDescription
-                                            )
+                                            Text(text = studySessionDescription)
                                         }
 
                                         Spacer(modifier = Modifier.height(8.dp))
 
-                                        Text("Date: " + displayDate)
-                                        Text("Start time: " + displayStartTime)
-                                        Text("End time: " + displayEndTime)
+                                        Text("Date: $displayDate")
+                                        Text("Start time: $displayStartTime")
+                                        Text("End time: $displayEndTime")
 
                                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -298,30 +380,37 @@ fun MessagesScreen(
                                                     Row {
                                                         Button(
                                                             onClick = {
-                                                                //Set up for adding event to local calendar for receiver user
-                                                                val createStudySessionEventTitle = message["title"] as? String ?: "Study Session"
-                                                                val createStudySessionEventDescription = message["description"] as? String ?: ""
-                                                                val createStudySessionEventStartTime = message["startTime"] as? Timestamp
-                                                                val createStudySessionEventEndTime = message["endTime"] as? Timestamp
+                                                                val createStudySessionEventTitle =
+                                                                    message["title"] as? String ?: "Study Session"
+                                                                val createStudySessionEventDescription =
+                                                                    message["description"] as? String ?: ""
+                                                                val createStudySessionEventStartTime =
+                                                                    message["startTime"] as? Timestamp
+                                                                val createStudySessionEventEndTime =
+                                                                    message["endTime"] as? Timestamp
 
-                                                                if (createStudySessionEventStartTime == null || createStudySessionEventEndTime == null) {
+                                                                if (createStudySessionEventStartTime == null ||
+                                                                    createStudySessionEventEndTime == null
+                                                                ) {
                                                                     return@Button
                                                                 }
 
                                                                 val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                                                val convertStudySessionEventStartTime = createStudySessionEventStartTime
-                                                                    .toDate()
-                                                                    .toInstant()
-                                                                    .atZone(ZoneId.systemDefault())
-                                                                    .toLocalDateTime()
-                                                                    .format(timeFormatter)
+                                                                val convertStudySessionEventStartTime =
+                                                                    createStudySessionEventStartTime
+                                                                        .toDate()
+                                                                        .toInstant()
+                                                                        .atZone(ZoneId.systemDefault())
+                                                                        .toLocalDateTime()
+                                                                        .format(timeFormatter)
 
-                                                                val convertStudySessionEventEndTime = createStudySessionEventEndTime
-                                                                    .toDate()
-                                                                    .toInstant()
-                                                                    .atZone(ZoneId.systemDefault())
-                                                                    .toLocalDateTime()
-                                                                    .format(timeFormatter)
+                                                                val convertStudySessionEventEndTime =
+                                                                    createStudySessionEventEndTime
+                                                                        .toDate()
+                                                                        .toInstant()
+                                                                        .atZone(ZoneId.systemDefault())
+                                                                        .toLocalDateTime()
+                                                                        .format(timeFormatter)
 
                                                                 val createStudySessionEvent = CalendarEvent(
                                                                     id = "",
@@ -337,25 +426,25 @@ fun MessagesScreen(
                                                                 )
 
                                                                 chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = chatID,
+                                                                    chatID = messageChatID,
                                                                     messageID = messageID,
                                                                     senderUserID = senderUserID,
                                                                     invitationResponse = "ACCEPTED"
                                                                 )
 
-                                                                //Event gets created for receiver user
                                                                 calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
                                                                     if (success) {
                                                                         Toast.makeText(
                                                                             context,
                                                                             "$createStudySessionEventTitle added to your local calendar",
-                                                                            Toast.LENGTH_SHORT).show()
-                                                                    }
-                                                                    else {
+                                                                            Toast.LENGTH_SHORT
+                                                                        ).show()
+                                                                    } else {
                                                                         Toast.makeText(
                                                                             context,
                                                                             "Failed to add $createStudySessionEventTitle to your local calendar",
-                                                                            Toast.LENGTH_SHORT).show()
+                                                                            Toast.LENGTH_SHORT
+                                                                        ).show()
                                                                     }
                                                                 }
                                                             }
@@ -363,12 +452,12 @@ fun MessagesScreen(
                                                             Text("Accept")
                                                         }
 
-                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
 
                                                         Button(
                                                             onClick = {
                                                                 chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = chatID,
+                                                                    chatID = messageChatID,
                                                                     messageID = messageID,
                                                                     senderUserID = senderUserID,
                                                                     invitationResponse = "DECLINED"
@@ -385,24 +474,16 @@ fun MessagesScreen(
 
                                             "ACCEPTED" -> {
                                                 when (receiverStatus) {
-                                                    "PENDING" -> {
-                                                        Text("Pending response...")
-                                                    }
-                                                    "ACCEPTED" -> {
-                                                        Text("Accepted")
-                                                    }
-                                                    "DECLINED" -> {
-                                                        Text("Declined")
-                                                    }
+                                                    "PENDING" -> Text("Pending response...")
+                                                    "ACCEPTED" -> Text("Accepted")
+                                                    "DECLINED" -> Text("Declined")
                                                 }
                                             }
 
-                                            // This one may never fire
                                             "DECLINED" -> {
-                                                if (receiverStatus == "PENDING"){
+                                                if (receiverStatus == "PENDING") {
                                                     Text("Pending response...")
-                                                }
-                                                else {
+                                                } else {
                                                     Text("Declined")
                                                 }
                                             }
@@ -416,11 +497,9 @@ fun MessagesScreen(
             }
         }
 
-        // Buttons and text field
-        var showStudySessionInviteDialog by remember { mutableStateOf(false) }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             BasicTextField(
                 value = messageText,
@@ -435,276 +514,343 @@ fun MessagesScreen(
                 )
             )
 
-            Button(onClick = {
-                if (messageText.isNotBlank()) {
-                    chatRepositoryViewModel.callSendMessage(
-                        senderUserID,
-                        receiverUserID,
-                        messageText
+            Button(
+                onClick = {
+                    if (messageText.isNotBlank()) {
+                        chatRepositoryViewModel.callSendMessage(
+                            senderUserID,
+                            receiverUserID,
+                            messageText
+                        )
+                        messageText = ""
+                    }
+                }
+            ) {
+                Text("Send")
+            }
+
+            Box {
+                IconButton(
+                    onClick = {
+                        showAttachMenu = true
+                    }
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Open attachment menu")
+                }
+
+                DropdownMenu(
+                    expanded = showAttachMenu,
+                    onDismissRequest = { showAttachMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Study session invite") },
+                        onClick = {
+                            showAttachMenu = false
+                            showStudySessionInviteDialog = true
+                        }
                     )
-                    messageText = ""
+
+                    DropdownMenuItem(
+                        text = { Text("Share campus pin") },
+                        onClick = {
+                            showAttachMenu = false
+                            showPinPickerDialog = true
+                        }
+                    )
                 }
             }
-            ) {
-                Text ("Send")
-            }
+        }
 
-            IconButton(onClick = {
-                showStudySessionInviteDialog = true
-            }
-            ) {
-                Icon(Icons.Default.Event, contentDescription = "Invite")
-            }
+        if (showStudySessionInviteDialog) {
+            var studySessionTitle by remember { mutableStateOf("") }
+            var studySessionDescription by remember { mutableStateOf("") }
+            val amPMTime = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
+            var emptyFieldChecker by remember { mutableStateOf<String?>(null) }
 
-            if (showStudySessionInviteDialog) {
-                var studySessionTitle by remember { mutableStateOf("") }
-                var studySessionDescription by remember {mutableStateOf("")}
-                val amPMTime = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
-                var emptyFieldChecker by remember { mutableStateOf<String?>(null) }
+            AlertDialog(
+                onDismissRequest = { showStudySessionInviteDialog = false },
+                title = { Text("Create study session") },
+                text = {
+                    Column {
+                        TextField(
+                            value = studySessionTitle,
+                            onValueChange = { studySessionTitle = it },
+                            label = { Text("Title") }
+                        )
 
-                AlertDialog(
-                    onDismissRequest = { showStudySessionInviteDialog = false },
-                    title = {
-                        Text("Create study session")
-                    },
-                    text = {
-                        Column{
-                            TextField(
-                                value = studySessionTitle,
-                                onValueChange = { studySessionTitle = it },
-                                label = { Text("Title") }
-                            )
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                        TextField(
+                            value = studySessionDescription,
+                            onValueChange = { studySessionDescription = it },
+                            label = { Text("Description") }
+                        )
 
-                            TextField(
-                                value = studySessionDescription,
-                                onValueChange = { studySessionDescription = it },
-                                label = { Text("Description") }
-                            )
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showDatePicker = true }
-                                    .padding(12.dp)
-                            ) {
-                                Icon(Icons.Default.DateRange, contentDescription = "Date")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text =
-                                        if (selectedStudyDate.isNotEmpty()) { selectedStudyDate }
-                                        else { "Select date" }
-                                )
-                            }
-
-                            if (showDatePicker) {
-                                EventDatePickerDialog(
-                                    initialDate = selectedStudyDate,
-                                    onDismiss = { showDatePicker = false },
-                                    onConfirm = { date ->
-                                        selectedStudyDate = date
-                                        showDatePicker = false
-                                    }
-                                )
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showStartTimePicker = true }
-                                    .padding(12.dp)
-                            ) {
-                                Icon(Icons.Default.AccessTime, contentDescription = "Start time")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = selectedStudyStartTime?.format(amPMTime) ?: "Select start time"
-                                )
-                            }
-
-                            if (showStartTimePicker) {
-                                EventTimePickerDialog (
-                                    title = "Start Time",
-                                    initialTime = selectedStudyStartTime,
-                                    onDismiss = { showStartTimePicker = false },
-                                    onConfirm = { selectedTime ->
-                                        selectedStudyStartTime = selectedTime
-                                        showStartTimePicker = false
-                                    }
-                                )
-                            }
-
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showDatePicker = true }
+                                .padding(12.dp)
+                        ) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Date")
                             Spacer(modifier = Modifier.width(8.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showEndTimePicker = true }
-                                    .padding(12.dp)
-                            ) {
-                                Icon(Icons.Default.AlarmOff, contentDescription = "End time")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = selectedStudyEndTime?.format(amPMTime) ?: "Select end time"
-                                )
-                            }
-
-                            if (showEndTimePicker) {
-                                EventTimePickerDialog(
-                                    title = "End Time",
-                                    initialTime = selectedStudyEndTime,
-                                    onDismiss = { showEndTimePicker = false },
-                                    onConfirm = { selectedTime ->
-                                        selectedStudyEndTime = selectedTime
-                                        showEndTimePicker = false
-                                    }
-                                )
-                            }
-
-                            emptyFieldChecker?.let{
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                    },
-
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                // studySessionDescription is optional.
-                                val eventStartTime = selectedStudyStartTime
-                                val eventEndTime = selectedStudyEndTime
-
-                                when {
-                                    studySessionTitle.isBlank() -> {
-                                        emptyFieldChecker = "Please enter a title"
-                                        return@Button
-                                    }
-
-                                    selectedStudyDate.isBlank() -> {
-                                        emptyFieldChecker = "Please select a date"
-                                        return@Button
-
-                                    }
-
-                                    eventStartTime == null -> {
-                                        emptyFieldChecker = "Please select a start time"
-                                        return@Button
-
-                                    }
-
-                                    eventEndTime == null -> {
-                                        emptyFieldChecker = "Please select an end time"
-                                        return@Button
-
-                                    }
-
-                                    eventEndTime <= eventStartTime -> {
-                                        emptyFieldChecker = "End time must be after start time"
-                                        return@Button
-                                    }
-
-                                    else -> {
-                                        emptyFieldChecker = null
-                                    }
-
+                            Text(
+                                text = if (selectedStudyDate.isNotEmpty()) {
+                                    selectedStudyDate
+                                } else {
+                                    "Select date"
                                 }
-
-                                val studyStartTime = convertToCalendarTimestamp(
-                                    selectedStudyDate,
-                                    selectedStudyStartTime!!
-                                )
-
-                                val studyEndTime = convertToCalendarTimestamp(
-                                    selectedStudyDate,
-                                    selectedStudyEndTime!!
-                                )
-
-                                chatRepositoryViewModel.callSendStudySessionInvitation(
-                                    senderUserID = senderUserID,
-                                    receiverUserID = receiverUserID,
-                                    studySessionTitle = studySessionTitle,
-                                    studySessionDescription = studySessionDescription,
-                                    startTime = studyStartTime,
-                                    endTime = studyEndTime
-                                )
-
-                                val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                val convertStudyStartTime = studyStartTime
-                                    .toDate()
-                                    .toInstant()
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDateTime()
-                                    .format(timeFormatter)
-
-                                val convertStudyEndTime = studyEndTime
-                                    .toDate()
-                                    .toInstant()
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDateTime()
-                                    .format(timeFormatter)
-
-                                val createStudySessionEvent = CalendarEvent(
-                                    id = "",
-                                    title = studySessionTitle,
-                                    description = studySessionDescription,
-                                    start = convertStudyStartTime,
-                                    end = convertStudyEndTime,
-                                    location = null,
-                                    reminderMinutes = emptyList(),
-                                    isAllDay = false,
-                                    colorHex = "0xFFE53935",
-                                    source = CalendarSource.LOCAL
-                                )
-
-                                calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
-                                    if (success) {
-                                        Toast.makeText(
-                                            context,
-                                            "$studySessionTitle added to your local calendar",
-                                            Toast.LENGTH_SHORT).show()
-                                    }
-                                    else {
-                                        Toast.makeText(
-                                            context,
-                                            "Failed to add $studySessionTitle to your local calendar",
-                                            Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-
-                                showStudySessionInviteDialog = false
-                            }
-                        ) {
-                            Text("Send")
+                            )
                         }
-                    },
-                    dismissButton = {
-                        Button(
-                            onClick = {
-                                showStudySessionInviteDialog = false
-                            }
+
+                        if (showDatePicker) {
+                            EventDatePickerDialog(
+                                initialDate = selectedStudyDate,
+                                onDismiss = { showDatePicker = false },
+                                onConfirm = { date ->
+                                    selectedStudyDate = date
+                                    showDatePicker = false
+                                }
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showStartTimePicker = true }
+                                .padding(12.dp)
                         ) {
-                            Text("Cancel")
+                            Icon(Icons.Default.AccessTime, contentDescription = "Start time")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = selectedStudyStartTime?.format(amPMTime) ?: "Select start time"
+                            )
+                        }
+
+                        if (showStartTimePicker) {
+                            EventTimePickerDialog(
+                                title = "Start Time",
+                                initialTime = selectedStudyStartTime,
+                                onDismiss = { showStartTimePicker = false },
+                                onConfirm = { selectedTime ->
+                                    selectedStudyStartTime = selectedTime
+                                    showStartTimePicker = false
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showEndTimePicker = true }
+                                .padding(12.dp)
+                        ) {
+                            Icon(Icons.Default.AlarmOff, contentDescription = "End time")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = selectedStudyEndTime?.format(amPMTime) ?: "Select end time"
+                            )
+                        }
+
+                        if (showEndTimePicker) {
+                            EventTimePickerDialog(
+                                title = "End Time",
+                                initialTime = selectedStudyEndTime,
+                                onDismiss = { showEndTimePicker = false },
+                                onConfirm = { selectedTime ->
+                                    selectedStudyEndTime = selectedTime
+                                    showEndTimePicker = false
+                                }
+                            )
+                        }
+
+                        emptyFieldChecker?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = it,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
-                )
-            }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val eventStartTime = selectedStudyStartTime
+                            val eventEndTime = selectedStudyEndTime
+
+                            when {
+                                studySessionTitle.isBlank() -> {
+                                    emptyFieldChecker = "Please enter a title"
+                                    return@Button
+                                }
+
+                                selectedStudyDate.isBlank() -> {
+                                    emptyFieldChecker = "Please select a date"
+                                    return@Button
+                                }
+
+                                eventStartTime == null -> {
+                                    emptyFieldChecker = "Please select a start time"
+                                    return@Button
+                                }
+
+                                eventEndTime == null -> {
+                                    emptyFieldChecker = "Please select an end time"
+                                    return@Button
+                                }
+
+                                eventEndTime <= eventStartTime -> {
+                                    emptyFieldChecker = "End time must be after start time"
+                                    return@Button
+                                }
+
+                                else -> {
+                                    emptyFieldChecker = null
+                                }
+                            }
+
+                            val studyStartTime = convertToCalendarTimestamp(
+                                selectedStudyDate,
+                                selectedStudyStartTime!!
+                            )
+
+                            val studyEndTime = convertToCalendarTimestamp(
+                                selectedStudyDate,
+                                selectedStudyEndTime!!
+                            )
+
+                            chatRepositoryViewModel.callSendStudySessionInvitation(
+                                senderUserID = senderUserID,
+                                receiverUserID = receiverUserID,
+                                studySessionTitle = studySessionTitle,
+                                studySessionDescription = studySessionDescription,
+                                startTime = studyStartTime,
+                                endTime = studyEndTime
+                            )
+
+                            val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                            val convertStudyStartTime = studyStartTime
+                                .toDate()
+                                .toInstant()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
+                                .format(timeFormatter)
+
+                            val convertStudyEndTime = studyEndTime
+                                .toDate()
+                                .toInstant()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
+                                .format(timeFormatter)
+
+                            val createStudySessionEvent = CalendarEvent(
+                                id = "",
+                                title = studySessionTitle,
+                                description = studySessionDescription,
+                                start = convertStudyStartTime,
+                                end = convertStudyEndTime,
+                                location = null,
+                                reminderMinutes = emptyList(),
+                                isAllDay = false,
+                                colorHex = "0xFFE53935",
+                                source = CalendarSource.LOCAL
+                            )
+
+                            calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
+                                if (success) {
+                                    Toast.makeText(
+                                        context,
+                                        "$studySessionTitle added to your local calendar",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to add $studySessionTitle to your local calendar",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+
+                            showStudySessionInviteDialog = false
+                        }
+                    ) {
+                        Text("Send")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = {
+                            showStudySessionInviteDialog = false
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showPinPickerDialog) {
+            AlertDialog(
+                onDismissRequest = { showPinPickerDialog = false },
+                title = { Text("Share campus pin") },
+                text = {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
+                        items(campusPins) { pin ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        chatRepositoryViewModel.callSendPinMessage(
+                                            senderUserID = senderUserID,
+                                            receiverUserID = receiverUserID,
+                                            location = pin
+                                        )
+                                        showPinPickerDialog = false
+                                    }
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Text(
+                                    text = pin.name,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (pin.building.isNotBlank()) {
+                                    Text(text = pin.building)
+                                }
+                                if (pin.category.isNotBlank()) {
+                                    Text(text = pin.category)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showPinPickerDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
 
-fun convertToCalendarTimestamp(selectedStudyDate: String, selectedStudyTime: LocalTime): Timestamp {
+fun convertToCalendarTimestamp(
+    selectedStudyDate: String,
+    selectedStudyTime: LocalTime
+): Timestamp {
     val localDate = LocalDate.parse(selectedStudyDate)
-
     val dateTime = LocalDateTime.of(localDate, selectedStudyTime)
     val instant = dateTime.atZone(ZoneId.systemDefault()).toInstant()
 

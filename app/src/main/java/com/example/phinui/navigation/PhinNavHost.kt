@@ -239,9 +239,10 @@ fun PhinNavHost(
             MessagesScreen(
                 senderUserID = currentUserID,
                 receiverUserID = receiverID,
+                navController = navController,
                 setTopBarTitle = { title, isMessages ->
                     setTopBarTitle(title, isMessages)
-                    }
+                }
             )
         }
 
@@ -505,8 +506,76 @@ fun PhinNavHost(
             )
         }
 
-        composable(Routes.MAP) {
-            MapScreen()
+        composable(
+            route = Routes.MAP_WITH_PIN,
+            arguments = listOf(
+                navArgument("pinId") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                },
+                navArgument("pinName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                },
+                navArgument("pinCategory") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                },
+                navArgument("pinLatitude") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                },
+                navArgument("pinLongitude") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                },
+                navArgument("pinBuilding") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                },
+                navArgument("pinDescription") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val pinId = backStackEntry.arguments?.getString("pinId").orEmpty()
+            val pinName = backStackEntry.arguments?.getString("pinName").orEmpty()
+            val pinCategory = backStackEntry.arguments?.getString("pinCategory").orEmpty()
+            val pinLatitude = backStackEntry.arguments?.getString("pinLatitude")?.toDoubleOrNull()
+            val pinLongitude = backStackEntry.arguments?.getString("pinLongitude")?.toDoubleOrNull()
+            val pinBuilding = backStackEntry.arguments?.getString("pinBuilding").orEmpty()
+            val pinDescription = backStackEntry.arguments?.getString("pinDescription").orEmpty()
+
+            val sharedPin =
+                if (
+                    pinId.isNotBlank() &&
+                    pinName.isNotBlank() &&
+                    pinLatitude != null &&
+                    pinLongitude != null
+                ) {
+                    com.example.phinui.data.CampusLocation(
+                        id = pinId,
+                        name = pinName,
+                        category = pinCategory,
+                        latitude = pinLatitude,
+                        longitude = pinLongitude,
+                        building = pinBuilding,
+                        description = pinDescription,
+                        isActive = true
+                    )
+                } else {
+                    null
+                }
+
+            MapScreen(sharedPin = sharedPin)
         }
 
         composable(Routes.SETTINGS) {

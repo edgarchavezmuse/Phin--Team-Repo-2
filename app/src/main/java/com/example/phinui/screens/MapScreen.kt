@@ -2,10 +2,78 @@
 
 package com.example.phinui.ui.screens
 
-import android.Manifest import android.app.Activity import androidx.activity.compose.rememberLauncherForActivityResult import androidx.activity.result.contract.ActivityResultContracts import androidx.compose.animation.AnimatedVisibility import androidx.compose.animation.fadeIn import androidx.compose.animation.fadeOut import androidx.compose.animation.slideInVertically import androidx.compose.animation.slideOutVertically import androidx.compose.foundation.background import androidx.compose.foundation.clickable import androidx.compose.foundation.horizontalScroll import androidx.compose.foundation.layout.Arrangement import androidx.compose.foundation.layout.Box import androidx.compose.foundation.layout.Column import androidx.compose.foundation.layout.Row import androidx.compose.foundation.layout.fillMaxSize import androidx.compose.foundation.layout.fillMaxWidth import androidx.compose.foundation.layout.padding import androidx.compose.foundation.rememberScrollState import androidx.compose.foundation.shape.RoundedCornerShape import androidx.compose.material3.Card import androidx.compose.material3.CardDefaults import androidx.compose.material3.FilterChip import androidx.compose.material3.FilterChipDefaults import androidx.compose.material3.MaterialTheme import androidx.compose.material3.OutlinedTextField import androidx.compose.material3.OutlinedTextFieldDefaults import androidx.compose.material3.Text import androidx.compose.runtime.Composable import androidx.compose.runtime.LaunchedEffect import androidx.compose.runtime.getValue import androidx.compose.runtime.key import androidx.compose.runtime.mutableStateOf import androidx.compose.runtime.remember import androidx.compose.runtime.saveable.rememberSaveable import androidx.compose.runtime.setValue import androidx.compose.ui.Alignment import androidx.compose.ui.Modifier import androidx.compose.ui.draw.shadow import androidx.compose.ui.graphics.Color import androidx.compose.ui.platform.LocalContext import androidx.compose.ui.unit.dp import com.example.phinui.BuildConfig import com.example.phinui.data.CampusLocation import com.example.phinui.data.fetchCampusLocations import com.example.phinui.data.filterCampusLocations import com.google.android.gms.location.LocationServices import com.google.android.gms.maps.CameraUpdateFactory import com.google.android.gms.maps.model.BitmapDescriptorFactory import com.google.android.gms.maps.model.CameraPosition import com.google.android.gms.maps.model.LatLng import com.google.android.gms.maps.model.LatLngBounds import com.google.android.libraries.places.api.Places import com.google.android.libraries.places.api.model.Place import com.google.android.libraries.places.api.model.RectangularBounds import com.google.android.libraries.places.api.net.FetchPlaceRequest import com.google.android.libraries.places.widget.PlaceAutocomplete import com.google.android.libraries.places.widget.PlaceAutocompleteActivity import com.google.maps.android.compose.GoogleMap import com.google.maps.android.compose.MapProperties import com.google.maps.android.compose.MapUiSettings import com.google.maps.android.compose.Marker import com.google.maps.android.compose.rememberCameraPositionState import com.google.maps.android.compose.rememberMarkerState import kotlinx.coroutines.tasks.await import android.content.Context import android.content.Intent import android.net.Uri
+import android.Manifest
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.example.phinui.BuildConfig
+import com.example.phinui.data.CampusLocation
+import com.example.phinui.data.fetchCampusLocations
+import com.example.phinui.data.filterCampusLocations
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.RectangularBounds
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.widget.PlaceAutocomplete
+import com.google.android.libraries.places.widget.PlaceAutocompleteActivity
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
+import kotlinx.coroutines.tasks.await
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 
 @Composable
-fun MapScreen() {
+fun MapScreen(sharedPin: CampusLocation? = null) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -120,6 +188,25 @@ fun MapScreen() {
 
     LaunchedEffect(Unit) {
         campusLocations = fetchCampusLocations()
+    }
+
+    LaunchedEffect(sharedPin, campusLocations) {
+        sharedPin?.let { incomingPin ->
+            val matchingPin = campusLocations.firstOrNull { it.id == incomingPin.id } ?: incomingPin
+
+            selectedCategory = "all"
+            selectedLocation = matchingPin
+            selectedPlaceLatLng = null
+            selectedPlaceName = null
+            searchText = matchingPin.name
+
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(matchingPin.latitude, matchingPin.longitude),
+                    17f
+                )
+            )
+        }
     }
 
     LaunchedEffect(hasLocationPermission) {
@@ -249,6 +336,9 @@ fun MapScreen() {
                     .padding(16.dp),
                 onDismiss = {
                     selectedLocation = null
+                },
+                onShare = { sharedLocation ->
+                    // Next phase: open friend/chat picker
                 }
             )
         }
@@ -291,7 +381,8 @@ fun CategoryFilterBar(
 fun PinInfoCard(
     location: CampusLocation,
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onShare: (CampusLocation) -> Unit
 ) {
     val context = LocalContext.current
 

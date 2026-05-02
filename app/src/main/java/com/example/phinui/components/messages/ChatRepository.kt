@@ -7,6 +7,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
+import com.example.phinui.data.CampusLocation
 
 class ChatRepository {
 
@@ -116,7 +117,8 @@ class ChatRepository {
             .update(
                 mapOf(
                     "deleted" to true,
-                    "text" to "This message was deleted"
+                    "text" to "This message was deleted",
+                    "pin" to FieldValue.delete()
                 )
             )
     }
@@ -275,4 +277,56 @@ class ChatRepository {
 
         return MessageInfo(chatID, chatReferenceDocument, messageReferenceCollection, currentTime)
     }
+    fun sendPinMessage(
+        senderUserID: String,
+        receiverUserID: String,
+        location: CampusLocation
+    ) {
+        val messageProperties = messageInfoHelper(senderUserID, receiverUserID)
+
+        val batch = database.batch()
+        val chatRef = messageProperties.chatReference
+        val messageRef = messageProperties.messageReference.document()
+
+        val pinPayload = hashMapOf(
+            "id" to location.id,
+            "name" to location.name,
+            "category" to location.category,
+            "latitude" to location.latitude,
+            "longitude" to location.longitude,
+            "building" to location.building,
+            "description" to location.description,
+            "isActive" to location.isActive,
+            "source" to "campus"
+        )
+
+        val message = hashMapOf(
+            "type" to "pin",
+            "senderID" to senderUserID,
+            "text" to "",
+            "timestamp" to messageProperties.currentTime,
+            "deleted" to false,
+            "pin" to pinPayload
+        )
+
+        val chatData = hashMapOf(
+            "lastMessage" to "Shared a pin: ${location.name}",
+            "lastTimestamp" to messageProperties.currentTime,
+            "participants" to listOf(senderUserID, receiverUserID),
+            "requestState" to "approved"
+        )
+
+        batch.set(messageRef, message)
+        batch.set(chatRef, chatData, SetOptions.merge())
+        batch.update(
+            chatRef,
+            "deletedBy",
+            FieldValue.arrayRemove(senderUserID, receiverUserID)
+        )
+
+        batch.commit()
+
+        setActiveChat(senderUserID, messageProperties.chatID)
+    }
+
 }
