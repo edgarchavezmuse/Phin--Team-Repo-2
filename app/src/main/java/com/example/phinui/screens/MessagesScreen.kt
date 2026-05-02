@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AlarmOff
-import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Schedule
@@ -78,7 +77,6 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.DeletedMessageColor
-import com.example.phinui.ui.theme.MessageBox
 import com.example.phinui.ui.theme.ReceiverUserColor
 import com.example.phinui.ui.theme.SenderUserColor
 import com.example.phinui.viewmodel.CalendarViewModel
@@ -95,6 +93,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.combinedClickable
 
 @Composable
 fun MessagesScreen(
@@ -140,6 +140,8 @@ fun MessagesScreen(
     var showStudySessionInviteDialog by remember { mutableStateOf(false) }
 
     val state = userListViewModel.userState
+
+    var visibleTimestampMessageId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state) {
         when (state) {
@@ -189,6 +191,22 @@ fun MessagesScreen(
         }
     }
 
+    LaunchedEffect(visibleTimestampMessageId) {
+        if (visibleTimestampMessageId != null) {
+            delay(5000)
+            visibleTimestampMessageId = null
+        }
+    }
+
+    LaunchedEffect(visibleTimestampMessageId, messages) {
+        val targetId = visibleTimestampMessageId ?: return@LaunchedEffect
+        val targetIndex = messages.indexOfFirst { it["messageID"] == targetId }
+
+        if (targetIndex != -1) {
+            autoScrollState.animateScrollToItem(targetIndex)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -235,9 +253,12 @@ fun MessagesScreen(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
             state = autoScrollState,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
-            items(messages) { message ->
+            items(
+                items = messages,
+                key = { message -> message["messageID"] as? String ?: message.hashCode().toString() }
+            ) { message ->
                 val type = message["type"] as? String ?: "text"
                 val text = message["text"] as? String ?: ""
 
@@ -277,6 +298,10 @@ fun MessagesScreen(
                         chatRepositoryViewModel = chatRepositoryViewModel,
                         calendarViewModel = calendarViewModel,
                         chatID = chatID,
+                        showTimestamp = visibleTimestampMessageId == messageID,
+                        onTapMessage = {
+                            visibleTimestampMessageId = messageID
+                        },
                         onLongPressMine = {
                             selectedMessage.value = message
                             showDeleteDialog.value = true
@@ -910,6 +935,8 @@ private fun MessageBubble(
     chatRepositoryViewModel: ChatRepositoryViewModel,
     calendarViewModel: CalendarViewModel,
     chatID: String,
+    showTimestamp: Boolean,
+    onTapMessage: () -> Unit,
     onLongPressMine: () -> Unit
 ) {
     val type = message["type"] as? String ?: "text"
@@ -944,6 +971,11 @@ private fun MessageBubble(
         bottomEnd = if (isMyMessage) 8.dp else 22.dp
     )
 
+    val sentAt = message["timestamp"] as? Timestamp
+    val timeText = sentAt?.toDate()?.let {
+        SimpleDateFormat("h:mm a", Locale.getDefault()).format(it)
+    }
+
     Column(
         horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
     ) {
@@ -954,15 +986,16 @@ private fun MessageBubble(
                     color = bubbleColor,
                     shape = bubbleShape
                 )
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = {
-                            if (isMyMessage && !isDeleted) {
-                                onLongPressMine()
-                            }
+                .combinedClickable(
+                    onClick = {
+                        onTapMessage()
+                    },
+                    onLongClick = {
+                        if (isMyMessage && !isDeleted) {
+                            onLongPressMine()
                         }
-                    )
-                }
+                    }
+                )
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             if (isDeleted) {
@@ -1186,12 +1219,7 @@ private fun MessageBubble(
             }
         }
 
-        val sentAt = message["timestamp"] as? Timestamp
-        val timeText = sentAt?.toDate()?.let {
-            SimpleDateFormat("h:mm a", Locale.getDefault()).format(it)
-        }
-
-        if (!timeText.isNullOrBlank()) {
+        if (showTimestamp && !timeText.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = timeText,
