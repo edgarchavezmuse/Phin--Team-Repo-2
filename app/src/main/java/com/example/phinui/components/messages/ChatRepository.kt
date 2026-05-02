@@ -110,17 +110,74 @@ class ChatRepository {
     }
 
     fun deleteMessage(chatID: String, messageID: String) {
-        chatsCollection
-            .document(chatID)
-            .collection("messages")
-            .document(messageID)
-            .update(
-                mapOf(
-                    "deleted" to true,
-                    "text" to "This message was deleted",
-                    "pin" to FieldValue.delete()
-                )
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document(messageID)
+
+        messageRef.update(
+            mapOf(
+                "deleted" to true,
+                "text" to "This message was deleted",
+                "pin" to FieldValue.delete()
             )
+        ).addOnSuccessListener {
+            refreshChatPreview(chatID)
+        }
+    }
+
+    private fun refreshChatPreview(chatID: String) {
+        val chatRef = chatsCollection.document(chatID)
+
+        chatRef.collection("messages")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { snapshot ->
+
+                val lastActiveMessage = snapshot.documents.firstOrNull { doc ->
+                    val deleted = doc.getBoolean("deleted") ?: false
+                    !deleted
+                }
+
+                if (lastActiveMessage != null) {
+                    val type = lastActiveMessage.getString("type") ?: "text"
+                    val timestamp = lastActiveMessage.getTimestamp("timestamp")
+
+                    val previewText = when (type) {
+                        "text" -> lastActiveMessage.getString("text") ?: ""
+                        "pin" -> {
+                            val pin = lastActiveMessage.get("pin") as? Map<*, *>
+                            val pinName = pin?.get("name") as? String
+                            if (!pinName.isNullOrBlank()) {
+                                "Shared a pin: $pinName"
+                            } else {
+                                "Shared a pin"
+                            }
+                        }
+                        "invitation" -> {
+                            val title = lastActiveMessage.getString("title")
+                            if (!title.isNullOrBlank()) {
+                                "Study session: $title"
+                            } else {
+                                "Sent a study session invitation"
+                            }
+                        }
+                        else -> lastActiveMessage.getString("text") ?: ""
+                    }
+
+                    chatRef.update(
+                        mapOf(
+                            "lastMessage" to previewText,
+                            "lastTimestamp" to timestamp
+                        )
+                    )
+                } else {
+                    chatRef.update(
+                        mapOf(
+                            "lastMessage" to "",
+                            "lastTimestamp" to null,
+                         )
+                    )
+                }
+            }
     }
 
     fun sendMessageRequest(senderUserID: String, receiverUserID: String) {
