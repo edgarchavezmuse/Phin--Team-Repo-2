@@ -16,22 +16,23 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = HeaderText,
     onTertiary = NavText,
     onBackground = NavText,
-    onSurface = NavText
+    onSurface = NavText,
+    surfaceVariant = LightPink
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkHeaderRed,
     secondary = DarkTextSecondary,
     tertiary = DarkSelectedPill,
-
     background = DarkBackground,
     surface = DarkSurface,
-
     onPrimary = DarkOnPrimary,
     onSecondary = DarkTextPrimary,
     onTertiary = DarkTextPrimary,
     onBackground = DarkTextPrimary,
-    onSurface = DarkTextPrimary
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkLightPink
+
 )
 
 @Composable
