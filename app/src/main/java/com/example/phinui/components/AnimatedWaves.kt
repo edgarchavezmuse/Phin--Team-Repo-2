@@ -3,6 +3,7 @@ package com.example.phinui.ui.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -29,7 +30,7 @@ fun AnimatedWaves(
     frontWavelengthFraction: Float = 0.9f,
     backWavelengthFraction: Float = 1.2f,
     showShip: Boolean = false,
-    shipColor: Color = Color.Black,
+    shipColor: Color = MaterialTheme.colorScheme.onBackground,
     shipSize: Dp = 28.dp,
     shipVerticalOffset: Float = 33f,
     frontPhase: Float,
