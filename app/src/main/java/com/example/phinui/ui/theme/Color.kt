@@ -14,6 +14,7 @@ val NavText = Color(0xFF000000)
 val PrimaryRed = Color(0xFFE53935)
 val SoftBackground = Color(0xFFFFE3E3)
 val TextMuted = Color(0xFF666666)
+val LightPink = Color(0xFFFFEAEA)
 
 // dark mode colors
 val DarkBackground = Color(0xFF121212)
@@ -29,3 +30,4 @@ val DarkSelectedPill = Color(0x33FF3B3B) // translucent red
 val DarkSenderUserColor = Color(0xFF2A1717)
 val DarkReceiverUserColor = Color(0xFF2A2A2A)
 val DarkMessageBox = Color(0xFF2C2C2C)
+val DarkLightPink = Color(0xFF2A1717)
