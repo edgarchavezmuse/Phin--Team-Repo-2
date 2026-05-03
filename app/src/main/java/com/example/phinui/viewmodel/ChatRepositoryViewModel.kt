@@ -12,6 +12,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
 import com.example.phinui.data.CampusLocation
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -29,6 +31,9 @@ class ChatRepositoryViewModel (
     var activeChatUserName = mutableStateOf<String?>(null)
 
     val confirmSendMessageRequest = mutableStateOf<String?>(null)
+
+    private val _mutedChats = MutableStateFlow<Set<String>>(emptySet())
+    val mutedChats = _mutedChats.asStateFlow()
 
     // FOR FILTERING FRIENDS FROM GENERAL
     val friendsList = mutableStateOf<List<User>>(emptyList())
@@ -241,6 +246,20 @@ class ChatRepositoryViewModel (
 
     fun onDeleteChat(userID: String, chatID: String) {
         chatRepository.deleteChat(userID, chatID)
+    }
+
+    fun loadMutedChats(userId: String) {
+        chatRepository.listenMutedChats(userId) { set ->
+            _mutedChats.value = set
+        }
+    }
+
+    fun onMuteChat(chatID: String) {
+        chatRepository.muteChat(currentUserID!!, chatID)
+    }
+
+    fun onUnmuteChat(chatID: String) {
+        chatRepository.unmuteChat(currentUserID!!, chatID)
     }
 
     fun callSendPinMessage(

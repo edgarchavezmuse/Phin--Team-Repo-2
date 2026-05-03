@@ -13,6 +13,7 @@ class ChatRepository {
 
     private val database = FirebaseFirestore.getInstance()
     private val chatsCollection = database.collection("chats")
+    private val usersCollection = database.collection("users")
 
     //Link users for 1 on 1 messaging
     fun getChatID(firstUserID: String, secondUserID: String): String {
@@ -228,6 +229,20 @@ class ChatRepository {
             }
     }
 
+    fun listenMutedChats(
+        userID: String,
+        onResult: (Set<String>) -> Unit
+    ) {
+        usersCollection
+            .document(userID)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+
+                val mutedChats = snapshot.get("mutedChats") as? List<String> ?: emptyList()
+                onResult(mutedChats.toSet())
+            }
+    }
+
     fun setActiveChat(userID: String, chatID: String?) {
         val userRef = database
             .collection("users")
@@ -261,6 +276,32 @@ class ChatRepository {
                     }
                 }
             }
+    }
+
+    fun muteChat(
+        userID: String,
+        chatID: String,
+        onSuccess: () -> Unit = {},
+        onError: (Exception) -> Unit = {}
+        ) {
+        val userRef = usersCollection.document(userID)
+
+        userRef.update("mutedChats", FieldValue.arrayUnion(chatID))
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onError(it) }
+    }
+
+    fun unmuteChat(
+        userID: String,
+        chatID: String,
+        onSuccess: () -> Unit = {},
+        onError: (Exception) -> Unit = {}
+    ) {
+        val userRef = usersCollection.document(userID)
+
+        userRef.update("mutedChats", FieldValue.arrayRemove(chatID))
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onError(it) }
     }
 
     data class MessageInfo(

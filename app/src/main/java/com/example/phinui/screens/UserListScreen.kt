@@ -1,5 +1,6 @@
 package com.example.phinui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.*
@@ -26,9 +27,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
@@ -42,8 +46,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import com.example.phinui.ui.components.UserAvatar
+import com.google.firebase.firestore.FirebaseFirestore
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen (
     navController: NavController,
@@ -67,8 +73,10 @@ fun UserListScreen (
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
 
-    var showDeleteDialog = remember { mutableStateOf(false) }
-    var selectedChatID = remember { mutableStateOf<String?>(null) }
+    //var showDeleteDialog = remember { mutableStateOf(false) }
+    var selectedChatID by remember { mutableStateOf<String?>(null) }
+    var showActionSheet by remember { mutableStateOf(false) }
+    val mutedChats by chatRepositoryViewModel.mutedChats.collectAsState()
 
 
     LaunchedEffect(Unit) {
@@ -87,6 +95,10 @@ fun UserListScreen (
     }
 
     LaunchedEffect(currentUserID) {
+        chatRepositoryViewModel.loadMutedChats(currentUserID)
+    }
+
+    LaunchedEffect(currentUserID) {
         chatRepositoryViewModel.userListRepository.loadCurrentUserBlockedListListener(currentUserID)
         chatRepositoryViewModel.userListRepository.loadBlockedByOtherUsersListListener(currentUserID)
     }
@@ -95,6 +107,7 @@ fun UserListScreen (
     val blockedByOtherUsersList = chatRepositoryViewModel.userListRepository.blockedByOtherUsersList.value
     val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
 
+    /*
     if (showDeleteDialog.value && selectedChatID.value != null) {
         AlertDialog(
             onDismissRequest = {
@@ -127,6 +140,8 @@ fun UserListScreen (
             }
         )
     }
+
+     */
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -257,8 +272,8 @@ fun UserListScreen (
                                     navController.navigate(Routes.MESSAGES + "/${friendId}")
                                 },
                                 onLongPress = {
-                                    selectedChatID.value = chatID
-                                    showDeleteDialog.value = true
+                                    selectedChatID = chatID
+                                    showActionSheet = true
                                 }
                             )
                             Spacer(modifier = Modifier.height(5.dp))
@@ -379,8 +394,8 @@ fun UserListScreen (
                                     navController.navigate(Routes.MESSAGES + "/${user.uid}")
                                 },
                                 onLongPress = {
-                                    selectedChatID.value = chatID
-                                    showDeleteDialog.value = true
+                                    selectedChatID = chatID
+                                    showActionSheet = true
                                 }
                             )
                             Spacer(modifier = Modifier.height(5.dp))
@@ -544,6 +559,66 @@ fun UserListScreen (
             },
             onDismiss = { friendToBlock = null }
         )
+    }
+
+    if (showActionSheet && selectedChatID != null) {
+        val isMuted = selectedChatID != null && selectedChatID in mutedChats
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showActionSheet = false
+                selectedChatID = null
+            }
+        ) {
+            Text(
+                text = "Chat Actions",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            HorizontalDivider()
+
+            ListItem(
+                headlineContent = { Text("Delete Chat") },
+                leadingContent = { Icon(Icons.Default.Delete, contentDescription = null) },
+                modifier = Modifier.clickable {
+                    chatRepositoryViewModel.onDeleteChat(
+                        userID = currentUserID,
+                        chatID = selectedChatID!!
+                    )
+                    showActionSheet = false
+                    selectedChatID = null
+                }
+            )
+
+            ListItem(
+                headlineContent = {
+                    Text(if (isMuted) "Unmute Chat" else "Mute Chat")
+                },
+                leadingContent = {
+                    if (isMuted) {
+                        Icon(Icons.Default.VolumeUp, contentDescription = null)
+                    } else {
+                        Icon(Icons.Default.VolumeOff, contentDescription = null)
+                    }
+                },
+                modifier = Modifier.clickable {
+                    if (isMuted) {
+                        chatRepositoryViewModel.onUnmuteChat(
+                            chatID = selectedChatID!!
+                        )
+                    } else {
+                        chatRepositoryViewModel.onMuteChat(
+                            chatID = selectedChatID!!
+                        )
+                    }
+                    showActionSheet = false
+                    selectedChatID = null
+                }
+            )
+
+            Spacer(Modifier.height(16.dp))
+        }
     }
 
 }
