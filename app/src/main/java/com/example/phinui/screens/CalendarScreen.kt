@@ -20,11 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.phinui.data.calendar.CalendarEvent
 import com.example.phinui.notifications.ExactAlarmPermissionRequest
-import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.viewmodel.CalendarViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.credentials.ClearCredentialStateRequest
@@ -45,12 +42,13 @@ import com.example.phinui.ui.components.calendar.WeekDateSelector
 import com.example.phinui.ui.components.calendar.CalendarConnectionCard
 import com.example.phinui.data.events.EventDetails
 import androidx.compose.foundation.background
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.window.Dialog
 import com.example.phinui.notifications.ReminderScheduler
 
 
@@ -71,7 +69,8 @@ fun CalendarScreen(
     onAddEventClick: () -> Unit,
     selectedEvent: MutableState<CalendarEvent?>,
     showRemoveDialog: MutableState<Boolean>,
-    reminderScheduler: ReminderScheduler
+    reminderScheduler: ReminderScheduler,
+    onEditEventClick: (CalendarEvent) -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -81,7 +80,6 @@ fun CalendarScreen(
     ExactAlarmPermissionRequest()
     // Variables for removing events from local calendar
     val coroutineScope = rememberCoroutineScope()
-    val storage = CalendarStorage(context)
 
     //  Authorization + calendar data state
     val googleAccessToken = calendarViewModel.googleAccessToken
@@ -117,7 +115,7 @@ fun CalendarScreen(
      */
     DisposableEffect(lifecycleOwner, googleAccessToken) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && googleAccessToken != null) {
+            if (event == Lifecycle.Event.ON_RESUME) {
                 calendarViewModel.refreshEvents()
             }
         }
@@ -334,51 +332,85 @@ fun CalendarScreen(
         val eventToDelete = selectedEvent.value!!
         val isGoogleEvent = eventToDelete.source == CalendarSource.GOOGLE
 
-        AlertDialog(
-            onDismissRequest = { showRemoveDialog.value = false },
-            containerColor = SoftBackground,
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Text(
-                    text = eventToDelete.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = TextDark
-                )
-            },
-            text = {
-                EventDetails(event = eventToDelete)
-            },
+        Dialog(
+            onDismissRequest = { showRemoveDialog.value = false }
+        ) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = SoftBackground,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
 
-            // If user taps 'Remove from calendar' for removal of event
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirmation.value = true
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = PrimaryRed
-                    )
-                ) {
-                    Text(
-                        text = "Remove from calendar",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            },
-            // Canceling the removal of event request
-            dismissButton = {
-                TextButton(
-                    onClick = { showRemoveDialog.value = false }
-                ) {
-                    Text(
-                        text = "Cancel",
-                        color = Color.Black,
-                        fontWeight = FontWeight.Medium
-                    )
+                    // 🔹 Top row: Title + Edit icon
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = eventToDelete.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(
+                            onClick = {
+                                onEditEventClick(eventToDelete)
+                                showRemoveDialog.value = false
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = "Edit",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 🔹 Event details
+                    EventDetails(event = eventToDelete)
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // 🔹 Bottom row: Cancel (left) + Remove (right)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+
+                        TextButton(
+                            onClick = { showRemoveDialog.value = false }
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        TextButton(
+                            onClick = {
+                                showDeleteConfirmation.value = true
+                            }
+                        ) {
+                            Text(
+                                text = "Remove from calendar",
+                                color = PrimaryRed,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 
     if (showDeleteConfirmation.value && selectedEvent.value != null) {
@@ -437,20 +469,22 @@ fun CalendarScreen(
                                 }
                             }
                         } else {
-                            coroutineScope.launch(Dispatchers.IO) {
-                                storage.removeEvent(eventToDelete, reminderScheduler)
-                                val updatedEvents = storage.loadEvents()
-
-                                withContext(Dispatchers.Main) {
-                                    savedEvents.clear()
-                                    savedEvents.addAll(updatedEvents)
+                            coroutineScope.launch {
+                                try {
+                                    calendarViewModel.deleteLocalEventFromFirebase(eventToDelete)
 
                                     Toast.makeText(
                                         context,
                                         "${eventToDelete.title} removed from Phin calendar",
                                         Toast.LENGTH_SHORT
                                     ).show()
-
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        e.message ?: "Failed to remove local event.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } finally {
                                     showDeleteConfirmation.value = false
                                     showRemoveDialog.value = false
                                 }

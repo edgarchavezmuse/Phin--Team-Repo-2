@@ -1,20 +1,27 @@
-const {onDocumentCreated} = require("firebase-functions/v2/firestore");
+const {onDocumentWritten} = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 
 console.log("MESSAGE REQUEST FUNCTION STARTED");
 
-exports.sendMessageRequestNotification = onDocumentCreated(
+exports.sendMessageRequestNotification = onDocumentWritten(
     {
       region: "us-central1",
       document: "chats/{requestId}",
     },
     async (event) => {
-      const snapshot = event.data;
-      if (!snapshot) return;
+      const before = event.data.before ? event.data.before.data() : null;
+      const after = event.data.after ? event.data.after.data() : null;
 
-      const data = snapshot.data();
-      const receiverId = data.participants[1];
-      const senderId = data.participants[0];
+      if (!after) return null;
+
+      // only fire when request becomes pending
+      if (after.requestState !== "pending") return null;
+
+      // prevent duplicate firing
+      if (before && before.requestState === "pending") return null;
+
+      const receiverId = after.participants[1];
+      const senderId = after.participants[0];
 
       if (!receiverId) {
         console.log("Missing toUid");

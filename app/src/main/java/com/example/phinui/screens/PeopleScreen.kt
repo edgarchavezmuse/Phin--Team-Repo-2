@@ -66,9 +66,16 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.example.phinui.components.people.ActiveChatDialog
 import androidx.compose.material3.*
 import com.example.phinui.components.people.PendingFriendRequestDialog
+import androidx.compose.foundation.clickable
+import androidx.navigation.NavHostController
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
+import com.example.phinui.ui.navigation.Routes
 
 @Composable
-fun PeopleScreen() {
+fun PeopleScreen(
+    navController: NavHostController
+) {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }
     val auth = remember { FirebaseAuth.getInstance() }
@@ -88,10 +95,13 @@ fun PeopleScreen() {
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
     var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var pendingRequestUser by remember { mutableStateOf<String?>(null) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToUnblock by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    val chats = chatRepositoryViewModel.approvedChats.value
 
     LaunchedEffect(Unit) {
         val uid = auth.currentUser?.uid ?: return@LaunchedEffect
@@ -244,6 +254,20 @@ fun PeopleScreen() {
                     items(visibleUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
+
+                        val currentUserId = chatRepositoryViewModel.currentUserID
+
+                        val chatForUser = chats.firstOrNull { chat ->
+                            val participants = chat["participants"] as? List<*> ?: return@firstOrNull false
+                            val ids = participants.mapNotNull { it as? String }
+
+                            currentUserId != null && currentUserId in ids && uid in ids
+                        }
+
+                        val requestState = chatForUser?.get("requestState") as? String
+                        val showSendMessage = requestState == "approved"
+                        val label = if (showSendMessage) "Send Message" else "Send Message Request"
 
                         Row(
                             modifier = Modifier
@@ -256,7 +280,20 @@ fun PeopleScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name, 44)
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -326,21 +363,26 @@ fun PeopleScreen() {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Icon(
                                                     imageVector = Icons.Default.Email,
-                                                    contentDescription = "Send Message Request",
+                                                    contentDescription = label,
                                                     tint = NavText
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Send Message Request", color = NavText)
+                                                Text(label, color = NavText)
                                             }
                                         },
                                         onClick = {
                                             val senderID = chatRepositoryViewModel.currentUserID
                                                 ?: return@DropdownMenuItem
-                                            chatRepositoryViewModel.sendMessageRequest(
-                                                senderID,
-                                                uid,
-                                                name
-                                            )
+
+                                            if (showSendMessage) {
+                                                navController.navigate(Routes.MESSAGES + "/$uid")
+                                            } else {
+                                                chatRepositoryViewModel.sendMessageRequest(
+                                                    senderID,
+                                                    uid,
+                                                    name
+                                                )
+                                            }
                                             showMenu = false
                                         }
                                     )
@@ -376,6 +418,7 @@ fun PeopleScreen() {
                     items(blockedUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
                         Row(
                             modifier = Modifier
@@ -388,7 +431,20 @@ fun PeopleScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name, 44)
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(12.dp))
 
                                 Column(
@@ -502,6 +558,17 @@ fun PeopleScreen() {
                 )
             },
             onDismiss = { userToUnblock = null }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
         )
     }
 

@@ -25,9 +25,10 @@ class FriendRepositoryViewModel (private val friendRepository: FriendRepository)
                 val alphabetizeFriendsList = friends.map {
                     User(
                         uid = it.first,
-                        name = it.second["name"] as? String ?: "Unknown"
+                        name = it.second["name"] as? String ?: "Unknown",
+                        photoUrl = it.second["photoUrl"] as? String
                     )
-                } .sortedBy { (it.name.lowercase() ) }
+                }.sortedBy { it.name.lowercase() }
 
                 _friendsList.value = alphabetizeFriendsList
 

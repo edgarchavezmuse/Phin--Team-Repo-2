@@ -71,11 +71,12 @@ import kotlinx.coroutines.tasks.await
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+
 import com.example.phinui.ui.navigation.Routes
 import androidx.navigation.NavHostController
 
 @Composable
-fun MapScreen(navController: NavHostController) {
+fun MapScreen(sharedPin: CampusLocation? = null,navController: NavHostController) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -189,6 +190,25 @@ fun MapScreen(navController: NavHostController) {
 
     LaunchedEffect(Unit) {
         campusLocations = fetchCampusLocations()
+    }
+
+    LaunchedEffect(sharedPin, campusLocations) {
+        sharedPin?.let { incomingPin ->
+            val matchingPin = campusLocations.firstOrNull { it.id == incomingPin.id } ?: incomingPin
+
+            selectedCategory = "all"
+            selectedLocation = matchingPin
+            selectedPlaceLatLng = null
+            selectedPlaceName = null
+            searchText = matchingPin.name
+
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(matchingPin.latitude, matchingPin.longitude),
+                    17f
+                )
+            )
+        }
     }
 
     LaunchedEffect(hasLocationPermission) {
@@ -319,6 +339,9 @@ fun MapScreen(navController: NavHostController) {
                 onDismiss = {
                     selectedLocation = null
                 },
+                onShare = { sharedLocation ->
+                    // Next phase: open friend/chat picker
+                },
                 onVendingStockClick = { vendingLocation ->
                     navController.navigate("${Routes.VENDING_STOCK}/${vendingLocation.id}")
                 }
@@ -364,6 +387,7 @@ fun PinInfoCard(
     location: CampusLocation,
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit,
+    onShare: (CampusLocation) -> Unit,
     onVendingStockClick: (CampusLocation) -> Unit
 ) {
     val context = LocalContext.current

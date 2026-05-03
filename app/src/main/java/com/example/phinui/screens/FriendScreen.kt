@@ -1,6 +1,5 @@
 package com.example.phinui.ui.screens
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,12 +56,18 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.RemoveFriendDialog
+import androidx.compose.material.icons.filled.PersonOff
+import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.foundation.clickable
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
 
 @Composable
 fun FriendsScreen(
@@ -77,6 +82,8 @@ fun FriendsScreen(
     var incoming by remember { mutableStateOf<List<Pair<String, FriendRequest>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var requestEmails by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var requestUsers by remember { mutableStateOf<Map<String, Map<String, Any>>>(emptyMap()) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
     var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -105,13 +112,13 @@ fun FriendsScreen(
 
     LaunchedEffect(incoming) {
         incoming.forEach { (_, req) ->
-            if (!requestEmails.containsKey(req.fromUid)) {
+            if (!requestUsers.containsKey(req.fromUid)) {
                 db.collection("users")
                     .document(req.fromUid)
                     .get()
                     .addOnSuccessListener { doc ->
-                        val email = doc.getString("email") ?: ""
-                        requestEmails = requestEmails + (req.fromUid to email)
+                        val data = doc.data ?: return@addOnSuccessListener
+                        requestUsers = requestUsers + (req.fromUid to data)
                     }
             }
         }
@@ -170,160 +177,235 @@ fun FriendsScreen(
             }
 
             if (selectedTab == 0) {
-                items(friends) { (uid, user) ->
-                    val name = user["name"] as? String ?: "Unknown"
-                    val email = user["email"] as? String ?: ""
+                if (friends.isEmpty()) {
+                    item {
+                        EmptyState(
+                            icon = Icons.Default.PersonOff,
+                            title = "No friends yet",
+                            subtitle = "Add people to start building your circle."
+                        )
+                    }
+                }
+                else {
+                    items(friends) { (uid, user) ->
+                        val name = user["name"] as? String ?: "Unknown"
+                        val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            UserAvatar(name = name, size = 44)
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Column(
-                                modifier = Modifier.fillMaxWidth()
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text(
-                                    text = name,
-                                    color = NavText
-                                )
-
-                                Text(
-                                    text = email,
-                                    color = TextMuted,
-                                    fontSize = 12.sp,
-                                    maxLines = 1
-                                )
-                            }
-                        }
-
-                        var showMenu by remember { mutableStateOf(false) }
-
-                        Box {
-                            IconButton(
-                                onClick = { showMenu = true }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "Friend Options",
-                                    tint = NavText
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false },
-                                containerColor = Background
-                            ) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.PersonRemove,
-                                                contentDescription = "Remove Friend",
-                                                tint = NavText
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Remove Friend")
-                                        }
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        friendToRemove = uid to name
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
                                     }
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
 
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.Block,
-                                                contentDescription = "Block User",
-                                                tint = HeaderRed
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Block User", color = HeaderRed)
+                                Column(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = name,
+                                        color = NavText
+                                    )
+
+                                    Text(
+                                        text = email,
+                                        color = TextMuted,
+                                        fontSize = 12.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+
+
+                            var showMenu by remember { mutableStateOf(false) }
+
+                            Box {
+                                IconButton(
+                                    onClick = { showMenu = true }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = "Friend Options",
+                                        tint = NavText
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false },
+                                    containerColor = Background
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PersonRemove,
+                                                    contentDescription = "Remove Friend",
+                                                    tint = NavText
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Remove Friend")
+                                            }
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            friendToRemove = uid to name
                                         }
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        friendToBlock = uid to name
-                                    }
-                                )
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Email,
+                                                    contentDescription = "Send Message",
+                                                    tint = NavText
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Send Message", color = NavText)
+                                            }
+                                        },
+                                        onClick = {
+                                            navController.navigate(Routes.MESSAGES + "/${uid}")
+                                            showMenu = false
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Block,
+                                                    contentDescription = "Block User",
+                                                    tint = HeaderRed
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Block User", color = HeaderRed)
+                                            }
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            friendToBlock = uid to name
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
+
             if (selectedTab == 1) {
-                items(incoming) { (requestId, req) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            UserAvatar(req.fromName, 44)
-                            Spacer(modifier = Modifier.width(8.dp))
+                if (incoming.isEmpty()) {
+                    item {
+                        EmptyState(
+                            icon = Icons.Default.MailOutline,
+                            title = "No requests",
+                            subtitle = "Friend requests will show up here."
+                        )
+                    }
+                }
+                else {
+                    items(incoming) { (requestId, req) ->
+                        val userData = requestUsers[req.fromUid]
 
-                            Column(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = req.fromName,
-                                    color = NavText
-                                )
-
-                                Text(
-                                    text = requestEmails[req.fromUid] ?: "",
-                                    color = TextMuted,
-                                    fontSize = 12.sp,
-                                    maxLines = 1
-                                )
-                            }
-                        }
+                        val name = userData?.get("name") as? String ?: req.fromName
+                        val email = userData?.get("email") as? String ?: ""
+                        val photoUrl = userData?.get("photoUrl") as? String
 
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(
-                                onClick = {
-                                    requestToAccept = Triple(requestId, req.fromUid, req.fromName)
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Accept Request",
-                                    tint = NavText
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = userData?.get("major") as? String ?: "",
+                                            bio = userData?.get("bio") as? String ?: ""
+                                        )
+                                    }
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Column(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = req.fromName,
+                                        color = NavText
+                                    )
+
+                                    Text(
+                                        text = email,
+                                        color = TextMuted,
+                                        fontSize = 12.sp,
+                                        maxLines = 1
+                                    )
+                                }
                             }
 
-                            Spacer(modifier = Modifier.width(2.dp))
-
-                            IconButton(
-                                onClick = {
-                                    requestToDecline = requestId to req.fromName
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Decline Request",
-                                    tint = HeaderRed
-                                )
+                                IconButton(
+                                    onClick = {
+                                        requestToAccept = Triple(requestId, req.fromUid, req.fromName)
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Accept Request",
+                                        tint = NavText
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(2.dp))
+
+                                IconButton(
+                                    onClick = {
+                                        requestToDecline = requestId to req.fromName
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Decline Request",
+                                        tint = HeaderRed
+                                    )
+                                }
                             }
                         }
                     }
@@ -486,6 +568,55 @@ fun FriendsScreen(
                     Text("Cancel", color = NavText)
                 }
             }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
+        )
+    }
+}
+
+@Composable
+private fun EmptyState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = TextMuted,
+            modifier = Modifier.height(48.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = title,
+            color = NavText,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = subtitle,
+            color = TextMuted,
+            fontSize = 14.sp
         )
     }
 }

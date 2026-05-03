@@ -44,9 +44,7 @@ fun LoginScreen(
     val isEmailValid = cleanEmail.endsWith("@myci.csuci.edu")
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
+        modifier = Modifier.fillMaxWidth()
     ) {
         AuthHeader()
 
