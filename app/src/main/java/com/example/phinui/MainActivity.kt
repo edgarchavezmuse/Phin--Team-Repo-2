@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
             val darkModeEnabled by settingsViewModel.darkModeEnabled.collectAsState()
 
             PhinUITheme(darkMode = darkModeEnabled) {
-                PhinUIApp(settingsViewModel)
+                PhinUIApp(settingsViewModel, darkModeEnabled)
             }
         }
     }
@@ -84,7 +84,8 @@ class MainActivity : ComponentActivity() {
 //@PreviewScreenSizes
 @Composable
 fun PhinUIApp(
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel,
+    darkModeEnabled: Boolean
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -149,6 +150,7 @@ fun PhinUIApp(
                     PhinNavHost(
                         navController = navController,
                         modifier = Modifier.fillMaxSize(),
+                        darkModeEnabled = darkModeEnabled,
                         setTopBarTitle = { title, isMessages ->
                             mainActivityViewModel.setTitle(title, isMessages)
                         }
@@ -242,6 +244,7 @@ fun PhinUIApp(
                 PhinNavHost(
                     navController = navController,
                     modifier = Modifier.padding(innerPadding),
+                    darkModeEnabled = darkModeEnabled,
                     setTopBarTitle = { title, isMessages ->
                         mainActivityViewModel.setTitle(title, isMessages)
                     }
@@ -257,7 +260,8 @@ fun PhinUIAppPreview() {
     val context = LocalContext.current
     val settingsViewModel = remember { SettingsViewModel(context) }
 
-    PhinUITheme(darkMode = false) {
-        PhinUIApp(settingsViewModel)
-    }
+    PhinUIApp(
+        settingsViewModel = settingsViewModel,
+        darkModeEnabled = false
+    )
 }
