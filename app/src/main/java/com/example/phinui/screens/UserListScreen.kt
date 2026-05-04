@@ -98,10 +98,6 @@ fun UserListScreen (
     }
 
     LaunchedEffect(currentUserID) {
-        chatRepositoryViewModel.loadMutedChats(currentUserID)
-    }
-
-    LaunchedEffect(currentUserID) {
         chatRepositoryViewModel.userListRepository.loadCurrentUserBlockedListListener(currentUserID)
         chatRepositoryViewModel.userListRepository.loadBlockedByOtherUsersListListener(currentUserID)
     }
@@ -110,41 +106,7 @@ fun UserListScreen (
     val blockedByOtherUsersList = chatRepositoryViewModel.userListRepository.blockedByOtherUsersList.value
     val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
 
-    /*
-    if (showDeleteDialog.value && selectedChatID.value != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showDeleteDialog.value = false
-                selectedChatID.value = null
-            },
-            title = { Text("Delete chat?") },
-            text = { Text("This chat will be deleted from your current chat list.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    chatRepositoryViewModel.onDeleteChat(
-                        userID = currentUserID,
-                        chatID = selectedChatID.value!!
-                    )
-                    showDeleteDialog.value = false
-                    selectedChatID.value = null
-                }) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog.value = false
-                        selectedChatID.value = null
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 
-     */
 
     Column(
         modifier = Modifier

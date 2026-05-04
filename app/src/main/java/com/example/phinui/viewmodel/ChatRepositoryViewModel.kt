@@ -103,8 +103,18 @@ class ChatRepositoryViewModel (
     }
 
     fun loadApprovedChats(userID: String) {
-        chatRepository.listenChats(userID) {
-            approvedChats.value = it
+        chatRepository.listenChats(userID) { chats ->
+            approvedChats.value = chats
+
+            // extract muted chat IDs
+            val mutedSet = chats.mapNotNull { chat ->
+                val mutedBy = chat["mutedBy"] as? List<String> ?: emptyList()
+                val chatID = chat["chatID"] as? String ?: return@mapNotNull null
+
+                if (mutedBy.contains(userID)) chatID else null
+            }.toSet()
+
+            _mutedChats.value = mutedSet
         }
     }
 
@@ -246,12 +256,6 @@ class ChatRepositoryViewModel (
 
     fun onDeleteChat(userID: String, chatID: String) {
         chatRepository.deleteChat(userID, chatID)
-    }
-
-    fun loadMutedChats(userId: String) {
-        chatRepository.listenMutedChats(userId) { set ->
-            _mutedChats.value = set
-        }
     }
 
     fun onMuteChat(chatID: String) {

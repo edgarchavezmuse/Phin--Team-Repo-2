@@ -277,26 +277,17 @@ class ChatRepository {
                 val chats = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
                     val deletedBy = data["deletedBy"] as? List<String> ?: emptyList()
+                    val mutedBy = data["mutedBy"] as? List<String> ?: emptyList()
+                    val isMuted = mutedBy.contains(userID)
 
                     if (deletedBy.contains(userID)) return@mapNotNull null
 
-                    data + mapOf("chatID" to doc.id)
+                    data + mapOf(
+                        "chatID" to doc.id,
+                        "isMuted" to isMuted
+                        )
                 }
                 onResult(chats)
-            }
-    }
-
-    fun listenMutedChats(
-        userID: String,
-        onResult: (Set<String>) -> Unit
-    ) {
-        usersCollection
-            .document(userID)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
-
-                val mutedChats = snapshot.get("mutedChats") as? List<String> ?: emptyList()
-                onResult(mutedChats.toSet())
             }
     }
 
@@ -335,30 +326,16 @@ class ChatRepository {
             }
     }
 
-    fun muteChat(
-        userID: String,
-        chatID: String,
-        onSuccess: () -> Unit = {},
-        onError: (Exception) -> Unit = {}
-        ) {
-        val userRef = usersCollection.document(userID)
+    fun muteChat(userID: String, chatID: String) {
+        val chatRef = chatsCollection.document(chatID)
 
-        userRef.update("mutedChats", FieldValue.arrayUnion(chatID))
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { onError(it) }
+        chatRef.update("mutedBy", FieldValue.arrayUnion(userID))
     }
 
-    fun unmuteChat(
-        userID: String,
-        chatID: String,
-        onSuccess: () -> Unit = {},
-        onError: (Exception) -> Unit = {}
-    ) {
-        val userRef = usersCollection.document(userID)
+    fun unmuteChat(userID: String, chatID: String) {
+        val chatRef = chatsCollection.document(chatID)
 
-        userRef.update("mutedChats", FieldValue.arrayRemove(chatID))
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { onError(it) }
+        chatRef.update("mutedBy", FieldValue.arrayRemove(userID))
     }
 
     data class MessageInfo(
