@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import com.example.phinui.ui.navigation.Routes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
@@ -28,7 +30,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.text.style.TextOverflow
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
 import com.example.phinui.components.people.RemoveFriendDialog
@@ -41,10 +42,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import com.example.phinui.ui.components.UserAvatar
-import com.google.firebase.Timestamp
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
 
 @Composable
@@ -131,10 +128,9 @@ fun UserListScreen (
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TabRow(selectedTabIndex = selectedTab) {
@@ -170,8 +166,10 @@ fun UserListScreen (
 
                 Box {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // changed Friends Tab to be chats based instead of users based
                         items(sortedFriendChats) { chat ->
@@ -181,24 +179,10 @@ fun UserListScreen (
 
                             if(friendId in hideBlockedUsers) return@items
 
-                            val friendUser = friendList.firstOrNull { it.uid == friendId } ?: User(
-                                uid = friendId,
-                                name = "Loading...",
-                                photoUrl = null
-                            )
+                            val friendUser = friendList.first { it.uid == friendId }
 
-                            val lastMessage = chat["lastMessage"] as? String ?: ""
-                            val timestamp = chat["lastTimestamp"] as? com.google.firebase.Timestamp
-
-                            val previewText = if (lastMessage.isBlank()) {
-                                "Start conversation"
-                            } else {
-                                lastMessage
-                            }
                             UserListItem(
                                 user = friendUser,
-                                subtitle = previewText,
-                                timeText = formatTimestamp(timestamp),
                                 trailingContent = {
                                     var showMenu by remember { mutableStateOf(false) }
                                     Box {
@@ -208,14 +192,14 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.MoreVert,
                                                 contentDescription = "Options",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
                                         DropdownMenu(
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
@@ -223,10 +207,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.PersonRemove,
                                                             contentDescription = "Remove Friend",
-                                                            tint = NavText
+                                                            tint = MaterialTheme.colorScheme.onTertiary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Remove Friend", color = NavText)
+                                                        Text("Remove Friend", color = MaterialTheme.colorScheme.onTertiary)
                                                     }
                                                 },
                                                 onClick = {
@@ -241,10 +225,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
-                                                            tint = HeaderRed
+                                                            tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = HeaderRed)
+                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 },
                                                 onClick = {
@@ -277,6 +261,7 @@ fun UserListScreen (
                                     showDeleteDialog.value = true
                                 }
                             )
+                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
@@ -295,8 +280,10 @@ fun UserListScreen (
                 )
                 Box {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(alphabetizedChats) { chat ->
                             val chatID = chat["chatID"] as? String ?: return@items
@@ -315,19 +302,8 @@ fun UserListScreen (
                                 photoUrl = null
                             )
 
-                            val lastMessage = chat["lastMessage"] as? String ?: ""
-                            val timestamp = chat["lastTimestamp"] as? Timestamp
-
-                            val previewText = if (lastMessage.isBlank()) {
-                                "Start conversation"
-                            } else {
-                                lastMessage
-                            }
-
                             UserListItem(
                                 user = user,
-                                subtitle = previewText,
-                                timeText = formatTimestamp(timestamp),
                                 trailingContent = {
                                     var showMenu by remember { mutableStateOf(false) }
                                     Box {
@@ -337,14 +313,14 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.MoreVert,
                                                 contentDescription = "Options",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
                                         DropdownMenu(
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
@@ -352,10 +328,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.PersonAdd,
                                                             contentDescription = "Add Friend",
-                                                            tint = NavText
+                                                            tint = MaterialTheme.colorScheme.onTertiary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Add Friend", color = NavText)
+                                                        Text("Add Friend", color = MaterialTheme.colorScheme.onTertiary)
                                                     }
                                                 },
                                                 onClick = {
@@ -371,10 +347,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
-                                                            tint = HeaderRed
+                                                            tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = HeaderRed)
+                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 },
                                                 onClick = {
@@ -407,6 +383,7 @@ fun UserListScreen (
                                     showDeleteDialog.value = true
                                 }
                             )
+                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
@@ -467,7 +444,7 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = "Accept Request",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
@@ -477,12 +454,13 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "Decline Request",
-                                                tint = HeaderRed
+                                                tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
                                 }
                             )
+                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
@@ -567,111 +545,63 @@ fun UserListScreen (
             onDismiss = { friendToBlock = null }
         )
     }
+
 }
 
 @Composable
 fun UserListItem(
     user: User,
-    subtitle: String = "",
-    timeText: String? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
-    Column(
-        modifier = Modifier.fillMaxWidth()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = { onClick?.invoke() },
+                onLongClick = { onLongPress?.invoke() }
+            )
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(),
-                    onClick = { onClick?.invoke() },
-                    onLongClick = { onLongPress?.invoke() }
-                )
-                .padding(horizontal = 12.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            UserAvatar(
-                name = user.name,
-                photoUrl = user.photoUrl,
-                size = 44
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                UserAvatar(
+                    name = user.name,
+                    photoUrl = user.photoUrl,
+                    size = 40
+                )
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = user.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1C1C1E)
-                        ),
-                        maxLines = 1
+                Text(
+                    text = user.name,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onTertiary
                     )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    if (timeText != null) {
-                        Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Color(0xFF8E8E93)
-                            )
-                        )
-                    }
-                }
-
-                if (subtitle.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = Color(0xFF8E8E93),
-                            lineHeight = 18.sp
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                )
             }
 
-            if (trailingContent != null) {
-                Spacer(modifier = Modifier.width(4.dp))
-                trailingContent()
-            }
+            trailingContent?.invoke()
         }
-
-        HorizontalDivider(
-            color = Color(0xFFEAEAEA),
-            thickness = 0.8.dp,
-            modifier = Modifier.padding(start = 64.dp, end = 8.dp)
-        )
-    }
-}
-fun formatTimestamp(timestamp: Timestamp?): String {
-    if (timestamp == null) return ""
-
-    val date = timestamp.toDate()
-    val now = Calendar.getInstance()
-    val msgTime = Calendar.getInstance().apply { time = date }
-
-    return if (
-        now.get(Calendar.DAY_OF_YEAR) == msgTime.get(Calendar.DAY_OF_YEAR) &&
-        now.get(Calendar.YEAR) == msgTime.get(Calendar.YEAR)
-    ) {
-        SimpleDateFormat("h:mm a", Locale.getDefault()).format(date)
-    } else {
-        SimpleDateFormat("MMM d", Locale.getDefault()).format(date)
     }
 }
 
