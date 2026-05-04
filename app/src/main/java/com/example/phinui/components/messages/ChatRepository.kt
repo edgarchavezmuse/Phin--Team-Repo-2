@@ -13,7 +13,6 @@ class ChatRepository {
 
     private val database = FirebaseFirestore.getInstance()
     private val chatsCollection = database.collection("chats")
-    private val usersCollection = database.collection("users")
 
     //Link users for 1 on 1 messaging
     fun getChatID(firstUserID: String, secondUserID: String): String {

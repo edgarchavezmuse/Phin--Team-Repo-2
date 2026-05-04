@@ -76,7 +76,6 @@ fun UserListScreen (
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
 
-    //var showDeleteDialog = remember { mutableStateOf(false) }
     var selectedChatID by remember { mutableStateOf<String?>(null) }
     var showActionSheet by remember { mutableStateOf(false) }
     val mutedChats by chatRepositoryViewModel.mutedChats.collectAsState()
