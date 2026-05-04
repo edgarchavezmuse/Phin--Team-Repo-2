@@ -49,6 +49,7 @@ fun CalendarHeader(
                 text = "${currentWeekStartDate.format(formatter)} - ${endDate.format(formatter)}",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

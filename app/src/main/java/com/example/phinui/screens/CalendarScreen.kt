@@ -359,7 +359,7 @@ fun CalendarScreen(
                             text = eventToDelete.title,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            color = TextDark,
+                            color = MaterialTheme.colorScheme.onTertiary,
                             modifier = Modifier.weight(1f)
                         )
 
@@ -395,7 +395,7 @@ fun CalendarScreen(
                         ) {
                             Text(
                                 text = "Cancel",
-                                color = Color.Black,
+                                color = MaterialTheme.colorScheme.onTertiary,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -445,7 +445,7 @@ fun CalendarScreen(
                         append(" from your calendar?")
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
             },
             confirmButton = {
@@ -511,7 +511,7 @@ fun CalendarScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         fontWeight = FontWeight.Medium
                     )
                 }
