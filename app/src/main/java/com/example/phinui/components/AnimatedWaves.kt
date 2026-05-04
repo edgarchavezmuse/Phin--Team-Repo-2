@@ -30,7 +30,7 @@ fun AnimatedWaves(
     frontWavelengthFraction: Float = 0.9f,
     backWavelengthFraction: Float = 1.2f,
     showShip: Boolean = false,
-    shipColor: Color = MaterialTheme.colorScheme.onBackground,
+    shipColor: Color = MaterialTheme.colorScheme.onTertiary,
     shipSize: Dp = 28.dp,
     shipVerticalOffset: Float = 33f,
     frontPhase: Float,

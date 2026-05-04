@@ -121,37 +121,39 @@ fun PhinUIApp(
     NotificationPermissionRequest()
 
     if (hideNavigationUi) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                if (showAuthWaves) {
-                    AnimatedWaves(
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                        waveColor = MaterialTheme.colorScheme.primary,
-                        height = 110.dp,
-                        showShip = true,
-                        shipSize = 20.dp,
-                        shipVerticalOffset = 18f,
-                        frontPhase = waveAnimation.frontPhase,
-                        backPhase = waveAnimation.backPhase,
-                        shipProgress = waveAnimation.shipProgress,
-                        bobPhase = waveAnimation.bobPhase
+        PhinUITheme(darkMode = false) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = MaterialTheme.colorScheme.background
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    if (showAuthWaves) {
+                        AnimatedWaves(
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            waveColor = MaterialTheme.colorScheme.primary,
+                            height = 110.dp,
+                            showShip = true,
+                            shipSize = 20.dp,
+                            shipVerticalOffset = 18f,
+                            frontPhase = waveAnimation.frontPhase,
+                            backPhase = waveAnimation.backPhase,
+                            shipProgress = waveAnimation.shipProgress,
+                            bobPhase = waveAnimation.bobPhase
+                        )
+                    }
+
+                    PhinNavHost(
+                        navController = navController,
+                        modifier = Modifier.fillMaxSize(),
+                        setTopBarTitle = { title, isMessages ->
+                            mainActivityViewModel.setTitle(title, isMessages)
+                        }
                     )
                 }
-
-                PhinNavHost(
-                    navController = navController,
-                    modifier = Modifier.fillMaxSize(),
-                    setTopBarTitle = { title, isMessages ->
-                        mainActivityViewModel.setTitle(title, isMessages)
-                    }
-                )
             }
         }
     } else {
