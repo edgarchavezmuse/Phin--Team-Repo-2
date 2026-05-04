@@ -150,7 +150,8 @@ fun PhinUIApp(
                     PhinNavHost(
                         navController = navController,
                         modifier = Modifier.fillMaxSize(),
-                        darkModeEnabled = darkModeEnabled,setTopBarTitle = { title, isMessages ->
+                        darkModeEnabled = darkModeEnabled,
+                        setTopBarTitle = { title, isMessages ->
                             mainActivityViewModel.setTitle(title, isMessages)
                         }
                     )
