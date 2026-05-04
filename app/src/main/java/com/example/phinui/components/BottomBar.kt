@@ -90,7 +90,7 @@ fun CustomBottomBar(
                     BottomBarItem(
                         label = item.label,
                         icon = item.icon,
-                        selected = currentRoute == item.route,
+                        selected = currentRoute?.startsWith(item.route) == true,
                         onClick = {
                             navController.navigate(item.route) {
                                 launchSingleTop = true
