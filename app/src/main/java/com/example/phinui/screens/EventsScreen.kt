@@ -37,12 +37,6 @@ import com.example.phinui.ui.components.calendar.EventCard
 import com.example.phinui.ui.theme.Background
 import com.example.phinui.ui.theme.NavText
 
-private val PrimaryRed = Color(0xFFE53935)
-private val DeepRed = Color(0xFFB71C1C)
-private val SoftBackground = Color(0xFFFFFBFA)
-private val TextDark = Color(0xFF1F1F1F)
-private val TextMuted = Color(0xFF666666)
-
 @Composable
 fun EventsScreen(
     events: List<CalendarEvent>,
@@ -68,7 +62,7 @@ fun EventsScreen(
                     text = "Events",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
             }
 
@@ -101,7 +95,7 @@ fun EventsScreen(
                     text = selectedEvent!!.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
             },
             text = {
@@ -113,7 +107,7 @@ fun EventsScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -127,7 +121,7 @@ fun EventsScreen(
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onBackground
+                        contentColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
                     Text(
