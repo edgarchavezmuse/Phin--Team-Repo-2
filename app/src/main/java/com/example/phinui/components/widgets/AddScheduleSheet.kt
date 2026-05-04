@@ -148,7 +148,7 @@ fun AddScheduleSheet(
                     "Quickly add a course to your schedule"
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onTertiary
             )
 
             EventInputRow(
@@ -191,7 +191,7 @@ fun AddScheduleSheet(
                                 Text(
                                     text = course.name,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onTertiary
                                 )
                             }
                         }
