@@ -52,7 +52,7 @@ fun EventDetails(event: CalendarEvent) {
                 Text(
                     text = date.format(eventDateFormatter),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -67,7 +67,7 @@ fun EventDetails(event: CalendarEvent) {
             Text(
                 text = formatEventTimeLine(event),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onTertiary
             )
         }
 
@@ -82,7 +82,7 @@ fun EventDetails(event: CalendarEvent) {
                 Text(
                     text = "Reminder: $reminderText",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
             }
         }
@@ -96,21 +96,21 @@ fun EventDetails(event: CalendarEvent) {
             Text(
                 text = event.location ?: "Location: TBD",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onTertiary
             )
         }
 
         Text(
             text = "Description",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onTertiary,
             fontWeight = FontWeight.SemiBold
         )
 
         Text(
             text = event.description ?: "No description available.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onTertiary
         )
     }
 }
