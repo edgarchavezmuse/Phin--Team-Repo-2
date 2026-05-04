@@ -2,6 +2,7 @@ package com.example.phinui.ui.theme
 
 //import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -13,12 +14,13 @@ private val LightColorScheme = lightColorScheme(
     background = Background,
     surface = Background,
     onPrimary = HeaderText,
-    onSecondary = HeaderText,
+    onSecondary = DarkTextMuted,
     onTertiary = NavText,
     onBackground = DeletedMessageColor,
     onSurface = NavText,
     surfaceVariant = LightPink,
-    primaryContainer = DarkHeaderRed
+    primaryContainer = DarkHeaderRed,
+    tertiaryContainer = SenderUserColor
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -28,13 +30,13 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBackground,
     surface = DarkSurface,
     onPrimary = DarkOnPrimary,
-    onSecondary = DarkTextPrimary,
+    onSecondary = TextMuted,
     onTertiary = DarkTextPrimary,
     onBackground = DarkTextPrimary,
     onSurface = DarkTextPrimary,
     surfaceVariant = DarkLightPink,
-    primaryContainer = DarkHeaderRed
-
+    primaryContainer = DarkHeaderRed,
+    tertiaryContainer = SenderUserColor
 )
 
 @Composable
