@@ -98,11 +98,11 @@ fun AddScheduleSheet(
         "#00E5FF"  // Bright Teal
     )
 
-    val accentRed = Color(0xFFFF1F1F)
-    val chipBarColor = Color(0xFFFFEAEA)
-    val unselectedChipColor = Color.White
-    val selectedChipTextColor = Color.White
-    val unselectedChipTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val accentRed = MaterialTheme.colorScheme.primary
+    val chipBarColor = MaterialTheme.colorScheme.surfaceVariant
+    val unselectedChipColor = MaterialTheme.colorScheme.surface
+    val selectedChipTextColor = MaterialTheme.colorScheme.surface
+    val unselectedChipTextColor = MaterialTheme.colorScheme.onTertiary
 
     val filteredCourses = remember(courseSearch, catalogCourses) {
         val query = courseSearch.trim().lowercase()
@@ -125,7 +125,7 @@ fun AddScheduleSheet(
         sheetState = sheetState,
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = Color(0xFFFFFAFA)
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -148,7 +148,7 @@ fun AddScheduleSheet(
                     "Quickly add a course to your schedule"
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onTertiary
             )
 
             EventInputRow(
@@ -165,7 +165,7 @@ fun AddScheduleSheet(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 220.dp)
@@ -190,7 +190,7 @@ fun AddScheduleSheet(
                                 Text(
                                     text = course.name,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onTertiary
                                 )
                             }
                         }
@@ -340,8 +340,8 @@ fun AddScheduleSheet(
                             showColorPicker = !showColorPicker
                         },
                     shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    tonalElevation = 1.dp,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
                     shadowElevation = 1.dp
                 ) {
                     Row(
@@ -366,7 +366,7 @@ fun AddScheduleSheet(
                             Text(
                                 text = "Tap to choose a color",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onTertiary
                             )
                         }
 
@@ -382,7 +382,7 @@ fun AddScheduleSheet(
                 if (showColorPicker) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFFDF4F4),
+                        color = MaterialTheme.colorScheme.surface,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -495,7 +495,7 @@ fun AddScheduleSheet(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = accentRed,
-                        contentColor = Color.White
+                        contentColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
                     Text(if (isEditMode) "Update Class" else "Save Class")

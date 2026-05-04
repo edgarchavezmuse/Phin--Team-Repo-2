@@ -58,9 +58,9 @@ fun EventTimePickerDialog(
 
     var showDial by rememberSaveable { mutableStateOf(false) }
 
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFF7F5F2)
-    val titleColor = Color(0xFF111111)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val titleColor = MaterialTheme.colorScheme.onTertiary
     val bodyColor = Color(0xFF444444)
 
     Dialog(
