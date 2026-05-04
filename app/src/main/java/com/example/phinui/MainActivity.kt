@@ -98,7 +98,7 @@ fun PhinUIApp(
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
 
-    val showAuthWaves = false // turns waves and ship on and off in Login and Register screens
+    val showAuthWaves = true // turns waves and ship on and off in Login and Register screens
     val waveAnimation = rememberWaveAnimationState(
         frontDurationMillis = 4200, // speed of wave
         backDurationMillis = 3500, // speed of wave
