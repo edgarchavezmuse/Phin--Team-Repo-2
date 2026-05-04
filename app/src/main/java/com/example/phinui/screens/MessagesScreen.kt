@@ -141,7 +141,8 @@ fun MessagesScreen(
 
     val state = userListViewModel.userState
 
-    var visibleTimestampMessageId by remember { mutableStateOf<String?>(null) }
+    var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
+    var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
 
     LaunchedEffect(state) {
         when (state) {
@@ -191,19 +192,11 @@ fun MessagesScreen(
         }
     }
 
-    LaunchedEffect(visibleTimestampMessageId) {
-        if (visibleTimestampMessageId != null) {
-            delay(5000)
-            visibleTimestampMessageId = null
-        }
-    }
-
-    LaunchedEffect(visibleTimestampMessageId, messages) {
-        val targetId = visibleTimestampMessageId ?: return@LaunchedEffect
-        val targetIndex = messages.indexOfFirst { it["messageID"] == targetId }
-
-        if (targetIndex != -1) {
-            autoScrollState.animateScrollToItem(targetIndex)
+    LaunchedEffect(shouldScrollLatestTimestamp, messages) {
+        if (shouldScrollLatestTimestamp && messages.isNotEmpty()) {
+            delay(50)
+            autoScrollState.animateScrollToItem(messages.lastIndex)
+            shouldScrollLatestTimestamp = false
         }
     }
 
@@ -298,9 +291,15 @@ fun MessagesScreen(
                         chatRepositoryViewModel = chatRepositoryViewModel,
                         calendarViewModel = calendarViewModel,
                         chatID = chatID,
-                        showTimestamp = visibleTimestampMessageId == messageID,
+                        showTimestamp = messageID in visibleTimestampMessageIds,
                         onTapMessage = {
-                            visibleTimestampMessageId = messageID
+                            visibleTimestampMessageIds = visibleTimestampMessageIds + messageID
+
+                            val latestMessageId = messages.lastOrNull()?.get("messageID") as? String
+                            shouldScrollLatestTimestamp = (messageID == latestMessageId)
+                        },
+                        onHideTimestamp = {
+                            visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
                         },
                         onLongPressMine = {
                             selectedMessage.value = message
@@ -937,6 +936,7 @@ private fun MessageBubble(
     chatID: String,
     showTimestamp: Boolean,
     onTapMessage: () -> Unit,
+    onHideTimestamp: () -> Unit,
     onLongPressMine: () -> Unit
 ) {
     val type = message["type"] as? String ?: "text"
@@ -974,6 +974,13 @@ private fun MessageBubble(
     val sentAt = message["timestamp"] as? Timestamp
     val timeText = sentAt?.toDate()?.let {
         SimpleDateFormat("h:mm a", Locale.getDefault()).format(it)
+    }
+
+    LaunchedEffect(showTimestamp) {
+        if (showTimestamp) {
+            delay(5000)
+            onHideTimestamp()
+        }
     }
 
     Column(
