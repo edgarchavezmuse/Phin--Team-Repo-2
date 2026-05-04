@@ -381,7 +381,7 @@ fun MessagesScreen(
                             ),
                             contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
-                            Text("Send", fontWeight = FontWeight.SemiBold)
+                            Text("Send", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 }
@@ -392,13 +392,15 @@ fun MessagesScreen(
                     IconButton(onClick = { showAttachMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Menu"
+                            contentDescription = "Menu",
+                            tint = MaterialTheme.colorScheme.onTertiary
                         )
                     }
 
                     DropdownMenu(
                         expanded = showAttachMenu,
-                        onDismissRequest = { showAttachMenu = false }
+                        onDismissRequest = { showAttachMenu = false },
+                        containerColor = MaterialTheme.colorScheme.surface
                     ) {
                         DropdownMenuItem(
                             text = { Text("Study session invite") },
@@ -429,7 +431,8 @@ fun MessagesScreen(
 
             AlertDialog(
                 onDismissRequest = { showStudySessionInviteDialog = false },
-                title = { Text("Create study session") },
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = { Text("Create study session", color = MaterialTheme.colorScheme.onTertiary) },
                 text = {
                     Column {
                         TextField(
@@ -662,6 +665,7 @@ fun MessagesScreen(
         if (showPinPickerDialog) {
             AlertDialog(
                 onDismissRequest = { showPinPickerDialog = false },
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = { Text("Share campus pin") },
                 text = {
                     LazyColumn(
@@ -1021,7 +1025,7 @@ private fun MessageBubble(
                             text = text,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onTertiary,
+                            color = MaterialTheme.colorScheme.tertiary,
                             lineHeight = 20.sp
                         )
                     }
@@ -1041,6 +1045,7 @@ private fun MessageBubble(
                             Text(
                                 text = pinName,
                                 fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 16.sp
                             )
 
@@ -1049,7 +1054,7 @@ private fun MessageBubble(
                                 Text(
                                     text = pinCategory.replaceFirstChar { it.uppercase() },
                                     fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.background
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
 
@@ -1057,7 +1062,7 @@ private fun MessageBubble(
                                 Text(
                                     text = "Building: $pinBuilding",
                                     fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.background
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
 
@@ -1065,6 +1070,7 @@ private fun MessageBubble(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = pinDescription,
+                                    color = MaterialTheme.colorScheme.tertiary,
                                     fontSize = 14.sp
                                 )
                             }
@@ -1097,6 +1103,7 @@ private fun MessageBubble(
                             Text(
                                 text = studySessionTitle,
                                 fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 16.sp
                             )
 
@@ -1104,15 +1111,16 @@ private fun MessageBubble(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = studySessionDescription,
+                                    color = MaterialTheme.colorScheme.tertiary,
                                     fontSize = 14.sp
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            Text("Date: $displayDate", fontSize = 13.sp)
-                            Text("Start time: $displayStartTime", fontSize = 13.sp)
-                            Text("End time: $displayEndTime", fontSize = 13.sp)
+                            Text("Date: $displayDate", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                            Text("Start time: $displayStartTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                            Text("End time: $displayEndTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
 
                             Spacer(modifier = Modifier.height(10.dp))
 
@@ -1201,24 +1209,24 @@ private fun MessageBubble(
                                         Text(
                                             "Pending response...",
                                             fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.surface
+                                            color = MaterialTheme.colorScheme.tertiary
                                         )
                                     }
                                 }
 
                                 "ACCEPTED" -> {
                                     when (receiverStatus) {
-                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp)
-                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp)
-                                        "DECLINED" -> Text("Declined", fontSize = 13.sp)
+                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        "DECLINED" -> Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
                                     }
                                 }
 
                                 "DECLINED" -> {
                                     if (receiverStatus == "PENDING") {
-                                        Text("Pending response...", fontSize = 13.sp)
+                                        Text("Pending response...", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
                                     } else {
-                                        Text("Declined", fontSize = 13.sp)
+                                        Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
                                     }
                                 }
                             }

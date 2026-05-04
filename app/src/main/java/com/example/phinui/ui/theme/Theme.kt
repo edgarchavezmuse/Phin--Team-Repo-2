@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 private val LightColorScheme = lightColorScheme(
     primary = HeaderRed,
     secondary = NavText,
-    tertiary = SelectedPill,
+    tertiary = NavText,
     background = Background,
     surface = Background,
     onPrimary = HeaderText,
@@ -26,7 +26,7 @@ private val LightColorScheme = lightColorScheme(
 private val DarkColorScheme = darkColorScheme(
     primary = DarkHeaderRed,
     secondary = DarkTextSecondary,
-    tertiary = DarkSelectedPill,
+    tertiary = NavText,
     background = DarkBackground,
     surface = DarkSurface,
     onPrimary = DarkOnPrimary,
