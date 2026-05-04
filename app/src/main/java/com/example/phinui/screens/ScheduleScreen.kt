@@ -100,14 +100,14 @@ fun ScheduleScreen() {
                     Text(
                         text = "Schedule",
                         fontSize = 28.sp,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
                         text = "Your weekly class schedule",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -166,7 +166,7 @@ fun ScheduleScreen() {
                                 text = day,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = MaterialTheme.colorScheme.onTertiary
                             )
 
                             if (dayClasses.isNotEmpty()) {
@@ -189,7 +189,7 @@ fun ScheduleScreen() {
                                 Text(
                                     text = "No classes",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = MaterialTheme.colorScheme.onTertiary,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                                 )
                             }

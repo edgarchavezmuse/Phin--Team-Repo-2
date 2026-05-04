@@ -37,10 +37,10 @@ fun EventInputRow(
 ) {
     val accentRed = MaterialTheme.colorScheme.primary
     val cardColor = MaterialTheme.colorScheme.surface
-    val labelColor = MaterialTheme.colorScheme.onTertiary
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val textColor = MaterialTheme.colorScheme.onTertiary
-    val placeholderColor = MaterialTheme.colorScheme.onTertiary
-    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onTertiary
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -143,8 +143,8 @@ fun EventPickerRow(
     val cardColor = MaterialTheme.colorScheme.surface
     val labelColor = MaterialTheme.colorScheme.onTertiary
     val textColor = MaterialTheme.colorScheme.onTertiary
-    val placeholderColor = MaterialTheme.colorScheme.onTertiary
-    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onTertiary
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier
@@ -236,8 +236,8 @@ fun EventTextArea(
     val cardColor = MaterialTheme.colorScheme.surface
     val labelColor = MaterialTheme.colorScheme.onTertiary
     val textColor = MaterialTheme.colorScheme.onTertiary
-    val placeholderColor = MaterialTheme.colorScheme.onTertiary
-    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onTertiary
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier.fillMaxWidth(),

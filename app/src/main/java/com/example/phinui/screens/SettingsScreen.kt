@@ -95,7 +95,7 @@ fun SettingsScreen(
             text = "Settings",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimary
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -120,13 +120,13 @@ fun SettingsScreen(
                     Text(
                         text = "Dark Mode",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onTertiary
                     )
 
                     Text(
                         text = if (darkModeEnabled) "On" else "Off",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.65f)
                     )
                 }
 
@@ -136,7 +136,7 @@ fun SettingsScreen(
                         viewModel.setDarkMode(enabled)
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        checkedThumbColor = MaterialTheme.colorScheme.onTertiary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary
                     )
                 )
@@ -161,6 +161,7 @@ fun SettingsScreen(
                 Text(
                     text = "Bottom Bar",
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     textAlign = TextAlign.Left
                 )
 
@@ -194,7 +195,7 @@ fun SettingsScreen(
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.surface
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {
