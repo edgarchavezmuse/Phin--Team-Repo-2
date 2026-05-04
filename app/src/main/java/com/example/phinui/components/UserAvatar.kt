@@ -30,7 +30,7 @@ fun UserAvatar(
         modifier = modifier
             .size(size.dp)
             .clip(CircleShape)
-            .background(Color(0xFFFFEFEF)),
+            .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         if (!photoUrl.isNullOrBlank()) {
@@ -44,7 +44,7 @@ fun UserAvatar(
             Text(
                 text = initial,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFFD32F2F),
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
             )
         }

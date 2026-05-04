@@ -52,9 +52,9 @@ import androidx.compose.ui.window.Dialog
 import com.example.phinui.notifications.ReminderScheduler
 
 
-private val PrimaryRed = Color(0xFFE53935)
-private val SoftBackground = Color(0xFFFFFBFA)
-private val TextDark = Color(0xFF1F1F1F)
+//private val PrimaryRed = Color(0xFFE53935)
+//private val SoftBackground = Color(0xFFFFFBFA)
+//private val TextDark = Color(0xFF1F1F1F)
 private val TextMuted = Color(0xFF666666)
 private val selectedDateTitleFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
 
@@ -108,6 +108,10 @@ fun CalendarScreen(
     val displayedEventsGroupedByDate = groupEventsByDateForWeek(mergedEvents, currentWeekStartDate)
 
     val showDeleteConfirmation = remember { mutableStateOf(false) }
+
+    val PrimaryRed = MaterialTheme.colorScheme.primary
+    val SoftBackground = MaterialTheme.colorScheme.surface
+    val TextDark = MaterialTheme.colorScheme.onTertiary
 
     /*
      * Auto-refresh calendar when screen is reopened
@@ -244,7 +248,7 @@ fun CalendarScreen(
             Row(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
@@ -252,7 +256,7 @@ fun CalendarScreen(
                     onClick = onAddEventClick,
                     shape = RoundedCornerShape(22.dp),
                     colors = ButtonDefaults.textButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.primary
                     ),
                     contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)

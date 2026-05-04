@@ -66,6 +66,7 @@ import com.example.phinui.components.people.RemoveFriendDialog
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.MaterialTheme
 import com.example.phinui.ui.components.UserProfilePreviewDialog
 import com.example.phinui.data.model.PreviewUser
 
@@ -131,7 +132,7 @@ fun FriendsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 8.dp, vertical = 16.dp)
     ) {
         LazyColumn(
@@ -146,7 +147,7 @@ fun FriendsScreen(
                     text = "Friends",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = NavText
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -224,7 +225,7 @@ fun FriendsScreen(
                                 ) {
                                     Text(
                                         text = name,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -246,14 +247,14 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
                                         contentDescription = "Friend Options",
-                                        tint = NavText
+                                        tint = MaterialTheme.colorScheme.onTertiary
                                     )
                                 }
 
                                 DropdownMenu(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false },
-                                    containerColor = Background
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ) {
                                     DropdownMenuItem(
                                         text = {
@@ -261,7 +262,7 @@ fun FriendsScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.PersonRemove,
                                                     contentDescription = "Remove Friend",
-                                                    tint = NavText
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text("Remove Friend")
@@ -279,10 +280,10 @@ fun FriendsScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.Email,
                                                     contentDescription = "Send Message",
-                                                    tint = NavText
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Send Message", color = NavText)
+                                                Text("Send Message", color = MaterialTheme.colorScheme.onTertiary)
                                             }
                                         },
                                         onClick = {
@@ -297,10 +298,10 @@ fun FriendsScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.Block,
                                                     contentDescription = "Block User",
-                                                    tint = HeaderRed
+                                                    tint = MaterialTheme.colorScheme.primary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Block User", color = HeaderRed)
+                                                Text("Block User", color = MaterialTheme.colorScheme.primary)
                                             }
                                         },
                                         onClick = {
@@ -366,7 +367,7 @@ fun FriendsScreen(
                                 ) {
                                     Text(
                                         text = req.fromName,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -389,7 +390,7 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = "Accept Request",
-                                        tint = NavText
+                                        tint = MaterialTheme.colorScheme.onTertiary
                                     )
                                 }
 
@@ -403,7 +404,7 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Decline Request",
-                                        tint = HeaderRed
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
@@ -422,8 +423,8 @@ fun FriendsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(4.dp),
-            containerColor = HeaderRed,
-            contentColor = HeaderText
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.surface
         ) {
             Icon(
                 imageVector = Icons.Default.PersonAdd,
@@ -473,7 +474,7 @@ fun FriendsScreen(
     requestToAccept?.let { (requestId, fromUid, name) ->
         AlertDialog(
             onDismissRequest = { requestToAccept = null },
-            containerColor = Background,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text("Accept request?")
             },
@@ -508,14 +509,14 @@ fun FriendsScreen(
                         )
                     }
                 ) {
-                    Text("Accept", color = HeaderRed)
+                    Text("Accept", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { requestToAccept = null }
                 ) {
-                    Text("Cancel", color = NavText)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
                 }
             }
         )
@@ -524,7 +525,7 @@ fun FriendsScreen(
     requestToDecline?.let { (requestId, name) ->
         AlertDialog(
             onDismissRequest = { requestToDecline = null },
-            containerColor = Background,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text("Decline request?")
             },
@@ -558,14 +559,14 @@ fun FriendsScreen(
                         )
                     }
                 ) {
-                    Text("Decline", color = HeaderRed)
+                    Text("Decline", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { requestToDecline = null }
                 ) {
-                    Text("Cancel", color = NavText)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
                 }
             }
         )
@@ -606,7 +607,7 @@ private fun EmptyState(
 
         Text(
             text = title,
-            color = NavText,
+            color = TextMuted,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
