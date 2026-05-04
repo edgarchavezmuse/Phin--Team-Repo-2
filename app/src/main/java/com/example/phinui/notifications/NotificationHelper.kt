@@ -13,7 +13,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.example.phinui.MainActivity
 import com.example.phinui.R
 
 object NotificationHelper {

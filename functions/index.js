@@ -8,6 +8,8 @@ const acceptRequest = require("./acceptFriendRequestNotif");
 const newMessage = require("./newMessageNotif");
 const messageRequest = require("./messageRequestNotif");
 const acceptMessageRequest = require("./acceptMessageRequestNotif");
+const inviteStudySession = require("./inviteStudySessionNotif");
+const acceptInvite = require("./acceptInviteNotif");
 
 // exports to Firebase
 exports.sendFriendRequestNotification =
@@ -24,4 +26,10 @@ messageRequest.sendMessageRequestNotification;
 
 exports.sendAcceptMessageRequestNotification =
 acceptMessageRequest.sendAcceptMessageRequestNotification;
+
+exports.sendInviteNotification =
+inviteStudySession.sendInviteNotification;
+
+exports.sendAcceptInvite =
+acceptInvite.sendAcceptInviteNotification;
 
