@@ -59,6 +59,7 @@ import com.example.phinui.viewmodel.MainActivityViewModel
 fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
+    darkModeEnabled: Boolean,
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
@@ -575,7 +576,7 @@ fun PhinNavHost(
                     null
                 }
 
-            MapScreen(sharedPin = sharedPin)
+            MapScreen(sharedPin = sharedPin, darkMode = darkModeEnabled)
         }
 
         composable(Routes.SETTINGS) {

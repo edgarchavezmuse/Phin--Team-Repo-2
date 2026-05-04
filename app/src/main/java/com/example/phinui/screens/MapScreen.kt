@@ -71,9 +71,11 @@ import kotlinx.coroutines.tasks.await
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.google.android.gms.maps.model.MapStyleOptions
+
 
 @Composable
-fun MapScreen(sharedPin: CampusLocation? = null) {
+fun MapScreen(sharedPin: CampusLocation? = null, darkMode: Boolean) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -114,6 +116,17 @@ fun MapScreen(sharedPin: CampusLocation? = null) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(campusCenter, 16f)
     }
+
+    val darkMapStyle = """
+        [
+          { "elementType": "geometry", "stylers": [{ "color": "#121212" }] },
+          { "elementType": "labels.text.fill", "stylers": [{ "color": "#B0B0B0" }] },
+          { "elementType": "labels.text.stroke", "stylers": [{ "color": "#121212" }] },
+          { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#2C2C2C" }] },
+          { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] },
+          { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#1E1E1E" }] }
+        ]
+    """.trimIndent()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -236,7 +249,12 @@ fun MapScreen(sharedPin: CampusLocation? = null) {
                 isMyLocationEnabled = hasLocationPermission,
                 latLngBoundsForCameraTarget = campusBounds,
                 minZoomPreference = 15f,
-                maxZoomPreference = 20f
+                maxZoomPreference = 20f,
+                mapStyleOptions =  if (darkMode) {
+                    MapStyleOptions(darkMapStyle)
+                } else {
+                    null
+                }
             ),
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = true
