@@ -17,7 +17,9 @@ class PhinFirebaseMessagingService : FirebaseMessagingService() {
         "FRIEND_ACCEPTED",
         "NEW_MESSAGE",
         "MESSAGE_REQUEST",
-        "ACCEPT_MESSAGE_REQUEST"
+        "ACCEPT_MESSAGE_REQUEST",
+        "INVITE",
+        "ACCEPT_INVITE"
     )
 
     override fun onNewToken(token: String) {
