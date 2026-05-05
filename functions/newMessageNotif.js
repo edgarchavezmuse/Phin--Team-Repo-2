@@ -23,6 +23,7 @@ exports.sendNewMessageNotification = onDocumentCreated(
 
         const chatDoc = await db.collection("chats").doc(chatId).get();
         const chatData = chatDoc.data();
+        const mutedBy = chatData.mutedBy || [];
 
         if (!chatData || !chatData.participants) return null;
 
@@ -31,6 +32,11 @@ exports.sendNewMessageNotification = onDocumentCreated(
         );
 
         if (!receiverId) return null;
+
+        if (mutedBy.includes(receiverId)) {
+          console.log("Chat is muted by receiver. Skipping notification");
+          return null;
+        }
 
         const receiverDoc = await db.collection("users").doc(receiverId).get();
         const receiverData = receiverDoc.data();

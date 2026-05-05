@@ -60,6 +60,7 @@ import com.example.phinui.ui.screens.VendingStockScreen
 fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
+    darkModeEnabled: Boolean,
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
@@ -571,13 +572,16 @@ fun PhinNavHost(
 
             MapScreen(
                 navController = navController,
-                sharedPin = sharedPin
+                sharedPin = sharedPin,
+                darkMode = darkModeEnabled
             )
         }
 
         composable(Routes.MAP) {
             MapScreen(
-                navController = navController
+                navController = navController,
+                sharedPin = null,
+                darkMode = darkModeEnabled
             )
         }
 

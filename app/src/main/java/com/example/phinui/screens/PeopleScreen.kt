@@ -191,7 +191,7 @@ fun PeopleScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -199,7 +199,7 @@ fun PeopleScreen(
             text = "People",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = NavText
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -301,7 +301,7 @@ fun PeopleScreen(
                                 ) {
                                     Text(
                                         text = name,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -322,14 +322,14 @@ fun PeopleScreen(
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
                                         contentDescription = "Person Options",
-                                        tint = NavText
+                                        tint = MaterialTheme.colorScheme.onTertiary
                                     )
                                 }
 
                                 DropdownMenu(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false },
-                                    containerColor = Background
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ) {
                                     DropdownMenuItem(
                                         text = {
@@ -337,7 +337,7 @@ fun PeopleScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.PersonAdd,
                                                     contentDescription = "Add Friend",
-                                                    tint = NavText
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text("Add Friend")
@@ -364,10 +364,10 @@ fun PeopleScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.Email,
                                                     contentDescription = label,
-                                                    tint = NavText
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text(label, color = NavText)
+                                                Text(label, color = MaterialTheme.colorScheme.onTertiary)
                                             }
                                         },
                                         onClick = {
@@ -393,10 +393,10 @@ fun PeopleScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.Block,
                                                     contentDescription = "Block User",
-                                                    tint = HeaderRed
+                                                    tint = MaterialTheme.colorScheme.primary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Block User", color = HeaderRed)
+                                                Text("Block User", color = MaterialTheme.colorScheme.primary)
                                             }
                                         },
                                         onClick = {
@@ -452,7 +452,7 @@ fun PeopleScreen(
                                 ) {
                                     Text(
                                         text = name,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -472,7 +472,7 @@ fun PeopleScreen(
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Unblock User",
-                                    tint = HeaderRed
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }

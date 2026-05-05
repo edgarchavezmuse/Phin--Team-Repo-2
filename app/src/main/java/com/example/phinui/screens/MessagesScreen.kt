@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -76,7 +77,6 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.DeletedMessageColor
-import com.example.phinui.ui.theme.MessageBox
 import com.example.phinui.ui.theme.ReceiverUserColor
 import com.example.phinui.ui.theme.SenderUserColor
 import com.example.phinui.viewmodel.CalendarViewModel
@@ -93,6 +93,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.TimePickerDefaults
 
 @Composable
 fun MessagesScreen(
@@ -138,6 +141,9 @@ fun MessagesScreen(
     var showStudySessionInviteDialog by remember { mutableStateOf(false) }
 
     val state = userListViewModel.userState
+
+    var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
+    var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
 
     LaunchedEffect(state) {
         when (state) {
@@ -187,6 +193,14 @@ fun MessagesScreen(
         }
     }
 
+    LaunchedEffect(shouldScrollLatestTimestamp, messages) {
+        if (shouldScrollLatestTimestamp && messages.isNotEmpty()) {
+            delay(50)
+            autoScrollState.animateScrollToItem(messages.lastIndex)
+            shouldScrollLatestTimestamp = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -233,9 +247,12 @@ fun MessagesScreen(
             modifier = Modifier.weight(1f),
             reverseLayout = false,
             state = autoScrollState,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
-            items(messages) { message ->
+            items(
+                items = messages,
+                key = { message -> message["messageID"] as? String ?: message.hashCode().toString() }
+            ) { message ->
                 val type = message["type"] as? String ?: "text"
                 val text = message["text"] as? String ?: ""
 
@@ -262,304 +279,150 @@ fun MessagesScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(4.dp),
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
                     horizontalArrangement = if (isMyMessage) Arrangement.End else Arrangement.Start
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .widthIn(max = 250.dp)
-                            .background(
-                                color = when {
-                                    isDeleted -> DeletedMessageColor
-                                    isMyMessage -> SenderUserColor
-                                    else -> ReceiverUserColor
-                                }
-                            )
-                            .padding(12.dp)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onLongPress = {
-                                        if (isMyMessage && !isDeleted) {
-                                            selectedMessage.value = message
-                                            showDeleteDialog.value = true
-                                        }
-                                    }
-                                )
-                            }
-                    ) {
-                        if (isDeleted) {
-                            Text(
-                                text = "This message was deleted",
-                                fontStyle = FontStyle.Italic
-                            )
-                        } else {
-                            when (type) {
-                                "text" -> {
-                                    Text(
-                                        text = text,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                    MessageBubble(
+                        message = message,
+                        isMyMessage = isMyMessage,
+                        isDeleted = isDeleted,
+                        senderUserID = senderUserID,
+                        receiverUserID = receiverUserID,
+                        navController = navController,
+                        chatRepositoryViewModel = chatRepositoryViewModel,
+                        calendarViewModel = calendarViewModel,
+                        chatID = chatID,
+                        showTimestamp = messageID in visibleTimestampMessageIds,
+                        onTapMessage = {
+                            visibleTimestampMessageIds = visibleTimestampMessageIds + messageID
 
-                                "pin" -> {
-                                    val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
-
-                                    val pinId = pin["id"] as? String ?: ""
-                                    val pinName = pin["name"] as? String ?: "Shared Pin"
-                                    val pinCategory = pin["category"] as? String ?: ""
-                                    val pinBuilding = pin["building"] as? String ?: ""
-                                    val pinDescription = pin["description"] as? String ?: ""
-                                    val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
-                                    val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
-
-                                    Column {
-                                        Text(
-                                            text = pinName,
-                                            fontWeight = FontWeight.Bold
-                                        )
-
-                                        if (pinCategory.isNotBlank()) {
-                                            Text(
-                                                text = pinCategory.replaceFirstChar { it.uppercase() }
-                                            )
-                                        }
-
-                                        if (pinBuilding.isNotBlank()) {
-                                            Text(text = "Building: $pinBuilding")
-                                        }
-
-                                        if (pinDescription.isNotBlank()) {
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Text(text = pinDescription)
-                                        }
-
-                                        Spacer(modifier = Modifier.height(10.dp))
-
-                                        Button(
-                                            onClick = {
-                                                navController.navigate(
-                                                    Routes.mapRouteWithPin(
-                                                        pinId = pinId,
-                                                        pinName = pinName,
-                                                        pinCategory = pinCategory,
-                                                        pinLatitude = pinLatitude,
-                                                        pinLongitude = pinLongitude,
-                                                        pinBuilding = pinBuilding,
-                                                        pinDescription = pinDescription
-                                                    )
-                                                )
-                                            }
-                                        ) {
-                                            Text("Open Pin")
-                                        }
-                                    }
-                                }
-
-                                "invitation" -> {
-                                    Column {
-                                        Text(
-                                            text = studySessionTitle,
-                                            fontWeight = FontWeight.Bold
-                                        )
-
-                                        if (studySessionDescription.isNotEmpty()) {
-                                            Text(text = studySessionDescription)
-                                        }
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        Text("Date: $displayDate")
-                                        Text("Start time: $displayStartTime")
-                                        Text("End time: $displayEndTime")
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        when (myStatus) {
-                                            "PENDING" -> {
-                                                if (!isMyMessage) {
-                                                    Row {
-                                                        Button(
-                                                            onClick = {
-                                                                val createStudySessionEventTitle =
-                                                                    message["title"] as? String ?: "Study Session"
-                                                                val createStudySessionEventDescription =
-                                                                    message["description"] as? String ?: ""
-                                                                val createStudySessionEventStartTime =
-                                                                    message["startTime"] as? Timestamp
-                                                                val createStudySessionEventEndTime =
-                                                                    message["endTime"] as? Timestamp
-
-                                                                if (createStudySessionEventStartTime == null ||
-                                                                    createStudySessionEventEndTime == null
-                                                                ) {
-                                                                    return@Button
-                                                                }
-
-                                                                val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                                                val convertStudySessionEventStartTime =
-                                                                    createStudySessionEventStartTime
-                                                                        .toDate()
-                                                                        .toInstant()
-                                                                        .atZone(ZoneId.systemDefault())
-                                                                        .toLocalDateTime()
-                                                                        .format(timeFormatter)
-
-                                                                val convertStudySessionEventEndTime =
-                                                                    createStudySessionEventEndTime
-                                                                        .toDate()
-                                                                        .toInstant()
-                                                                        .atZone(ZoneId.systemDefault())
-                                                                        .toLocalDateTime()
-                                                                        .format(timeFormatter)
-
-                                                                val createStudySessionEvent = CalendarEvent(
-                                                                    id = "",
-                                                                    title = createStudySessionEventTitle,
-                                                                    description = createStudySessionEventDescription,
-                                                                    start = convertStudySessionEventStartTime,
-                                                                    end = convertStudySessionEventEndTime,
-                                                                    location = null,
-                                                                    reminderMinutes = emptyList(),
-                                                                    isAllDay = false,
-                                                                    colorHex = "0xFFE53935",
-                                                                    source = CalendarSource.LOCAL
-                                                                )
-
-                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = messageChatID,
-                                                                    messageID = messageID,
-                                                                    senderUserID = senderUserID,
-                                                                    invitationResponse = "ACCEPTED"
-                                                                )
-
-                                                                calendarViewModel.saveStudySessionEvent(createStudySessionEvent) { success ->
-                                                                    if (success) {
-                                                                        Toast.makeText(
-                                                                            context,
-                                                                            "$createStudySessionEventTitle added to your local calendar",
-                                                                            Toast.LENGTH_SHORT
-                                                                        ).show()
-                                                                    } else {
-                                                                        Toast.makeText(
-                                                                            context,
-                                                                            "Failed to add $createStudySessionEventTitle to your local calendar",
-                                                                            Toast.LENGTH_SHORT
-                                                                        ).show()
-                                                                    }
-                                                                }
-                                                            }
-                                                        ) {
-                                                            Text("Accept")
-                                                        }
-
-                                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                                        Button(
-                                                            onClick = {
-                                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                                    chatID = messageChatID,
-                                                                    messageID = messageID,
-                                                                    senderUserID = senderUserID,
-                                                                    invitationResponse = "DECLINED"
-                                                                )
-                                                            }
-                                                        ) {
-                                                            Text("Decline")
-                                                        }
-                                                    }
-                                                } else {
-                                                    Text("Pending response...")
-                                                }
-                                            }
-
-                                            "ACCEPTED" -> {
-                                                when (receiverStatus) {
-                                                    "PENDING" -> Text("Pending response...")
-                                                    "ACCEPTED" -> Text("Accepted")
-                                                    "DECLINED" -> Text("Declined")
-                                                }
-                                            }
-
-                                            "DECLINED" -> {
-                                                if (receiverStatus == "PENDING") {
-                                                    Text("Pending response...")
-                                                } else {
-                                                    Text("Declined")
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            val latestMessageId = messages.lastOrNull()?.get("messageID") as? String
+                            shouldScrollLatestTimestamp = (messageID == latestMessageId)
+                        },
+                        onHideTimestamp = {
+                            visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
+                        },
+                        onLongPressMine = {
+                            selectedMessage.value = message
+                            showDeleteDialog.value = true
                         }
-                    }
+                    )
                 }
             }
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            BasicTextField(
-                value = messageText,
-                onValueChange = { messageText = it },
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .background(MessageBox)
-                    .padding(16.dp),
-                textStyle = TextStyle(
-                    fontSize = 14.sp,
-                    color = Color.Black
-                )
-            )
-
-            Button(
-                onClick = {
-                    if (messageText.isNotBlank()) {
-                        chatRepositoryViewModel.callSendMessage(
-                            senderUserID,
-                            receiverUserID,
-                            messageText
-                        )
-                        messageText = ""
-                    }
-                }
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(32.dp)
+                    )
+                    .padding(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Send")
-            }
-
-            Box {
-                IconButton(
-                    onClick = {
-                        showAttachMenu = true
-                    }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                        .padding(start = 12.dp, end = 4.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Open attachment menu")
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicTextField(
+                            value = messageText,
+                            onValueChange = { messageText = it },
+                            modifier = Modifier.weight(1f),
+                            textStyle = TextStyle(
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onTertiary
+                            ),
+                            singleLine = true,
+                            decorationBox = { innerTextField ->
+                                if (messageText.isEmpty()) {
+                                    Text(
+                                        text = "Type a message...",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 15.sp
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+
+                        Button(
+                            onClick = {
+                                if (messageText.isNotBlank()) {
+                                    chatRepositoryViewModel.callSendMessage(
+                                        senderUserID,
+                                        receiverUserID,
+                                        messageText
+                                    )
+                                    messageText = ""
+                                }
+                            },
+                            modifier = Modifier.height(40.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
+                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            Text("Send", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    }
                 }
 
-                DropdownMenu(
-                    expanded = showAttachMenu,
-                    onDismissRequest = { showAttachMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Study session invite") },
-                        onClick = {
-                            showAttachMenu = false
-                            showStudySessionInviteDialog = true
-                        }
-                    )
+                Spacer(modifier = Modifier.width(4.dp))
 
-                    DropdownMenuItem(
-                        text = { Text("Share campus pin") },
-                        onClick = {
-                            showAttachMenu = false
-                            showPinPickerDialog = true
-                        }
-                    )
+                Box {
+                    IconButton(onClick = { showAttachMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Menu",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showAttachMenu,
+                        onDismissRequest = { showAttachMenu = false },
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Study session invite") },
+                            onClick = {
+                                showAttachMenu = false
+                                showStudySessionInviteDialog = true
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text("Share campus pin") },
+                            onClick = {
+                                showAttachMenu = false
+                                showPinPickerDialog = true
+                            }
+                        )
+                    }
                 }
             }
         }
+    }
 
         if (showStudySessionInviteDialog) {
             var studySessionTitle by remember { mutableStateOf("") }
@@ -569,7 +432,8 @@ fun MessagesScreen(
 
             AlertDialog(
                 onDismissRequest = { showStudySessionInviteDialog = false },
-                title = { Text("Create study session") },
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = { Text("Create study session", color = MaterialTheme.colorScheme.onTertiary) },
                 text = {
                     Column {
                         TextField(
@@ -802,6 +666,7 @@ fun MessagesScreen(
         if (showPinPickerDialog) {
             AlertDialog(
                 onDismissRequest = { showPinPickerDialog = false },
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = { Text("Share campus pin") },
                 text = {
                     LazyColumn(
@@ -844,7 +709,6 @@ fun MessagesScreen(
             )
         }
     }
-}
 
 fun convertToCalendarTimestamp(
     selectedStudyDate: String,
@@ -864,7 +728,7 @@ private fun EventDatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    val accentRed = Color(0xFFFF1F1F)
+    val accentRed = MaterialTheme.colorScheme.primary
 
     val initialMillis = remember(initialDate) {
         parseIsoDateToMillis(initialDate)
@@ -887,7 +751,7 @@ private fun EventDatePickerDialog(
                 enabled = datePickerState.selectedDateMillis != null,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accentRed,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onTertiary
                 ),
                 shape = RoundedCornerShape(14.dp)
             ) {
@@ -900,25 +764,25 @@ private fun EventDatePickerDialog(
             }
         },
         colors = DatePickerDefaults.colors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         DatePicker(
             state = datePickerState,
             showModeToggle = true,
             colors = DatePickerDefaults.colors(
-                containerColor = Color.White,
-                titleContentColor = Color.Black,
-                headlineContentColor = Color.Black,
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onTertiary,
+                headlineContentColor = MaterialTheme.colorScheme.onTertiary,
                 weekdayContentColor = Color.DarkGray,
                 subheadContentColor = Color.DarkGray,
                 selectedDayContainerColor = accentRed,
-                selectedDayContentColor = Color.White,
+                selectedDayContentColor = MaterialTheme.colorScheme.onTertiary,
                 todayDateBorderColor = accentRed,
                 todayContentColor = accentRed,
                 selectedYearContainerColor = accentRed,
-                selectedYearContentColor = Color.White,
-                dayContentColor = Color.Black,
+                selectedYearContentColor = MaterialTheme.colorScheme.onTertiary,
+                dayContentColor = MaterialTheme.colorScheme.onSurface,
                 disabledDayContentColor = Color.LightGray
             )
         )
@@ -965,10 +829,10 @@ private fun EventTimePickerDialog(
 
     var showDial by rememberSaveable { mutableStateOf(false) }
 
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFF7F5F2)
-    val titleColor = Color(0xFF111111)
-    val bodyColor = Color(0xFF444444)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val titleColor = MaterialTheme.colorScheme.onTertiary
+    val bodyColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1022,9 +886,39 @@ private fun EventTimePickerDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (showDial) {
-                        TimePicker(state = timePickerState)
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                selectorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     } else {
-                        TimeInput(state = timePickerState)
+                        TimeInput(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                // SELECTED (Hour/Minute box)
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                // UNSELECTED (Hour/Minute box)
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.onSecondary,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                // AM / PM
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
                     }
                 }
 
@@ -1052,7 +946,7 @@ private fun EventTimePickerDialog(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = accentRed,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         shape = RoundedCornerShape(14.dp)
                     ) {
@@ -1060,6 +954,327 @@ private fun EventTimePickerDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MessageBubble(
+    message: Map<String, Any>,
+    isMyMessage: Boolean,
+    isDeleted: Boolean,
+    senderUserID: String,
+    receiverUserID: String,
+    navController: NavController,
+    chatRepositoryViewModel: ChatRepositoryViewModel,
+    calendarViewModel: CalendarViewModel,
+    chatID: String,
+    showTimestamp: Boolean,
+    onTapMessage: () -> Unit,
+    onHideTimestamp: () -> Unit,
+    onLongPressMine: () -> Unit
+) {
+    val type = message["type"] as? String ?: "text"
+    val text = message["text"] as? String ?: ""
+    val messageID = message["messageID"] as? String ?: ""
+    val messageChatID = message["chatID"] as? String ?: ""
+    val startTime = message["startTime"] as? Timestamp
+    val endTime = message["endTime"] as? Timestamp
+
+    val studySessionTitle = message["title"] as? String ?: "Study Session"
+    val studySessionDescription = message["description"] as? String ?: ""
+    val participants = message["participants"] as? Map<String, String> ?: emptyMap()
+    val myStatus = participants[senderUserID] ?: "PENDING"
+    val receiverStatus = participants[receiverUserID] ?: "PENDING"
+
+    val convertDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
+    val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
+    val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
+    val displayEndTime = endTime?.toDate()?.let { convertTime.format(it) } ?: ""
+
+    val bubbleColor = when {
+        isDeleted -> DeletedMessageColor
+        //isMyMessage -> SenderUserColor
+        isMyMessage -> MaterialTheme.colorScheme.tertiaryContainer
+        //else -> ReceiverUserColor
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val bubbleShape = RoundedCornerShape(
+        topStart = 22.dp,
+        topEnd = 22.dp,
+        bottomStart = if (isMyMessage) 22.dp else 8.dp,
+        bottomEnd = if (isMyMessage) 8.dp else 22.dp
+    )
+
+    val sentAt = message["timestamp"] as? Timestamp
+    val timeText = sentAt?.toDate()?.let {
+        SimpleDateFormat("h:mm a", Locale.getDefault()).format(it)
+    }
+
+    LaunchedEffect(showTimestamp) {
+        if (showTimestamp) {
+            delay(5000)
+            onHideTimestamp()
+        }
+    }
+
+    Column(
+        horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
+    ) {
+        Box(
+            modifier = Modifier
+                .widthIn(max = 280.dp)
+                .background(
+                    color = bubbleColor,
+                    shape = bubbleShape
+                )
+                .combinedClickable(
+                    onClick = {
+                        onTapMessage()
+                    },
+                    onLongClick = {
+                        if (isMyMessage && !isDeleted) {
+                            onLongPressMine()
+                        }
+                    }
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            if (isDeleted) {
+                Text(
+                    text = "This message was deleted",
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+            } else {
+                when (type) {
+                    "text" -> {
+                        Text(
+                            text = text,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            lineHeight = 20.sp
+                        )
+                    }
+
+                    "pin" -> {
+                        val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
+
+                        val pinId = pin["id"] as? String ?: ""
+                        val pinName = pin["name"] as? String ?: "Shared Pin"
+                        val pinCategory = pin["category"] as? String ?: ""
+                        val pinBuilding = pin["building"] as? String ?: ""
+                        val pinDescription = pin["description"] as? String ?: ""
+                        val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
+                        val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
+
+                        Column {
+                            Text(
+                                text = pinName,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontSize = 16.sp
+                            )
+
+                            if (pinCategory.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = pinCategory.replaceFirstChar { it.uppercase() },
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+
+                            if (pinBuilding.isNotBlank()) {
+                                Text(
+                                    text = "Building: $pinBuilding",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+
+                            if (pinDescription.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = pinDescription,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 14.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Button(
+                                onClick = {
+                                    navController.navigate(
+                                        Routes.mapRouteWithPin(
+                                            pinId = pinId,
+                                            pinName = pinName,
+                                            pinCategory = pinCategory,
+                                            pinLatitude = pinLatitude,
+                                            pinLongitude = pinLongitude,
+                                            pinBuilding = pinBuilding,
+                                            pinDescription = pinDescription
+                                        )
+                                    )
+                                },
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text("Open Pin")
+                            }
+                        }
+                    }
+
+                    "invitation" -> {
+                        Column {
+                            Text(
+                                text = studySessionTitle,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontSize = 16.sp
+                            )
+
+                            if (studySessionDescription.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = studySessionDescription,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 14.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text("Date: $displayDate", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                            Text("Start time: $displayStartTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                            Text("End time: $displayEndTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            when (myStatus) {
+                                "PENDING" -> {
+                                    if (!isMyMessage) {
+                                        Row {
+                                            Button(
+                                                onClick = {
+                                                    val createStudySessionEventTitle =
+                                                        message["title"] as? String ?: "Study Session"
+                                                    val createStudySessionEventDescription =
+                                                        message["description"] as? String ?: ""
+                                                    val createStudySessionEventStartTime =
+                                                        message["startTime"] as? Timestamp
+                                                    val createStudySessionEventEndTime =
+                                                        message["endTime"] as? Timestamp
+
+                                                    if (createStudySessionEventStartTime == null ||
+                                                        createStudySessionEventEndTime == null
+                                                    ) {
+                                                        return@Button
+                                                    }
+
+                                                    val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                                                    val convertStudySessionEventStartTime =
+                                                        createStudySessionEventStartTime
+                                                            .toDate()
+                                                            .toInstant()
+                                                            .atZone(ZoneId.systemDefault())
+                                                            .toLocalDateTime()
+                                                            .format(timeFormatter)
+
+                                                    val convertStudySessionEventEndTime =
+                                                        createStudySessionEventEndTime
+                                                            .toDate()
+                                                            .toInstant()
+                                                            .atZone(ZoneId.systemDefault())
+                                                            .toLocalDateTime()
+                                                            .format(timeFormatter)
+
+                                                    val createStudySessionEvent = CalendarEvent(
+                                                        id = "",
+                                                        title = createStudySessionEventTitle,
+                                                        description = createStudySessionEventDescription,
+                                                        start = convertStudySessionEventStartTime,
+                                                        end = convertStudySessionEventEndTime,
+                                                        location = null,
+                                                        reminderMinutes = emptyList(),
+                                                        isAllDay = false,
+                                                        colorHex = "0xFFE53935",
+                                                        source = CalendarSource.LOCAL
+                                                    )
+
+                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                        chatID = messageChatID,
+                                                        messageID = messageID,
+                                                        senderUserID = senderUserID,
+                                                        invitationResponse = "ACCEPTED"
+                                                    )
+
+                                                    calendarViewModel.saveStudySessionEvent(createStudySessionEvent) {}
+                                                },
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Text("Accept")
+                                            }
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            Button(
+                                                onClick = {
+                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                        chatID = messageChatID,
+                                                        messageID = messageID,
+                                                        senderUserID = senderUserID,
+                                                        invitationResponse = "DECLINED"
+                                                    )
+                                                },
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Text("Decline")
+                                            }
+                                        }
+                                    } else {
+                                        Text(
+                                            "Pending response...",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    }
+                                }
+
+                                "ACCEPTED" -> {
+                                    when (receiverStatus) {
+                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        "DECLINED" -> Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                    }
+                                }
+
+                                "DECLINED" -> {
+                                    if (receiverStatus == "PENDING") {
+                                        Text("Pending response...", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                                    } else {
+                                        Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showTimestamp && !timeText.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = timeText,
+                fontSize = 11.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 6.dp)
+            )
         }
     }
 }

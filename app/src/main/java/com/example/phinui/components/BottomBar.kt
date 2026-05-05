@@ -72,7 +72,7 @@ fun CustomBottomBar(
             .fillMaxWidth()
             .navigationBarsPadding(),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        color = Background,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp
     ) {
         Box(
@@ -90,7 +90,7 @@ fun CustomBottomBar(
                     BottomBarItem(
                         label = item.label,
                         icon = item.icon,
-                        selected = currentRoute == item.route,
+                        selected = currentRoute?.startsWith(item.route) == true,
                         onClick = {
                             navController.navigate(item.route) {
                                 launchSingleTop = true
@@ -111,7 +111,7 @@ fun WaveBottomBar(waveAnimation: WaveAnimationState) {
             .fillMaxWidth()
             .navigationBarsPadding(),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        color = Background,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp
     ) {
         Box(
@@ -123,7 +123,7 @@ fun WaveBottomBar(waveAnimation: WaveAnimationState) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter),
-                waveColor = HeaderRed,
+                waveColor = MaterialTheme.colorScheme.primary,
                 height = 90.dp,
                 showShip = true,
                 shipSize = 18.dp,
@@ -145,9 +145,9 @@ fun BottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeBackground = Color(0xFFFFE3E3)
-    val activeColor = Color(0xFFD62828)
-    val inactiveColor = Color(0xFF2C2C2C)
+    val activeBackground = MaterialTheme.colorScheme.surfaceVariant
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.secondary
 
     Column(
         modifier = Modifier

@@ -76,13 +76,13 @@ fun ScheduleScreen() {
     var classToDelete by remember { mutableStateOf<ScheduleClass?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
-    val accentRed = Color(0xFFFF1F1F)
+    val accentRed = MaterialTheme.colorScheme.primary
     val editingClass by scheduleViewModel.editingClass.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(top = 24.dp)
     ) {
         LazyColumn(
@@ -100,7 +100,7 @@ fun ScheduleScreen() {
                     Text(
                         text = "Schedule",
                         fontSize = 28.sp,
-                        color = NavText,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         fontWeight = FontWeight.Bold
                     )
 
@@ -124,11 +124,11 @@ fun ScheduleScreen() {
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, accentRed)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         Text(
                             text = "+ Add Class",
-                            color = accentRed,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -140,13 +140,13 @@ fun ScheduleScreen() {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 4.dp
                     ) {
                         Text(
                             text = "No classes added yet.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onTertiary,
                             modifier = Modifier.padding(20.dp)
                         )
                     }
@@ -166,14 +166,14 @@ fun ScheduleScreen() {
                                 text = day,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onTertiary
                             )
 
                             if (dayClasses.isNotEmpty()) {
                                 Text(
                                     text = if (dayClasses.size == 1) "1 class" else "${dayClasses.size} classes",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onTertiary
                                 )
                             }
                         }
@@ -184,12 +184,12 @@ fun ScheduleScreen() {
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(18.dp),
-                                color = Color(0xFFFFFAFA)
+                                color = MaterialTheme.colorScheme.surface
                             ) {
                                 Text(
                                     text = "No classes",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onTertiary,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                                 )
                             }
@@ -256,7 +256,7 @@ fun ScheduleScreen() {
                             text = "Remove class?",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onTertiary
                         )
 
                         Text(
@@ -300,7 +300,7 @@ fun ScheduleScreen() {
                                     classToDelete = null
                                 }
                             ) {
-                                Text("Remove", color = accentRed)
+                                Text("Remove", color = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
@@ -328,7 +328,7 @@ private fun ScheduleClassCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 4.dp
     ) {
         Row(
@@ -358,7 +358,7 @@ private fun ScheduleClassCard(
                     text = "${scheduleClass.courseCode} • ${scheduleClass.courseName}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -387,7 +387,7 @@ private fun ScheduleClassCard(
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
                         contentDescription = "Class options",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -396,8 +396,8 @@ private fun ScheduleClassCard(
                     onDismissRequest = { menuExpanded = false },
                     offset = DpOffset(x = (-8).dp, y = 4.dp),
                     shape = RoundedCornerShape(16.dp),
-                    containerColor = Color.White,
-                    tonalElevation = 2.dp,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
                     shadowElevation = 8.dp
                 ) {
                     DropdownMenuItem(
@@ -408,7 +408,7 @@ private fun ScheduleClassCard(
                                 Icon(
                                     imageVector = Icons.Outlined.Edit,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(18.dp)
                                 )
 
@@ -420,7 +420,7 @@ private fun ScheduleClassCard(
                                     text = "Edit",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onTertiary
                                 )
                             }
                         },
@@ -438,7 +438,7 @@ private fun ScheduleClassCard(
                                 Icon(
                                     imageVector = Icons.Outlined.Delete,
                                     contentDescription = null,
-                                    tint = accentRed,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
 
@@ -450,7 +450,7 @@ private fun ScheduleClassCard(
                                     text = "Delete",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = accentRed
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         },
@@ -497,7 +497,8 @@ private fun SwipeToDeleteScheduleCard(
                     .fillMaxHeight()
                     .width(actionWidth),
                 shape = RoundedCornerShape(18.dp),
-                color = accentRed.copy(alpha = 0.12f)
+                //color = accentRed.copy(alpha = 0.12f)
+                color = MaterialTheme.colorScheme.primary
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -507,7 +508,7 @@ private fun SwipeToDeleteScheduleCard(
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = "Delete class",
-                            tint = accentRed
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -535,7 +536,7 @@ private fun SwipeToDeleteScheduleCard(
         ) {
             ScheduleClassCard(
                 scheduleClass = scheduleClass,
-                accentRed = accentRed,
+                accentRed = MaterialTheme.colorScheme.primary,
                 onEdit = {
                     offsetX = 0f
                     onEdit()

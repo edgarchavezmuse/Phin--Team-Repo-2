@@ -32,7 +32,7 @@ fun UserProfilePreviewDialog(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         dragHandle = {
             BottomSheetDefaults.DragHandle(
@@ -57,7 +57,7 @@ fun UserProfilePreviewDialog(
 
             Text(
                 text = if (name.isNotBlank()) name else "No Name",
-                color = NavText,
+                color = MaterialTheme.colorScheme.onTertiary,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -84,7 +84,7 @@ fun UserProfilePreviewDialog(
                     Icon(
                         imageVector = Icons.Outlined.Email,
                         contentDescription = null,
-                        tint = HeaderRed
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 label = "Email Address",
@@ -98,7 +98,7 @@ fun UserProfilePreviewDialog(
                     Icon(
                         imageVector = Icons.Outlined.School,
                         contentDescription = null,
-                        tint = HeaderRed
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 label = "Major",
@@ -112,7 +112,7 @@ fun UserProfilePreviewDialog(
                     Icon(
                         imageVector = Icons.Outlined.ShortText,
                         contentDescription = null,
-                        tint = HeaderRed
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 label = "Bio",
@@ -126,7 +126,7 @@ fun UserProfilePreviewDialog(
             ) {
                 Text(
                     text = "Close",
-                    color = HeaderRed,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -148,7 +148,7 @@ private fun PreviewInfoRow(
             modifier = Modifier
                 .size(42.dp)
                 .background(
-                    color = Color(0xFFFFEBEE),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp)
                 ),
             contentAlignment = Alignment.Center
@@ -172,7 +172,7 @@ private fun PreviewInfoRow(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                color = NavText
+                color = MaterialTheme.colorScheme.onTertiary
             )
         }
     }

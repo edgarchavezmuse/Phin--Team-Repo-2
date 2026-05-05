@@ -52,10 +52,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.material.icons.outlined.Edit
 
-private val TextDark = Color(0xFF1E1E1E)
-private val TextMuted = Color(0xFF6F6F6F)
-private val BrandRed = Color(0xFFFF1F1F)
-
 @Composable
 fun CourseScheduleWidget(
     classes: List<ScheduleClass>,
@@ -70,6 +66,10 @@ fun CourseScheduleWidget(
     val filteredClasses = classes
         .filter { it.days.contains(selectedDay) }
         .sortedBy { it.startTime }
+
+    val TextDark = MaterialTheme.colorScheme.onTertiary
+    val TextMuted = MaterialTheme.colorScheme.onTertiary
+    val BrandRed = MaterialTheme.colorScheme.primary
 
     if (classToDelete != null) {
         Dialog(onDismissRequest = { classToDelete = null }) {
@@ -204,7 +204,7 @@ fun CourseScheduleWidget(
 
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFFFEAEA),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -346,8 +346,8 @@ fun CourseScheduleWidget(
                                         onDismissRequest = { menuExpanded = false },
                                         offset = DpOffset(x = (-8).dp, y = 4.dp),
                                         shape = RoundedCornerShape(16.dp),
-                                        containerColor = Color.White,
-                                        tonalElevation = 2.dp,
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                        tonalElevation = 0.dp,
                                         shadowElevation = 8.dp
                                     ) {
                                         DropdownMenuItem(
@@ -358,7 +358,7 @@ fun CourseScheduleWidget(
                                                     Icon(
                                                         imageVector = Icons.Outlined.Edit,
                                                         contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        tint = MaterialTheme.colorScheme.onTertiary,
                                                         modifier = Modifier.size(18.dp)
                                                     )
 

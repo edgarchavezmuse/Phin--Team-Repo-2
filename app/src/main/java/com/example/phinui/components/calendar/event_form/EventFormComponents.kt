@@ -35,19 +35,19 @@ fun EventInputRow(
     isActive: Boolean = false,
     trailingIcon: ImageVector? = null
 ) {
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFFDFDFD)
-    val labelColor = Color(0xFF7A766F)
-    val textColor = Color(0xFF1F1F1F)
-    val placeholderColor = Color(0xFF9A948C)
-    val indicatorColor = if (isActive) accentRed else Color(0xFFD8D2CB)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = MaterialTheme.colorScheme.onTertiary
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         color = cardColor,
         tonalElevation = 0.dp,
-        shadowElevation = 1.dp
+        shadowElevation = 4.dp
     ) {
         Row(
             modifier = Modifier
@@ -139,12 +139,12 @@ fun EventPickerRow(
     modifier: Modifier = Modifier,
     isActive: Boolean = false
 ) {
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFFDFDFD)
-    val labelColor = Color(0xFF7A766F)
-    val textColor = Color(0xFF1F1F1F)
-    val placeholderColor = Color(0xFF9A948C)
-    val indicatorColor = if (isActive) accentRed else Color(0xFFD8D2CB)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val labelColor = MaterialTheme.colorScheme.onTertiary
+    val textColor = MaterialTheme.colorScheme.onTertiary
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier
@@ -153,7 +153,7 @@ fun EventPickerRow(
         shape = RoundedCornerShape(18.dp),
         color = cardColor,
         tonalElevation = 0.dp,
-        shadowElevation = 1.dp
+        shadowElevation = 4.dp
     ) {
         Row(
             modifier = Modifier
@@ -232,12 +232,12 @@ fun EventTextArea(
     modifier: Modifier = Modifier,
     isActive: Boolean = false
 ) {
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFFDFDFD)
-    val labelColor = Color(0xFF7A766F)
-    val textColor = Color(0xFF1F1F1F)
-    val placeholderColor = Color(0xFF9A948C)
-    val indicatorColor = if (isActive) accentRed else Color(0xFFD8D2CB)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val labelColor = MaterialTheme.colorScheme.onTertiary
+    val textColor = MaterialTheme.colorScheme.onTertiary
+    val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor = if (isActive) accentRed else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier.fillMaxWidth(),
