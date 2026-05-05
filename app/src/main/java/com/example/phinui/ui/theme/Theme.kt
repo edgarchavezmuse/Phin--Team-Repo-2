@@ -11,7 +11,7 @@ private val LightColorScheme = lightColorScheme(
     primary = HeaderRed,
     secondary = NavText,
     tertiary = NavText,
-    background = Background,
+    background = MessageBox,
     surface = Background,
     onPrimary = HeaderText,
     onSecondary = DarkTextMuted,
@@ -19,7 +19,7 @@ private val LightColorScheme = lightColorScheme(
     onBackground = DeletedMessageColor,
     onSurface = NavText,
     surfaceVariant = LightPink,
-    primaryContainer = DarkHeaderRed,
+    primaryContainer = ReceiverUserColor,
     tertiaryContainer = SenderUserColor
 )
 
@@ -27,7 +27,7 @@ private val DarkColorScheme = darkColorScheme(
     primary = DarkHeaderRed,
     secondary = DarkTextSecondary,
     tertiary = NavText,
-    background = DarkBackground,
+    background = MessageBox,
     surface = DarkSurface,
     onPrimary = DarkOnPrimary,
     onSecondary = TextMuted,
@@ -35,7 +35,7 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = DarkTextPrimary,
     onSurface = DarkTextPrimary,
     surfaceVariant = DarkLightPink,
-    primaryContainer = DarkHeaderRed,
+    primaryContainer = ReceiverUserColor,
     tertiaryContainer = SenderUserColor
 )
 

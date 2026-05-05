@@ -61,7 +61,7 @@ fun EventTimePickerDialog(
     val accentRed = MaterialTheme.colorScheme.primary
     val cardColor = MaterialTheme.colorScheme.surface
     val titleColor = MaterialTheme.colorScheme.onTertiary
-    val bodyColor = Color(0xFF444444)
+    val bodyColor = MaterialTheme.colorScheme.primary //Color(0xFF444444)
 
     Dialog(
         onDismissRequest = onDismiss,

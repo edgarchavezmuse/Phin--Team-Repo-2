@@ -320,7 +320,7 @@ fun MessagesScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = MaterialTheme.colorScheme.surface,
+                        color = MaterialTheme.colorScheme.background,
                         shape = RoundedCornerShape(32.dp)
                     )
                     .padding(6.dp),
@@ -393,7 +393,7 @@ fun MessagesScreen(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Menu",
-                            tint = MaterialTheme.colorScheme.onTertiary
+                            tint = MaterialTheme.colorScheme.tertiary
                         )
                     }
 
@@ -967,7 +967,7 @@ private fun MessageBubble(
         //isMyMessage -> SenderUserColor
         isMyMessage -> MaterialTheme.colorScheme.tertiaryContainer
         //else -> ReceiverUserColor
-        else -> MaterialTheme.colorScheme.onSecondary
+        else -> MaterialTheme.colorScheme.primaryContainer
     }
 
     val bubbleShape = RoundedCornerShape(

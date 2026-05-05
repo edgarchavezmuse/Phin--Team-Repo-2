@@ -12,7 +12,7 @@ val MessageBox = Color(0xD2D2D2C9)
 val SelectedPill = Color(0x40F4141C)
 val NavText = Color(0xFF000000)
 val PrimaryRed = Color(0xFFE53935)
-val SoftBackground = Color(0xFFFFE3E3)
+val SoftBackground = Color(0xFF2A2A2A)
 val TextMuted = Color(0xFF666666)
 val LightPink = Color(0xFFFFEAEA)
 
