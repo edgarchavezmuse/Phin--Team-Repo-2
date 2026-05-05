@@ -43,6 +43,9 @@ import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.PrimaryRed
 import com.example.phinui.viewmodel.SettingsViewModel
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 
 enum class BottomBarType {
     ON, OFF, WAVE
@@ -67,6 +70,10 @@ fun SettingsScreen(
         .collectAsState()
         .value ?: BottomBarType.ON
 
+    val darkModeEnabled = viewModel.darkModeEnabled
+        .collectAsState()
+        .value
+
     val options = listOf(
         BottomBarOption(BottomBarType.ON, "On"),
         BottomBarOption(BottomBarType.OFF, "Off"),
@@ -79,7 +86,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -88,10 +95,55 @@ fun SettingsScreen(
             text = "Settings",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = NavText
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        // dark mode toggle
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Dark Mode",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+
+                    Text(
+                        text = if (darkModeEnabled) "On" else "Off",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.65f)
+                    )
+                }
+
+                Switch(
+                    checked = darkModeEnabled,
+                    onCheckedChange = { enabled ->
+                        viewModel.setDarkMode(enabled)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onTertiary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // toggle bottom bar
         ElevatedCard(
@@ -109,6 +161,7 @@ fun SettingsScreen(
                 Text(
                     text = "Bottom Bar",
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     textAlign = TextAlign.Left
                 )
 
@@ -141,8 +194,8 @@ fun SettingsScreen(
                 .height(48.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
-                containerColor = PrimaryRed,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.surface
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {

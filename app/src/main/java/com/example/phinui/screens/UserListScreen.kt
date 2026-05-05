@@ -184,14 +184,14 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.MoreVert,
                                                 contentDescription = "Options",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
                                         DropdownMenu(
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
@@ -199,10 +199,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.PersonRemove,
                                                             contentDescription = "Remove Friend",
-                                                            tint = NavText
+                                                            tint = MaterialTheme.colorScheme.onTertiary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Remove Friend", color = NavText)
+                                                        Text("Remove Friend", color = MaterialTheme.colorScheme.onTertiary)
                                                     }
                                                 },
                                                 onClick = {
@@ -217,10 +217,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
-                                                            tint = HeaderRed
+                                                            tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = HeaderRed)
+                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 },
                                                 onClick = {
@@ -313,14 +313,14 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.MoreVert,
                                                 contentDescription = "Options",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
                                         DropdownMenu(
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
@@ -328,10 +328,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.PersonAdd,
                                                             contentDescription = "Add Friend",
-                                                            tint = NavText
+                                                            tint = MaterialTheme.colorScheme.onTertiary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Add Friend", color = NavText)
+                                                        Text("Add Friend", color = MaterialTheme.colorScheme.onTertiary)
                                                     }
                                                 },
                                                 onClick = {
@@ -347,10 +347,10 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
-                                                            tint = HeaderRed
+                                                            tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = HeaderRed)
+                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 },
                                                 onClick = {
@@ -443,7 +443,7 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = "Accept Request",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
@@ -453,7 +453,7 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "Decline Request",
-                                                tint = HeaderRed
+                                                tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
@@ -651,7 +651,7 @@ fun UserListItem(
                         text = user.name,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1C1C1E)
+                            color = MaterialTheme.colorScheme.onTertiary
                         ),
                         maxLines = 1
                     )
@@ -662,7 +662,7 @@ fun UserListItem(
                         Text(
                             text = timeText,
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Color(0xFF8E8E93)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                     }
@@ -673,7 +673,7 @@ fun UserListItem(
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = Color(0xFF8E8E93),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp
                         ),
                         maxLines = 2,
@@ -689,7 +689,7 @@ fun UserListItem(
         }
 
         HorizontalDivider(
-            color = Color(0xFFEAEAEA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             thickness = 0.8.dp,
             modifier = Modifier.padding(start = 64.dp, end = 8.dp)
         )

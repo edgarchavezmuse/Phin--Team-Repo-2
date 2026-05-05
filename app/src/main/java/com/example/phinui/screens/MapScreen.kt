@@ -71,9 +71,11 @@ import kotlinx.coroutines.tasks.await
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.google.android.gms.maps.model.MapStyleOptions
+
 
 @Composable
-fun MapScreen(sharedPin: CampusLocation? = null) {
+fun MapScreen(sharedPin: CampusLocation? = null, darkMode: Boolean) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -114,6 +116,17 @@ fun MapScreen(sharedPin: CampusLocation? = null) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(campusCenter, 16f)
     }
+
+    val darkMapStyle = """
+        [
+          { "elementType": "geometry", "stylers": [{ "color": "#121212" }] },
+          { "elementType": "labels.text.fill", "stylers": [{ "color": "#B0B0B0" }] },
+          { "elementType": "labels.text.stroke", "stylers": [{ "color": "#121212" }] },
+          { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#2C2C2C" }] },
+          { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] },
+          { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#1E1E1E" }] }
+        ]
+    """.trimIndent()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -236,7 +249,12 @@ fun MapScreen(sharedPin: CampusLocation? = null) {
                 isMyLocationEnabled = hasLocationPermission,
                 latLngBoundsForCameraTarget = campusBounds,
                 minZoomPreference = 15f,
-                maxZoomPreference = 20f
+                maxZoomPreference = 20f,
+                mapStyleOptions =  if (darkMode) {
+                    MapStyleOptions(darkMapStyle)
+                } else {
+                    null
+                }
             ),
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = true
@@ -299,10 +317,10 @@ fun MapScreen(sharedPin: CampusLocation? = null) {
                 placeholder = { Text("Search for a place") },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    disabledContainerColor = Color.White,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
                     disabledBorderColor = Color.Transparent,
-                    disabledTextColor = Color.Black,
-                    disabledPlaceholderColor = Color.Gray
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -312,7 +330,7 @@ fun MapScreen(sharedPin: CampusLocation? = null) {
                 .align(Alignment.TopCenter)
                 .padding(top = 96.dp)
                 .shadow(8.dp, RoundedCornerShape(24.dp))
-                .background(Color.White, RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             CategoryFilterBar(
@@ -370,8 +388,19 @@ fun CategoryFilterBar(
             FilterChip(
                 selected = selectedCategory == value,
                 onClick = { onCategorySelected(value) },
-                label = { Text(label) },
-                colors = FilterChipDefaults.filterChipColors()
+                label = {
+                    Text(
+                        label,
+                        color = if (selectedCategory == value)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
         }
     }
@@ -396,7 +425,7 @@ fun PinInfoCard(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
@@ -411,6 +440,7 @@ fun PinInfoCard(
                     Text(
                         text = location.name,
                         style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -418,7 +448,7 @@ fun PinInfoCard(
                         modifier = Modifier
                             .padding(start = 12.dp)
                             .background(
-                                color = Color(0xFFD32F2F),
+                                color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(50)
                             )
                             .clickable { onDismiss() }
@@ -426,7 +456,7 @@ fun PinInfoCard(
                     ) {
                         Text(
                             text = "Close",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
@@ -436,7 +466,7 @@ fun PinInfoCard(
                     Text(
                         text = location.category.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
@@ -445,6 +475,7 @@ fun PinInfoCard(
                     Text(
                         text = location.description,
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -452,7 +483,7 @@ fun PinInfoCard(
                 Text(
                     text = "Lat: ${location.latitude}, Lng: ${location.longitude}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
@@ -475,7 +506,7 @@ fun PinInfoCard(
                 ) {
                     Text(
                         text = "Directions",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         style = MaterialTheme.typography.labelLarge
                     )
                 }

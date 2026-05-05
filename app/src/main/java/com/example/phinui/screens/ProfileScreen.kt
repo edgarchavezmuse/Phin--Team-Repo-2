@@ -186,7 +186,7 @@ fun ProfileScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -197,11 +197,11 @@ fun ProfileScreen(navController: NavHostController) {
             AlertDialog(
                 onDismissRequest = { showConfirm = false },
                 shape = RoundedCornerShape(24.dp),
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = {
                     Text(
                         text = "Remove Photo?",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.headlineSmall
                     )
@@ -209,7 +209,7 @@ fun ProfileScreen(navController: NavHostController) {
                 text = {
                     Text(
                         text = "Are you sure you want to remove your profile photo?",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 },
@@ -219,7 +219,7 @@ fun ProfileScreen(navController: NavHostController) {
                     ) {
                         Text(
                             text = "Cancel",
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onTertiary,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -233,7 +233,7 @@ fun ProfileScreen(navController: NavHostController) {
                     ) {
                         Text(
                             text = "Remove",
-                            color = PrimaryRed,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -245,7 +245,7 @@ fun ProfileScreen(navController: NavHostController) {
             text = "My Profile",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = NavText
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -257,7 +257,7 @@ fun ProfileScreen(navController: NavHostController) {
             Surface(
                 modifier = Modifier.size(96.dp),
                 shape = CircleShape,
-                color = Color(0xFFFFEFEF)
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 if (!photoUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -274,7 +274,7 @@ fun ProfileScreen(navController: NavHostController) {
                         Text(
                             text = initial,
                             style = MaterialTheme.typography.headlineMedium,
-                            color = Color(0xFFD32F2F)
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -298,15 +298,15 @@ fun ProfileScreen(navController: NavHostController) {
                 Icon(
                     imageVector = if (isEditing) Icons.Outlined.CameraAlt else Icons.Outlined.Edit,
                     contentDescription = if (isEditing) "Change profile photo" else "Edit profile",
-                    tint = Color(0xFFD32F2F),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
                 )
 
                 DropdownMenu(
                     expanded = showPhotoMenu,
                     onDismissRequest = { showPhotoMenu = false },
-                    containerColor = Color.White,
-                    tonalElevation = 2.dp,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
                     shadowElevation = 6.dp
                 ) {
                     DropdownMenuItem(
@@ -321,7 +321,7 @@ fun ProfileScreen(navController: NavHostController) {
 
                     if (!photoUrl.isNullOrBlank()) {
                         DropdownMenuItem(
-                            text = { Text("Remove Photo", color = Color.Red) },
+                            text = { Text("Remove Photo", color = MaterialTheme.colorScheme.primary) },
                             onClick = {
                                 showPhotoMenu = false
                                 showConfirm = true
@@ -346,7 +346,7 @@ fun ProfileScreen(navController: NavHostController) {
         Text(
             text = if (name.isNotBlank()) name else "No Name",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -420,7 +420,7 @@ fun ProfileScreen(navController: NavHostController) {
                                 Icon(
                                     imageVector = Icons.Outlined.Person,
                                     contentDescription = null,
-                                    tint = Color(0xFFD32F2F)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             label = "Full Name",
@@ -434,7 +434,7 @@ fun ProfileScreen(navController: NavHostController) {
                                 Icon(
                                     imageVector = Icons.Outlined.Email,
                                     contentDescription = null,
-                                    tint = Color(0xFFD32F2F)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             label = "Email Address",
@@ -448,7 +448,7 @@ fun ProfileScreen(navController: NavHostController) {
                                 Icon(
                                     imageVector = Icons.Outlined.School,
                                     contentDescription = null,
-                                    tint = Color(0xFFD32F2F)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             label = "Major",
@@ -462,7 +462,7 @@ fun ProfileScreen(navController: NavHostController) {
                                 Icon(
                                     imageVector = Icons.Outlined.ShortText,
                                     contentDescription = null,
-                                    tint = Color(0xFFD32F2F)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             label = "Bio",
@@ -477,7 +477,7 @@ fun ProfileScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = errorMessage ?: "",
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -523,7 +523,7 @@ fun ProfileScreen(navController: NavHostController) {
                 ) {
                     Text(
                         text = "Cancel",
-                        color = Color(0xFFD32F2F),
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -557,8 +557,8 @@ fun ProfileScreen(navController: NavHostController) {
                         .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryRed,
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary
                     ),
                     enabled = !isSaving && !isUploadingPhoto
                 ) {
@@ -581,8 +581,8 @@ fun ProfileScreen(navController: NavHostController) {
                     .height(48.dp),
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryRed,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
@@ -611,7 +611,7 @@ fun ProfileInfoRow(
             modifier = Modifier
                 .size(42.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFFFEBEE)),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             icon()
@@ -629,7 +629,7 @@ fun ProfileInfoRow(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onTertiary
             )
         }
     }

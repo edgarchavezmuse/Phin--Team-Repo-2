@@ -95,6 +95,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.TimePickerDefaults
 
 @Composable
 fun MessagesScreen(
@@ -320,7 +321,7 @@ fun MessagesScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = Color(0xFFF4F1ED),
+                        color = MaterialTheme.colorScheme.background,
                         shape = RoundedCornerShape(32.dp)
                     )
                     .padding(6.dp),
@@ -331,7 +332,7 @@ fun MessagesScreen(
                         .weight(1f)
                         .height(48.dp)
                         .background(
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             shape = RoundedCornerShape(24.dp)
                         )
                         .padding(start = 12.dp, end = 4.dp),
@@ -347,14 +348,14 @@ fun MessagesScreen(
                             modifier = Modifier.weight(1f),
                             textStyle = TextStyle(
                                 fontSize = 15.sp,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onTertiary
                             ),
                             singleLine = true,
                             decorationBox = { innerTextField ->
                                 if (messageText.isEmpty()) {
                                     Text(
                                         text = "Type a message...",
-                                        color = Color(0xFF9E9E9E),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 15.sp
                                     )
                                 }
@@ -376,12 +377,12 @@ fun MessagesScreen(
                             modifier = Modifier.height(40.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF1F1F),
-                                contentColor = Color.White
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
                             ),
                             contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
-                            Text("Send", fontWeight = FontWeight.SemiBold)
+                            Text("Send", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 }
@@ -392,13 +393,15 @@ fun MessagesScreen(
                     IconButton(onClick = { showAttachMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Menu"
+                            contentDescription = "Menu",
+                            tint = MaterialTheme.colorScheme.tertiary
                         )
                     }
 
                     DropdownMenu(
                         expanded = showAttachMenu,
-                        onDismissRequest = { showAttachMenu = false }
+                        onDismissRequest = { showAttachMenu = false },
+                        containerColor = MaterialTheme.colorScheme.surface
                     ) {
                         DropdownMenuItem(
                             text = { Text("Study session invite") },
@@ -429,7 +432,8 @@ fun MessagesScreen(
 
             AlertDialog(
                 onDismissRequest = { showStudySessionInviteDialog = false },
-                title = { Text("Create study session") },
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = { Text("Create study session", color = MaterialTheme.colorScheme.onTertiary) },
                 text = {
                     Column {
                         TextField(
@@ -662,6 +666,7 @@ fun MessagesScreen(
         if (showPinPickerDialog) {
             AlertDialog(
                 onDismissRequest = { showPinPickerDialog = false },
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = { Text("Share campus pin") },
                 text = {
                     LazyColumn(
@@ -723,7 +728,7 @@ private fun EventDatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    val accentRed = Color(0xFFFF1F1F)
+    val accentRed = MaterialTheme.colorScheme.primary
 
     val initialMillis = remember(initialDate) {
         parseIsoDateToMillis(initialDate)
@@ -746,7 +751,7 @@ private fun EventDatePickerDialog(
                 enabled = datePickerState.selectedDateMillis != null,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accentRed,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onTertiary
                 ),
                 shape = RoundedCornerShape(14.dp)
             ) {
@@ -759,25 +764,25 @@ private fun EventDatePickerDialog(
             }
         },
         colors = DatePickerDefaults.colors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         DatePicker(
             state = datePickerState,
             showModeToggle = true,
             colors = DatePickerDefaults.colors(
-                containerColor = Color.White,
-                titleContentColor = Color.Black,
-                headlineContentColor = Color.Black,
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onTertiary,
+                headlineContentColor = MaterialTheme.colorScheme.onTertiary,
                 weekdayContentColor = Color.DarkGray,
                 subheadContentColor = Color.DarkGray,
                 selectedDayContainerColor = accentRed,
-                selectedDayContentColor = Color.White,
+                selectedDayContentColor = MaterialTheme.colorScheme.onTertiary,
                 todayDateBorderColor = accentRed,
                 todayContentColor = accentRed,
                 selectedYearContainerColor = accentRed,
-                selectedYearContentColor = Color.White,
-                dayContentColor = Color.Black,
+                selectedYearContentColor = MaterialTheme.colorScheme.onTertiary,
+                dayContentColor = MaterialTheme.colorScheme.onSurface,
                 disabledDayContentColor = Color.LightGray
             )
         )
@@ -824,10 +829,10 @@ private fun EventTimePickerDialog(
 
     var showDial by rememberSaveable { mutableStateOf(false) }
 
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFF7F5F2)
-    val titleColor = Color(0xFF111111)
-    val bodyColor = Color(0xFF444444)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val titleColor = MaterialTheme.colorScheme.onTertiary
+    val bodyColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -881,9 +886,39 @@ private fun EventTimePickerDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (showDial) {
-                        TimePicker(state = timePickerState)
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                selectorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     } else {
-                        TimeInput(state = timePickerState)
+                        TimeInput(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                // SELECTED (Hour/Minute box)
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                // UNSELECTED (Hour/Minute box)
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.onSecondary,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                // AM / PM
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
                     }
                 }
 
@@ -911,7 +946,7 @@ private fun EventTimePickerDialog(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = accentRed,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         shape = RoundedCornerShape(14.dp)
                     ) {
@@ -960,8 +995,10 @@ private fun MessageBubble(
 
     val bubbleColor = when {
         isDeleted -> DeletedMessageColor
-        isMyMessage -> SenderUserColor
-        else -> ReceiverUserColor
+        //isMyMessage -> SenderUserColor
+        isMyMessage -> MaterialTheme.colorScheme.tertiaryContainer
+        //else -> ReceiverUserColor
+        else -> MaterialTheme.colorScheme.primaryContainer
     }
 
     val bubbleShape = RoundedCornerShape(
@@ -1009,7 +1046,7 @@ private fun MessageBubble(
                 Text(
                     text = "This message was deleted",
                     fontStyle = FontStyle.Italic,
-                    color = Color.DarkGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
             } else {
@@ -1019,7 +1056,7 @@ private fun MessageBubble(
                             text = text,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.tertiary,
                             lineHeight = 20.sp
                         )
                     }
@@ -1039,6 +1076,7 @@ private fun MessageBubble(
                             Text(
                                 text = pinName,
                                 fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 16.sp
                             )
 
@@ -1047,7 +1085,7 @@ private fun MessageBubble(
                                 Text(
                                     text = pinCategory.replaceFirstChar { it.uppercase() },
                                     fontSize = 13.sp,
-                                    color = Color.DarkGray
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
 
@@ -1055,7 +1093,7 @@ private fun MessageBubble(
                                 Text(
                                     text = "Building: $pinBuilding",
                                     fontSize = 13.sp,
-                                    color = Color.DarkGray
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
 
@@ -1063,6 +1101,7 @@ private fun MessageBubble(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = pinDescription,
+                                    color = MaterialTheme.colorScheme.tertiary,
                                     fontSize = 14.sp
                                 )
                             }
@@ -1095,6 +1134,7 @@ private fun MessageBubble(
                             Text(
                                 text = studySessionTitle,
                                 fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 16.sp
                             )
 
@@ -1102,15 +1142,16 @@ private fun MessageBubble(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = studySessionDescription,
+                                    color = MaterialTheme.colorScheme.tertiary,
                                     fontSize = 14.sp
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            Text("Date: $displayDate", fontSize = 13.sp)
-                            Text("Start time: $displayStartTime", fontSize = 13.sp)
-                            Text("End time: $displayEndTime", fontSize = 13.sp)
+                            Text("Date: $displayDate", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                            Text("Start time: $displayStartTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                            Text("End time: $displayEndTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
 
                             Spacer(modifier = Modifier.height(10.dp))
 
@@ -1199,24 +1240,24 @@ private fun MessageBubble(
                                         Text(
                                             "Pending response...",
                                             fontSize = 13.sp,
-                                            color = Color.DarkGray
+                                            color = MaterialTheme.colorScheme.tertiary
                                         )
                                     }
                                 }
 
                                 "ACCEPTED" -> {
                                     when (receiverStatus) {
-                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp)
-                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp)
-                                        "DECLINED" -> Text("Declined", fontSize = 13.sp)
+                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        "DECLINED" -> Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
                                     }
                                 }
 
                                 "DECLINED" -> {
                                     if (receiverStatus == "PENDING") {
-                                        Text("Pending response...", fontSize = 13.sp)
+                                        Text("Pending response...", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
                                     } else {
-                                        Text("Declined", fontSize = 13.sp)
+                                        Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
                                     }
                                 }
                             }

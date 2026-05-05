@@ -73,6 +73,7 @@ fun CampusEventsWidget(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (showingToday) "Today's Events" else "Upcoming Campus Events",
+                        color = MaterialTheme.colorScheme.onTertiary,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -195,6 +196,7 @@ private fun ModernEventRow(
                 text = event.title.ifBlank { "(No title)" },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )

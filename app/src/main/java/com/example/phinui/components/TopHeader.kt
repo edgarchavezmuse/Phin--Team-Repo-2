@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.painterResource
 import com.example.phinui.R
 
@@ -28,7 +29,8 @@ fun TopHeader() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(HeaderRed)
+            //.background(HeaderRed)
+            .background(MaterialTheme.colorScheme.primary)
             .padding(top = 0.dp, bottom = 10.dp),
         contentAlignment = Alignment.Center
     ) {

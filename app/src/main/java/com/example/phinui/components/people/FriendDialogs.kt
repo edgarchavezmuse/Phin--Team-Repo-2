@@ -18,7 +18,7 @@ import com.example.phinui.components.people.PendingFriendRequestDialog
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Send friend request?")
         },
@@ -37,14 +37,14 @@ import com.example.phinui.components.people.PendingFriendRequestDialog
             TextButton(
                 onClick = onConfirm
             ) {
-                Text("Send", color = HeaderRed)
+                Text("Send", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Cancel", color = NavText)
+                Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
             }
         }
     )
@@ -57,7 +57,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Friend request pending")
         },
@@ -76,7 +76,7 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("OK", color = HeaderRed)
+                Text("OK", color = MaterialTheme.colorScheme.primary)
             }
         }
     )
@@ -88,7 +88,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Already friends")
         },
@@ -106,7 +106,7 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Ok", color = HeaderRed)
+                Text("Ok", color = MaterialTheme.colorScheme.primary)
             }
         }
     )
@@ -118,7 +118,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Active Chat")
         },
@@ -136,7 +136,7 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Ok", color = HeaderRed)
+                Text("Ok", color = MaterialTheme.colorScheme.primary)
             }
         }
     )
@@ -149,7 +149,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Remove Friend?")
         },
@@ -168,14 +168,14 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onConfirm
             ) {
-                Text("Remove", color = HeaderRed)
+                Text("Remove", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Cancel", color = NavText)
+                Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
             }
         }
     )
@@ -189,7 +189,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Block user?")
         },
@@ -214,14 +214,14 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onConfirm
             ) {
-                Text("Block", color = HeaderRed)
+                Text("Block", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Cancel", color = NavText)
+                Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
             }
         }
     )
@@ -234,7 +234,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Block user?")
         },
@@ -253,14 +253,14 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onConfirm
             ) {
-                Text("Block", color = HeaderRed)
+                Text("Block", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Cancel", color = NavText)
+                Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
             }
         }
     )
@@ -273,7 +273,7 @@ fun PendingFriendRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text("Unblock user?")
         },
@@ -292,14 +292,14 @@ fun PendingFriendRequestDialog(
             TextButton(
                 onClick = onConfirm
             ) {
-                Text("Unblock", color = HeaderRed)
+                Text("Unblock", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Cancel", color = NavText)
+                Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
             }
         }
     )
