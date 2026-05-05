@@ -1,5 +1,6 @@
 package com.example.phinui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.*
@@ -24,9 +25,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.phinui.components.people.BlockFriendDialog
@@ -45,8 +49,10 @@ import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import com.google.firebase.firestore.FirebaseFirestore
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen (
     navController: NavController,
@@ -70,8 +76,9 @@ fun UserListScreen (
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
 
-    var showDeleteDialog = remember { mutableStateOf(false) }
-    var selectedChatID = remember { mutableStateOf<String?>(null) }
+    var selectedChatID by remember { mutableStateOf<String?>(null) }
+    var showActionSheet by remember { mutableStateOf(false) }
+    val mutedChats by chatRepositoryViewModel.mutedChats.collectAsState()
 
 
     LaunchedEffect(Unit) {
@@ -98,38 +105,7 @@ fun UserListScreen (
     val blockedByOtherUsersList = chatRepositoryViewModel.userListRepository.blockedByOtherUsersList.value
     val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
 
-    if (showDeleteDialog.value && selectedChatID.value != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showDeleteDialog.value = false
-                selectedChatID.value = null
-            },
-            title = { Text("Delete chat?") },
-            text = { Text("This chat will be deleted from your current chat list.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    chatRepositoryViewModel.onDeleteChat(
-                        userID = currentUserID,
-                        chatID = selectedChatID.value!!
-                    )
-                    showDeleteDialog.value = false
-                    selectedChatID.value = null
-                }) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog.value = false
-                        selectedChatID.value = null
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+
 
     Column(
         modifier = Modifier
@@ -273,8 +249,8 @@ fun UserListScreen (
                                     navController.navigate(Routes.MESSAGES + "/${friendId}")
                                 },
                                 onLongPress = {
-                                    selectedChatID.value = chatID
-                                    showDeleteDialog.value = true
+                                    selectedChatID = chatID
+                                    showActionSheet = true
                                 }
                             )
                         }
@@ -403,8 +379,8 @@ fun UserListScreen (
                                     navController.navigate(Routes.MESSAGES + "/${user.uid}")
                                 },
                                 onLongPress = {
-                                    selectedChatID.value = chatID
-                                    showDeleteDialog.value = true
+                                    selectedChatID = chatID
+                                    showActionSheet = true
                                 }
                             )
                         }
@@ -567,6 +543,67 @@ fun UserListScreen (
             onDismiss = { friendToBlock = null }
         )
     }
+
+    if (showActionSheet && selectedChatID != null) {
+        val isMuted = selectedChatID != null && selectedChatID in mutedChats
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showActionSheet = false
+                selectedChatID = null
+            }
+        ) {
+            Text(
+                text = "Chat Actions",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            HorizontalDivider()
+
+            ListItem(
+                headlineContent = { Text("Delete Chat") },
+                leadingContent = { Icon(Icons.Default.Delete, contentDescription = null) },
+                modifier = Modifier.clickable {
+                    chatRepositoryViewModel.onDeleteChat(
+                        userID = currentUserID,
+                        chatID = selectedChatID!!
+                    )
+                    showActionSheet = false
+                    selectedChatID = null
+                }
+            )
+
+            ListItem(
+                headlineContent = {
+                    Text(if (isMuted) "Unmute Chat" else "Mute Chat")
+                },
+                leadingContent = {
+                    if (isMuted) {
+                        Icon(Icons.Default.VolumeUp, contentDescription = null)
+                    } else {
+                        Icon(Icons.Default.VolumeOff, contentDescription = null)
+                    }
+                },
+                modifier = Modifier.clickable {
+                    if (isMuted) {
+                        chatRepositoryViewModel.onUnmuteChat(
+                            chatID = selectedChatID!!
+                        )
+                    } else {
+                        chatRepositoryViewModel.onMuteChat(
+                            chatID = selectedChatID!!
+                        )
+                    }
+                    showActionSheet = false
+                    selectedChatID = null
+                }
+            )
+
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+
 }
 
 @Composable

@@ -276,10 +276,15 @@ class ChatRepository {
                 val chats = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
                     val deletedBy = data["deletedBy"] as? List<String> ?: emptyList()
+                    val mutedBy = data["mutedBy"] as? List<String> ?: emptyList()
+                    val isMuted = mutedBy.contains(userID)
 
                     if (deletedBy.contains(userID)) return@mapNotNull null
 
-                    data + mapOf("chatID" to doc.id)
+                    data + mapOf(
+                        "chatID" to doc.id,
+                        "isMuted" to isMuted
+                        )
                 }
                 onResult(chats)
             }
@@ -318,6 +323,18 @@ class ChatRepository {
                     }
                 }
             }
+    }
+
+    fun muteChat(userID: String, chatID: String) {
+        val chatRef = chatsCollection.document(chatID)
+
+        chatRef.update("mutedBy", FieldValue.arrayUnion(userID))
+    }
+
+    fun unmuteChat(userID: String, chatID: String) {
+        val chatRef = chatsCollection.document(chatID)
+
+        chatRef.update("mutedBy", FieldValue.arrayRemove(userID))
     }
 
     data class MessageInfo(
