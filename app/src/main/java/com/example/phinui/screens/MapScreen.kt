@@ -74,8 +74,11 @@ import android.net.Uri
 import com.google.android.gms.maps.model.MapStyleOptions
 
 
+import com.example.phinui.ui.navigation.Routes
+import androidx.navigation.NavHostController
+
 @Composable
-fun MapScreen(sharedPin: CampusLocation? = null, darkMode: Boolean) {
+fun MapScreen(sharedPin: CampusLocation? = null,navController: NavHostController,darkMode: Boolean) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -87,8 +90,7 @@ fun MapScreen(sharedPin: CampusLocation? = null, darkMode: Boolean) {
 
     var campusLocations by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
-    var selectedLocation by rememberSaveable { mutableStateOf<CampusLocation?>(null) }
-
+    var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
     val placesClient = remember { Places.createClient(context) }
 
     val fusedLocationClient = remember {
@@ -357,6 +359,9 @@ fun MapScreen(sharedPin: CampusLocation? = null, darkMode: Boolean) {
                 },
                 onShare = { sharedLocation ->
                     // Next phase: open friend/chat picker
+                },
+                onVendingStockClick = { vendingLocation ->
+                    navController.navigate("${Routes.VENDING_STOCK}/${vendingLocation.id}")
                 }
             )
         }
@@ -411,7 +416,8 @@ fun PinInfoCard(
     location: CampusLocation,
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit,
-    onShare: (CampusLocation) -> Unit
+    onShare: (CampusLocation) -> Unit,
+    onVendingStockClick: (CampusLocation) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -462,7 +468,7 @@ fun PinInfoCard(
                     }
                 }
 
-                if (!location.category.isNullOrBlank()) {
+                if (location.category.isNotBlank()) {
                     Text(
                         text = location.category.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.titleMedium,
@@ -471,7 +477,7 @@ fun PinInfoCard(
                     )
                 }
 
-                if (!location.description.isNullOrBlank()) {
+                if (location.description.isNotBlank()) {
                     Text(
                         text = location.description,
                         style = MaterialTheme.typography.bodyLarge,
@@ -487,34 +493,60 @@ fun PinInfoCard(
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
-                Box(
+                Row(
                     modifier = Modifier
-                        .padding(top = 16.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(50)
-                        )
-                        .clickable {
-                            openGoogleMapsDirections(
-                                location.latitude,
-                                location.longitude,
-                                location.name,
-                                context
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+
+                    if (location.category.equals("vending", ignoreCase = true)) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .clickable { onVendingStockClick(location) }
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = "Stock",
+                                color = MaterialTheme.colorScheme.surface,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = "Directions",
-                        color = MaterialTheme.colorScheme.surface,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(50)
+                            )
+                            .clickable {
+                                openGoogleMapsDirections(
+                                    location.latitude,
+                                    location.longitude,
+                                    location.name,
+                                    context
+                                )
+                            }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "Directions",
+                            color = MaterialTheme.colorScheme.surface,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 private fun markerHueForCategory(category: String?): Float {
     return when (category?.lowercase()) {
         "restroom" -> BitmapDescriptorFactory.HUE_AZURE

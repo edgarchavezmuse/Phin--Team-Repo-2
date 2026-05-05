@@ -51,9 +51,10 @@ import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
-import androidx.privacysandbox.ads.adservices.topics.Topic
+
 import com.example.phinui.screens.SettingsScreen
-import com.example.phinui.viewmodel.MainActivityViewModel
+
+import com.example.phinui.ui.screens.VendingStockScreen
 
 @Composable
 fun PhinNavHost(
@@ -513,37 +514,30 @@ fun PhinNavHost(
                 navArgument("pinId") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 },
                 navArgument("pinName") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 },
                 navArgument("pinCategory") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 },
                 navArgument("pinLatitude") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 },
                 navArgument("pinLongitude") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 },
                 navArgument("pinBuilding") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 },
                 navArgument("pinDescription") {
                     type = NavType.StringType
                     defaultValue = ""
-                    nullable = false
                 }
             )
         ) { backStackEntry ->
@@ -576,11 +570,39 @@ fun PhinNavHost(
                     null
                 }
 
-            MapScreen(sharedPin = sharedPin, darkMode = darkModeEnabled)
+            MapScreen(
+                navController = navController,
+                sharedPin = sharedPin,
+                darkMode = darkModeEnabled
+            )
+        }
+
+        composable(Routes.MAP) {
+            MapScreen(
+                navController = navController,
+                sharedPin = null,
+                darkMode = darkModeEnabled
+            )
         }
 
         composable(Routes.SETTINGS) {
             SettingsScreen(navController)
+        }
+
+        composable(
+            route = Routes.VENDING_STOCK + "/{locationId}",
+            arguments = listOf(
+                navArgument("locationId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val locationId = backStackEntry.arguments?.getString("locationId") ?: ""
+
+            VendingStockScreen(
+                locationId = locationId,
+                navController = navController
+            )
         }
     }
 }
