@@ -116,7 +116,8 @@ fun VendingStockScreen(
                 Text(
                     text = machineName,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onTertiary
+
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -134,7 +135,8 @@ fun VendingStockScreen(
                         Text(
                             text = "Current vending machine stock image.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onTertiary
+
                         )
                     }
 
@@ -142,7 +144,8 @@ fun VendingStockScreen(
                         Text(
                             text = errorMessage ?: "No stock image available.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onTertiary
+
                         )
                     }
                 }
