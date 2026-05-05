@@ -84,7 +84,7 @@ fun VendingStockScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F6F1))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -106,7 +106,7 @@ fun VendingStockScreen(
                 .fillMaxWidth()
                 .shadow(8.dp, RoundedCornerShape(24.dp)),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
@@ -115,7 +115,8 @@ fun VendingStockScreen(
             ) {
                 Text(
                     text = machineName,
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -133,7 +134,7 @@ fun VendingStockScreen(
                         Text(
                             text = "Current vending machine stock image.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = Color.White
                         )
                     }
 
@@ -141,7 +142,7 @@ fun VendingStockScreen(
                         Text(
                             text = errorMessage ?: "No stock image available.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
+                            color = Color.White
                         )
                     }
                 }

@@ -500,28 +500,7 @@ fun PinInfoCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(50)
-                            )
-                            .clickable {
-                                openGoogleMapsDirections(
-                                    location.latitude,
-                                    location.longitude,
-                                    location.name,
-                                    context
-                                )
-                            }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = "Directions",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+
 
                     if (location.category.equals("vending", ignoreCase = true)) {
                         Box(
@@ -535,7 +514,7 @@ fun PinInfoCard(
                         ) {
                             Text(
                                 text = "Stock",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.surface,
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
