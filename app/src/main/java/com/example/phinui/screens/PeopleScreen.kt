@@ -72,6 +72,7 @@ import com.example.phinui.ui.components.UserProfilePreviewDialog
 import com.example.phinui.data.model.PreviewUser
 import com.example.phinui.ui.navigation.Routes
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PeopleScreen(
     navController: NavHostController
@@ -86,6 +87,8 @@ fun PeopleScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     var search by remember { mutableStateOf("") }
+    var majorFilter by remember { mutableStateOf("All Majors") }
+    var majorMenuExpanded by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var blockedUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var blockedByOthers by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -223,29 +226,94 @@ fun PeopleScreen(
 
         when (selectedTab) {
             0 -> {
-                OutlinedTextField(
-                    value = search,
-                    onValueChange = { search = it },
-                    label = { Text("Search users by name") },
+                val majors = listOf("All Majors") +
+                        allUsers.mapNotNull { (_, user) ->
+                            (user["major"] as? String)?.trim()
+                        }
+                            .filter { it.isNotBlank() }
+                            .map { it.lowercase() }            // normalize
+                            .distinct()                        // remove duplicates
+                            .map { it.split(" ").joinToString(" ") { word ->
+                                word.replaceFirstChar { c -> c.uppercase() }  // Title Case
+                            }}
+                            .sorted()
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { keyboardController?.hide() }
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        label = { Text("Search users") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Search
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSearch = { keyboardController?.hide() }
+                        )
                     )
-                )
+
+                    Box {
+                        IconButton(
+                            onClick = { majorMenuExpanded = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Filter by major",
+                                tint = MaterialTheme.colorScheme.onTertiary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = majorMenuExpanded,
+                            onDismissRequest = { majorMenuExpanded = false },
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ) {
+                            majors.forEach { major ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = major,
+                                            color = MaterialTheme.colorScheme.onTertiary
+                                        )
+                                    },
+                                    onClick = {
+                                        majorFilter = major
+                                        majorMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (majorFilter != "All Majors") {
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Major: $majorFilter",
+                        color = TextMuted,
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 val usersToDisplay =
                     if (search.isBlank()) allUsers else searchResults
 
-                val visibleUsers = usersToDisplay.filter { (uid, _) ->
+                val visibleUsers = usersToDisplay.filter { (uid, user) ->
+                    val major = user["major"] as? String ?: ""
+
                     blockedUsers.none { (blockedUid, _) -> blockedUid == uid } &&
-                            uid !in blockedByOthers
+                            uid !in blockedByOthers &&
+                            (majorFilter == "All Majors" || major.equals(majorFilter, ignoreCase = true))
                 }
 
                 LazyColumn(
