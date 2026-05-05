@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,10 +31,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -113,9 +114,32 @@ fun EventTimePickerDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (showDial) {
-                        TimePicker(state = timePickerState)
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                selectorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     } else {
-                        TimeInput(state = timePickerState)
+                        TimeInput(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.onSecondary,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
                     }
                 }
 

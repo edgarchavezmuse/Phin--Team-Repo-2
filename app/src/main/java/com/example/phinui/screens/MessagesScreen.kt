@@ -95,6 +95,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.TimePickerDefaults
 
 @Composable
 fun MessagesScreen(
@@ -885,9 +886,39 @@ private fun EventTimePickerDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (showDial) {
-                        TimePicker(state = timePickerState)
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                selectorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     } else {
-                        TimeInput(state = timePickerState)
+                        TimeInput(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                // SELECTED (Hour/Minute box)
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                // UNSELECTED (Hour/Minute box)
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.onSecondary,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                // AM / PM
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
                     }
                 }
 
