@@ -406,70 +406,71 @@ fun PinInfoCard(
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
+            Column(
+                modifier = Modifier.padding(20.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(bottom = 56.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Text(
-                            text = location.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 12.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(50)
-                                )
-                                .clickable { onDismiss() }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = "Close",
-                                color = Color.White,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                    }
-
-                    if (!location.category.isNullOrBlank()) {
-                        Text(
-                            text = location.category.replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 12.dp)
-                        )
-                    }
-
-                    if (!location.description.isNullOrBlank()) {
-                        Text(
-                            text = location.description,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = 16.dp)
-                        )
-                    }
-
                     Text(
-                        text = "Lat: ${location.latitude}, Lng: ${location.longitude}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 16.dp)
+                        text = location.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f)
                     )
 
                     Box(
                         modifier = Modifier
-                            .padding(top = 16.dp)
+                            .padding(start = 12.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(50)
+                            )
+                            .clickable { onDismiss() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Close",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+
+                if (location.category.isNotBlank()) {
+                    Text(
+                        text = location.category.replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
+
+                if (location.description.isNotBlank()) {
+                    Text(
+                        text = location.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+
+                Text(
+                    text = "Lat: ${location.latitude}, Lng: ${location.longitude}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
                             .background(
                                 color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(50)
@@ -490,24 +491,23 @@ fun PinInfoCard(
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
-                }
 
-                if (location.category.equals("vending", ignoreCase = true)) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(50)
+                    if (location.category.equals("vending", ignoreCase = true)) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .clickable { onVendingStockClick(location) }
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = "Stock",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge
                             )
-                            .clickable { onVendingStockClick(location) }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = "Stock",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                        }
                     }
                 }
             }

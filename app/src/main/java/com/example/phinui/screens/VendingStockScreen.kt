@@ -1,13 +1,18 @@
 package com.example.phinui.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,7 +22,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -74,40 +84,68 @@ fun VendingStockScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .background(Color(0xFFF8F6F1))
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = machineName,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-
-
-        when {
-            isLoading -> {
-                CircularProgressIndicator()
-                Text("Loading image...")
-            }
-
-            imageUrl != null -> {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Vending machine stock",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 200.dp, max = 500.dp)
-                )
-            }
-
-            else -> {
-                Text(
-                    text = errorMessage ?: "No stock image available.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+        imageUrl?.let { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = "Vending machine stock",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 280.dp, max = 460.dp)
+                    .clip(RoundedCornerShape(24.dp))
+            )
         }
 
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(8.dp, RoundedCornerShape(24.dp)),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Text(
+                    text = machineName,
+                    style = MaterialTheme.typography.headlineSmall
+                )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Loading image...")
+                    }
+
+                    imageUrl != null -> {
+                        Text(
+                            text = "Current vending machine stock image.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                    }
+
+                    else -> {
+                        Text(
+                            text = errorMessage ?: "No stock image available.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
     }
 }
