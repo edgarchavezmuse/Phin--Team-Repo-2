@@ -2,6 +2,7 @@ package com.example.phinui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -156,20 +158,34 @@ fun SideMenu(
 
         Row(
             modifier = Modifier
-                .clickable(
-                    onClick = {
-                        navController.navigate(Routes.SETTINGS)
-                    }
-                )
+                .fillMaxWidth()
+                .clickable {
+                    navController.navigate(Routes.SETTINGS)
+                },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings"
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.titleMedium
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings"
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            // RIGHT SIDE (small white circle → Credits)
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color.White, shape = androidx.compose.foundation.shape.CircleShape)
+                    .clickable {
+                        navController.navigate(Routes.CREDITS)
+                    }
             )
         }
     }
