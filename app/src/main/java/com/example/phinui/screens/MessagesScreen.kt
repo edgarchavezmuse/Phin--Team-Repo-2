@@ -625,7 +625,7 @@ fun MessagesScreen(
                                 location = null,
                                 reminderMinutes = emptyList(),
                                 isAllDay = false,
-                                colorHex = "0xFFE53935",
+                                colorHex = "#DC2127",
                                 source = CalendarSource.LOCAL
                             )
 
@@ -980,6 +980,7 @@ private fun MessageBubble(
     val messageChatID = message["chatID"] as? String ?: ""
     val startTime = message["startTime"] as? Timestamp
     val endTime = message["endTime"] as? Timestamp
+    val context = LocalContext.current
 
     val studySessionTitle = message["title"] as? String ?: "Study Session"
     val studySessionDescription = message["description"] as? String ?: ""
@@ -1202,7 +1203,7 @@ private fun MessageBubble(
                                                         location = null,
                                                         reminderMinutes = emptyList(),
                                                         isAllDay = false,
-                                                        colorHex = "0xFFE53935",
+                                                        colorHex = "#DC2127",
                                                         source = CalendarSource.LOCAL
                                                     )
 
@@ -1213,7 +1214,23 @@ private fun MessageBubble(
                                                         invitationResponse = "ACCEPTED"
                                                     )
 
-                                                    calendarViewModel.saveStudySessionEvent(createStudySessionEvent) {}
+                                                    calendarViewModel.saveStudySessionEvent(
+                                                        createStudySessionEvent
+                                                    ) { success ->
+                                                        if (success) {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "$createStudySessionEventTitle added to your local calendar",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        } else {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Failed to add $createStudySessionEventTitle to your local calendar",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    }
                                                 },
                                                 shape = RoundedCornerShape(14.dp)
                                             ) {
