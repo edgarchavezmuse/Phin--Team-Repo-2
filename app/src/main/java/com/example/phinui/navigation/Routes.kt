@@ -21,6 +21,7 @@ object Routes {
     const val FRIENDS = "friends"
     const val PEOPLE = "people"
     const val SETTINGS = "settings"
+    const val CREDITS = "credits"
     fun mapRouteWithPin(
         pinId: String,
         pinName: String,
