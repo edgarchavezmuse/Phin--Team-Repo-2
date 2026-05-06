@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 
 data class FriendRequest(
     val id: String = "",
@@ -167,12 +168,20 @@ class FriendRepository(
             val myUserRef = db.collection("users").document(myUid)
             val otherUserRef = db.collection("users").document(fromUid)
             val requestRef = db.collection("friend_requests").document(requestId)
+            val chatID = if (myUid < fromUid) "${myUid}_$fromUid" else "${fromUid}_$myUid"
+            val chatRef = db.collection("chats").document(chatID)
 
             db.runBatch { batch ->
                 batch.update(myUserRef, "friends", FieldValue.arrayUnion(fromUid))
                 batch.update(otherUserRef, "friends", FieldValue.arrayUnion(myUid))
 
                 batch.update(requestRef, "status", "accepted")
+
+                batch.set(
+                    chatRef,
+                    mapOf("isFriendChat" to true),
+                    SetOptions.merge()
+                )
             }
                 .addOnSuccessListener { onSuccess() }
                 .addOnFailureListener(onError)
@@ -200,6 +209,9 @@ class FriendRepository(
             val myUserRef = db.collection("users").document(myUid)
             val otherUserRef = db.collection("users").document(blockedUid)
 
+            val chatID = if (myUid < blockedUid) "${myUid}_$blockedUid" else "${blockedUid}_$myUid"
+            val chatRef = db.collection("chats").document(chatID)
+
             db.collection("friend_requests")
                 .whereEqualTo("fromUid", blockedUid)
                 .whereEqualTo("toUid", myUid)
@@ -224,6 +236,12 @@ class FriendRepository(
                                     FieldValue.arrayRemove(blockedUid)
                                 )
                                 batch.update(otherUserRef, "friends", FieldValue.arrayRemove(myUid))
+
+                                batch.set(
+                                    chatRef,
+                                    mapOf("isFriendChat" to false),
+                                    SetOptions.merge()
+                                )
 
                                 incomingSnapshot.documents.forEach { doc ->
                                     batch.delete(doc.reference)
@@ -329,6 +347,9 @@ class FriendRepository(
             val myUserRef = db.collection("users").document(myUid)
             val otherUserRef = db.collection("users").document(friendUid)
 
+            val chatID = if (myUid < friendUid) "${myUid}_$friendUid" else "${friendUid}_$myUid"
+            val chatRef = db.collection("chats").document(chatID)
+
             db.collection("friend_requests")
                 .whereEqualTo("fromUid", friendUid)
                 .whereEqualTo("toUid", myUid)
@@ -348,6 +369,12 @@ class FriendRepository(
                                     FieldValue.arrayRemove(friendUid)
                                 )
                                 batch.update(otherUserRef, "friends", FieldValue.arrayRemove(myUid))
+
+                                batch.set(
+                                    chatRef,
+                                    mapOf("isFriendChat" to false),
+                                    SetOptions.merge()
+                                )
 
                                 incomingSnapshot.documents.forEach { doc ->
                                     batch.delete(doc.reference)

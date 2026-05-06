@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 
 import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.components.messages.User
+import com.example.phinui.components.messages.UserState
 
 class UserListViewModel : ViewModel() {
 
@@ -36,11 +37,22 @@ class UserListViewModel : ViewModel() {
         }
     }
 
+    var userState by mutableStateOf<UserState>(UserState.Empty)
+        private set
+
     fun loadSelectedUser(userID: String) {
         viewModelScope.launch {
-            isLoading = true
-            selectedUser = userList.getUserByID(userID)
-            isLoading = false
+            userState = UserState.Loading
+            try {
+                val user = userList.getUserByID(userID)
+                userState = if (user != null) {
+                    UserState.Loaded(user)
+                } else {
+                    UserState.Empty
+                }
+            } catch (e: Exception) {
+                userState = UserState.Empty
+            }
         }
     }
 }

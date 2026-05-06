@@ -46,8 +46,8 @@ fun CalendarEmptyState(
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge
-            )
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onTertiary            )
 
             Spacer(modifier = Modifier.height(6.dp))
 

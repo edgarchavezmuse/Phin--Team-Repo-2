@@ -17,66 +17,77 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import com.example.phinui.data.calendar.CalendarEvent
-import com.example.phinui.data.calendar.CalendarStorage
 import com.example.phinui.screens.CalendarScreen
 import com.example.phinui.ui.screens.AddEventScreen
 import com.example.phinui.ui.screens.EventsScreen
 import com.example.phinui.ui.screens.MessagesScreen
 import com.example.phinui.ui.screens.HomeScreen
 import com.example.phinui.ui.screens.ProfileScreen
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.phinui.ui.screens.MapScreen
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
-import kotlinx.coroutines.withContext
 import com.example.phinui.viewmodel.AddEventResult
 import com.example.phinui.ui.screens.ScheduleScreen
 import com.example.phinui.data.calendar.CalendarSource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.authorization.GoogleAuthManager
 import com.example.phinui.notifications.NotificationHelper.createNotificationChannels
 import com.example.phinui.screens.UserListScreen
-
-//firebase
 import com.example.phinui.ui.screens.LoginScreen
 import com.example.phinui.ui.screens.RegisterScreen
 import com.example.phinui.viewmodel.EventsRepository
 import com.example.phinui.viewmodel.EventsViewModel
 import com.example.phinui.viewmodel.EventsViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
-
 import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+
+import com.example.phinui.screens.SettingsScreen
+
+import com.example.phinui.ui.screens.VendingStockScreen
 
 @Composable
 fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
+    darkModeEnabled: Boolean,
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
     val context = LocalContext.current
-    val storeEvent = remember { CalendarStorage(context) }
     val savedEvents = remember { mutableStateListOf<CalendarEvent>() }
     val allEvents = remember { mutableStateListOf<CalendarEvent>() }
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { FirebaseAuth.getInstance() }
-    val startDestination = if (auth.currentUser != null) Routes.HOME else Routes.LOGIN
+    var currentUserId by remember { mutableStateOf(auth.currentUser?.uid) }
+    val eventBeingEdited = remember { mutableStateOf<CalendarEvent?>(null) }
+
+    DisposableEffect(auth) {
+        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            currentUserId = firebaseAuth.currentUser?.uid
+        }
+
+        auth.addAuthStateListener(listener)
+
+        onDispose {
+            auth.removeAuthStateListener(listener)
+        }
+    }
+
+    val startDestination = if (currentUserId != null) Routes.HOME else Routes.LOGIN
 
     createNotificationChannels(context)
 
-    LaunchedEffect(Unit) {
-        val loaded = storeEvent.loadEvents()
-        savedEvents.clear()
-        savedEvents.addAll(loaded)
-    }
 
     val activity = context as ComponentActivity
 
@@ -119,6 +130,24 @@ fun PhinNavHost(
         } else {
             calendarViewModel.onAuthorizationSuccess(tokenFromResult)
         }
+    }
+
+    LaunchedEffect(currentUserId) {
+        savedEvents.clear()
+        allEvents.clear()
+        calendarViewModel.clearInMemoryState()
+        calendarViewModel.restoreConnectionFromFirebase()
+        calendarViewModel.refreshEvents()
+    }
+
+    LaunchedEffect(calendarViewModel.eventsGroupedByDate) {
+        val localEvents = calendarViewModel.eventsGroupedByDate
+            .values
+            .flatten()
+            .filter { it.source == CalendarSource.LOCAL }
+
+        savedEvents.clear()
+        savedEvents.addAll(localEvents)
     }
 
     LaunchedEffect(
@@ -212,7 +241,10 @@ fun PhinNavHost(
             MessagesScreen(
                 senderUserID = currentUserID,
                 receiverUserID = receiverID,
-                setTopBarTitle = { title -> setTopBarTitle(title, true)}
+                navController = navController,
+                setTopBarTitle = { title, isMessages ->
+                    setTopBarTitle(title, isMessages)
+                }
             )
         }
 
@@ -244,7 +276,7 @@ fun PhinNavHost(
         }
 
         composable(Routes.PEOPLE) {
-            PeopleScreen()
+            PeopleScreen(navController = navController)
         }
 
         composable(
@@ -280,8 +312,11 @@ fun PhinNavHost(
                 //events = allEvents,
                 events = schoolEvents,
                 onEventClick = { event ->
-                    val googleEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
-                    val existsLocally = savedEvents.any { sameCalendarEvent(it, event) }
+                    val allCalendarEvents = calendarViewModel.eventsGroupedByDate.values.flatten()
+                    val googleEvents = allCalendarEvents.filter { it.source == CalendarSource.GOOGLE }
+                    val localEvents = allCalendarEvents.filter { it.source == CalendarSource.LOCAL }
+
+                    val existsLocally = localEvents.any { sameCalendarEvent(it, event) }
                     val existsInGoogle = googleEvents.any { sameCalendarEvent(it, event) }
 
                     if (existsInGoogle) {
@@ -302,11 +337,8 @@ fun PhinNavHost(
                                 when (val result = calendarViewModel.addEventToAppropriateCalendar(event)) {
                                     is AddEventResult.ShouldSaveLocally -> {
                                         val localEvent = event.copy(source = CalendarSource.LOCAL)
-                                        savedEvents.add(localEvent)
 
-                                        withContext(Dispatchers.IO) {
-                                            storeEvent.saveEvent(localEvent, reminderScheduler)
-                                        }
+                                        calendarViewModel.saveLocalEventToFirebase(localEvent)
 
                                         Toast.makeText(
                                             context,
@@ -356,23 +388,42 @@ fun PhinNavHost(
                     showRemoveDialog.value = true
                 },
                 onAddEventClick = {
+                    eventBeingEdited.value = null
+                    navController.navigate(Routes.ADD_EVENT)
+                },
+                onEditEventClick = { event ->
+                    eventBeingEdited.value = event
+                    showRemoveDialog.value = false
                     navController.navigate(Routes.ADD_EVENT)
                 },
                 onConnectClick = {
                     calendarViewModel.setError(null)
-                    GoogleAuthManager.startAuthorization(
-                        activity = activity,
-                        launcher = authorizationLauncher,
-                        onAccessToken = { token ->
-                            calendarViewModel.onAuthorizationSuccess(token)
-                        },
-                        onError = { exception ->
-                            calendarViewModel.onGoogleSessionRestoreFailed(
-                                exception.message ?: "Authorization error."
+
+                    val credentialManager = CredentialManager.create(activity)
+
+                    coroutineScope.launch {
+                        try {
+                            credentialManager.clearCredentialState(
+                                ClearCredentialStateRequest()
                             )
+                        } catch (_: Exception) {
                         }
-                    )
+
+                        GoogleAuthManager.startAuthorization(
+                            activity = activity,
+                            launcher = authorizationLauncher,
+                            onAccessToken = { token ->
+                                calendarViewModel.onAuthorizationSuccess(token)
+                            },
+                            onError = { exception ->
+                                calendarViewModel.onGoogleSessionRestoreFailed(
+                                    exception.message ?: "Authorization error."
+                                )
+                            }
+                        )
+                    }
                 },
+
                 selectedEvent = selectedEvent,
                 showRemoveDialog = showRemoveDialog,
                 reminderScheduler = reminderScheduler
@@ -382,45 +433,65 @@ fun PhinNavHost(
         composable(Routes.ADD_EVENT) {
 
             AddEventScreen(
+                existingEvent = eventBeingEdited.value,
                 onSaveEvent = { newEvent ->
                     coroutineScope.launch {
                         try {
-                            when (val result = calendarViewModel.addEventToAppropriateCalendar(newEvent)) {
-                                is AddEventResult.ShouldSaveLocally -> {
-                                    if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
-                                        allEvents.add(newEvent)
+                            val isEditing = eventBeingEdited.value != null
+
+                            if (isEditing) {
+                                when (newEvent.source) {
+                                    CalendarSource.GOOGLE -> {
+                                        calendarViewModel.updateGoogleEvent(newEvent)
+
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} updated in Google Calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
 
-                                    val localEvent = newEvent.copy(source = CalendarSource.LOCAL)
+                                    CalendarSource.LOCAL -> {
+                                        calendarViewModel.updateLocalEventInFirebase(newEvent)
 
-                                    if (savedEvents.none { it.title == localEvent.title && it.start == localEvent.start }) {
-                                        savedEvents.add(localEvent)
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} updated in your local calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
-
-                                    withContext(Dispatchers.IO) {
-                                        storeEvent.saveEvent(localEvent, reminderScheduler)
-                                    }
-
-                                    Toast.makeText(
-                                        context,
-                                        "${newEvent.title} added to your local calendar.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    navController.popBackStack()
                                 }
+                            } else {
+                                when (val result = calendarViewModel.addEventToAppropriateCalendar(newEvent)) {
+                                    is AddEventResult.ShouldSaveLocally -> {
+                                        if (allEvents.none { it.title == newEvent.title && it.start == newEvent.start }) {
+                                            allEvents.add(newEvent)
+                                        }
 
-                                is AddEventResult.AddedToGoogle -> {
+                                        val localEvent = newEvent.copy(source = CalendarSource.LOCAL)
 
-                                    Toast.makeText(
-                                        context,
-                                        "${newEvent.title} added to your Google Calendar.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                        calendarViewModel.saveLocalEventToFirebase(localEvent)
 
-                                    navController.popBackStack()
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} added to your local calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                    is AddEventResult.AddedToGoogle -> {
+                                        Toast.makeText(
+                                            context,
+                                            "${newEvent.title} added to your Google Calendar.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
                             }
+
+                            eventBeingEdited.value = null
+                            navController.popBackStack()
+
                         } catch (e: Exception) {
                             Toast.makeText(
                                 context,
@@ -431,13 +502,107 @@ fun PhinNavHost(
                     }
                 },
                 onBackClick = {
+                    eventBeingEdited.value = null
                     navController.popBackStack()
                 }
             )
         }
 
+        composable(
+            route = Routes.MAP_WITH_PIN,
+            arguments = listOf(
+                navArgument("pinId") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("pinName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("pinCategory") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("pinLatitude") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("pinLongitude") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("pinBuilding") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("pinDescription") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val pinId = backStackEntry.arguments?.getString("pinId").orEmpty()
+            val pinName = backStackEntry.arguments?.getString("pinName").orEmpty()
+            val pinCategory = backStackEntry.arguments?.getString("pinCategory").orEmpty()
+            val pinLatitude = backStackEntry.arguments?.getString("pinLatitude")?.toDoubleOrNull()
+            val pinLongitude = backStackEntry.arguments?.getString("pinLongitude")?.toDoubleOrNull()
+            val pinBuilding = backStackEntry.arguments?.getString("pinBuilding").orEmpty()
+            val pinDescription = backStackEntry.arguments?.getString("pinDescription").orEmpty()
+
+            val sharedPin =
+                if (
+                    pinId.isNotBlank() &&
+                    pinName.isNotBlank() &&
+                    pinLatitude != null &&
+                    pinLongitude != null
+                ) {
+                    com.example.phinui.data.CampusLocation(
+                        id = pinId,
+                        name = pinName,
+                        category = pinCategory,
+                        latitude = pinLatitude,
+                        longitude = pinLongitude,
+                        building = pinBuilding,
+                        description = pinDescription,
+                        isActive = true
+                    )
+                } else {
+                    null
+                }
+
+            MapScreen(
+                navController = navController,
+                sharedPin = sharedPin,
+                darkMode = darkModeEnabled
+            )
+        }
+
         composable(Routes.MAP) {
-            MapScreen()
+            MapScreen(
+                navController = navController,
+                sharedPin = null,
+                darkMode = darkModeEnabled
+            )
+        }
+
+        composable(Routes.SETTINGS) {
+            SettingsScreen(navController)
+        }
+
+        composable(
+            route = Routes.VENDING_STOCK + "/{locationId}",
+            arguments = listOf(
+                navArgument("locationId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val locationId = backStackEntry.arguments?.getString("locationId") ?: ""
+
+            VendingStockScreen(
+                locationId = locationId,
+                navController = navController
+            )
         }
     }
 }

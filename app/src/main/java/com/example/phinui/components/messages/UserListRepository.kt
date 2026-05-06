@@ -1,18 +1,22 @@
 package com.example.phinui.components.messages
 
-import androidx.compose.animation.core.snap
 import androidx.compose.runtime.mutableStateOf
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 data class User(
     val uid: String,
-    val name: String
+    val name: String,
+    val photoUrl: String? = null
 )
 
+sealed class UserState {
+    object Loading : UserState()
+    data class Loaded(val user: User) : UserState()
+    object Empty : UserState()
+}
 class UserListRepository {
     private val database = FirebaseFirestore.getInstance()
     private val usersCollection = database.collection("users")
@@ -27,12 +31,18 @@ class UserListRepository {
                 .orderBy("name")
                 .get()
                 .await()
+
             snapshot.documents
                 .mapNotNull { document ->
                     val uid = document.id
                     val name = document.getString("name") ?: return@mapNotNull null
-                    if (uid != currentUserID) User(uid, name)
-                    else null
+                    val photoUrl = document.getString("photoUrl")
+
+                    if (uid != currentUserID) {
+                        User(uid = uid, name = name, photoUrl = photoUrl)
+                    } else {
+                        null
+                    }
                 }
         } catch (e: Exception) {
             emptyList()
@@ -40,38 +50,24 @@ class UserListRepository {
     }
 
     suspend fun getUserByID(userID: String): User? {
-        return try{
-            val document = usersCollection.document(userID)
+        return try {
+            val document = usersCollection
+                .document(userID)
                 .get()
                 .await()
+
             val userName = document.getString("name") ?: return null
-            User(userID, userName)
+            val photoUrl = document.getString("photoUrl")
+
+            User(
+                uid = userID,
+                name = userName,
+                photoUrl = photoUrl
+            )
         } catch (e: Exception) {
             null
         }
     }
-
-//    fun getUserNameByID(
-//        userID: String,
-//        onResult: (User) -> Unit,
-//        onError: (Exception) -> Unit
-//    ) {
-//
-//        database.collection("users")
-//            .document(userID)
-//            .get()
-//            .addOnSuccessListener { document ->
-//                if (document.exists()) {
-//                    val userName = document.getString("name") ?: "Unknown User"
-//                    val user = User(uid = userID, name = userName)
-//                    onResult(user)
-//            } else {
-//                onError(Exception("User not found"))
-//                }
-//        }.addOnFailureListener { exception ->
-//            onError(exception)
-//            }
-//    }
 
     suspend fun getUserNameByID(userID: String): String {
         return suspendCancellableCoroutine { continuation ->
@@ -88,6 +84,24 @@ class UserListRepository {
                     }
                 }.addOnFailureListener { exception ->
                     continuation.resume("Unknown User")
+                }
+        }
+    }
+
+    suspend fun getUserPhotoUrlByID(userID: String): String? {
+        return suspendCancellableCoroutine { continuation ->
+            database.collection("users")
+                .document(userID)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        continuation.resume(document.getString("photoUrl"))
+                    } else {
+                        continuation.resume(null)
+                    }
+                }
+                .addOnFailureListener {
+                    continuation.resume(null)
                 }
         }
     }

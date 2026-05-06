@@ -1,6 +1,5 @@
 package com.example.phinui.ui.screens
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +56,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -65,6 +65,10 @@ import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.RemoveFriendDialog
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.MaterialTheme
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
 
 @Composable
 fun FriendsScreen(
@@ -79,6 +83,8 @@ fun FriendsScreen(
     var incoming by remember { mutableStateOf<List<Pair<String, FriendRequest>>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var requestEmails by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var requestUsers by remember { mutableStateOf<Map<String, Map<String, Any>>>(emptyMap()) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
     var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -107,13 +113,13 @@ fun FriendsScreen(
 
     LaunchedEffect(incoming) {
         incoming.forEach { (_, req) ->
-            if (!requestEmails.containsKey(req.fromUid)) {
+            if (!requestUsers.containsKey(req.fromUid)) {
                 db.collection("users")
                     .document(req.fromUid)
                     .get()
                     .addOnSuccessListener { doc ->
-                        val email = doc.getString("email") ?: ""
-                        requestEmails = requestEmails + (req.fromUid to email)
+                        val data = doc.data ?: return@addOnSuccessListener
+                        requestUsers = requestUsers + (req.fromUid to data)
                     }
             }
         }
@@ -126,7 +132,7 @@ fun FriendsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 8.dp, vertical = 16.dp)
     ) {
         LazyColumn(
@@ -141,7 +147,7 @@ fun FriendsScreen(
                     text = "Friends",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = NavText
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -185,6 +191,7 @@ fun FriendsScreen(
                     items(friends) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
                         Row(
                             modifier = Modifier
@@ -197,7 +204,20 @@ fun FriendsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name = name, size = 44)
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -205,7 +225,7 @@ fun FriendsScreen(
                                 ) {
                                     Text(
                                         text = name,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -227,14 +247,14 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
                                         contentDescription = "Friend Options",
-                                        tint = NavText
+                                        tint = MaterialTheme.colorScheme.onTertiary
                                     )
                                 }
 
                                 DropdownMenu(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false },
-                                    containerColor = Background
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ) {
                                     DropdownMenuItem(
                                         text = {
@@ -242,7 +262,7 @@ fun FriendsScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.PersonRemove,
                                                     contentDescription = "Remove Friend",
-                                                    tint = NavText
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text("Remove Friend")
@@ -258,12 +278,30 @@ fun FriendsScreen(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Block,
-                                                    contentDescription = "Block User",
-                                                    tint = HeaderRed
+                                                    imageVector = Icons.Default.Email,
+                                                    contentDescription = "Send Message",
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Block User", color = HeaderRed)
+                                                Text("Send Message", color = MaterialTheme.colorScheme.onTertiary)
+                                            }
+                                        },
+                                        onClick = {
+                                            navController.navigate(Routes.MESSAGES + "/${uid}")
+                                            showMenu = false
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Block,
+                                                    contentDescription = "Block User",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Block User", color = MaterialTheme.colorScheme.primary)
                                             }
                                         },
                                         onClick = {
@@ -291,6 +329,12 @@ fun FriendsScreen(
                 }
                 else {
                     items(incoming) { (requestId, req) ->
+                        val userData = requestUsers[req.fromUid]
+
+                        val name = userData?.get("name") as? String ?: req.fromName
+                        val email = userData?.get("email") as? String ?: ""
+                        val photoUrl = userData?.get("photoUrl") as? String
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -302,7 +346,20 @@ fun FriendsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(req.fromName, 44)
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = userData?.get("major") as? String ?: "",
+                                            bio = userData?.get("bio") as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -310,11 +367,11 @@ fun FriendsScreen(
                                 ) {
                                     Text(
                                         text = req.fromName,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
-                                        text = requestEmails[req.fromUid] ?: "",
+                                        text = email,
                                         color = TextMuted,
                                         fontSize = 12.sp,
                                         maxLines = 1
@@ -333,7 +390,7 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = "Accept Request",
-                                        tint = NavText
+                                        tint = MaterialTheme.colorScheme.onTertiary
                                     )
                                 }
 
@@ -347,7 +404,7 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Decline Request",
-                                        tint = HeaderRed
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
@@ -366,8 +423,8 @@ fun FriendsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(4.dp),
-            containerColor = HeaderRed,
-            contentColor = HeaderText
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.surface
         ) {
             Icon(
                 imageVector = Icons.Default.PersonAdd,
@@ -417,7 +474,7 @@ fun FriendsScreen(
     requestToAccept?.let { (requestId, fromUid, name) ->
         AlertDialog(
             onDismissRequest = { requestToAccept = null },
-            containerColor = Background,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text("Accept request?")
             },
@@ -452,14 +509,14 @@ fun FriendsScreen(
                         )
                     }
                 ) {
-                    Text("Accept", color = HeaderRed)
+                    Text("Accept", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { requestToAccept = null }
                 ) {
-                    Text("Cancel", color = NavText)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
                 }
             }
         )
@@ -468,7 +525,7 @@ fun FriendsScreen(
     requestToDecline?.let { (requestId, name) ->
         AlertDialog(
             onDismissRequest = { requestToDecline = null },
-            containerColor = Background,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text("Decline request?")
             },
@@ -502,16 +559,27 @@ fun FriendsScreen(
                         )
                     }
                 ) {
-                    Text("Decline", color = HeaderRed)
+                    Text("Decline", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { requestToDecline = null }
                 ) {
-                    Text("Cancel", color = NavText)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onTertiary)
                 }
             }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
         )
     }
 }
@@ -539,7 +607,7 @@ private fun EmptyState(
 
         Text(
             text = title,
-            color = NavText,
+            color = TextMuted,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )

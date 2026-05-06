@@ -1,12 +1,12 @@
 package com.example.phinui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,13 +17,10 @@ import com.example.phinui.ui.navigation.Routes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
 import com.example.phinui.ui.theme.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
@@ -32,10 +29,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.input.pointer.motionEventSpy
-import androidx.lifecycle.viewModelScope
-import com.example.phinui.components.messages.ChatRepository
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
 import com.example.phinui.components.people.RemoveFriendDialog
@@ -44,12 +41,18 @@ import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
-import com.example.phinui.viewmodel.UserListViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import com.example.phinui.ui.components.UserAvatar
+import com.google.firebase.Timestamp
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import com.google.firebase.firestore.FirebaseFirestore
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen (
     navController: NavController,
@@ -72,6 +75,10 @@ fun UserListScreen (
     var myName by remember { mutableStateOf("") }
     val usersDataBase = chatRepositoryViewModel.firebaseFirestoreAuthenticated
     var message by remember { mutableStateOf<String?>(null) }
+
+    var selectedChatID by remember { mutableStateOf<String?>(null) }
+    var showActionSheet by remember { mutableStateOf(false) }
+    val mutedChats by chatRepositoryViewModel.mutedChats.collectAsState()
 
 
     LaunchedEffect(Unit) {
@@ -99,9 +106,11 @@ fun UserListScreen (
     val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
 
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(20.dp),
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TabRow(selectedTabIndex = selectedTab) {
@@ -125,17 +134,47 @@ fun UserListScreen (
 
             //Friends tab
             0 -> {
+                val friendChats = chatRepositoryViewModel.getFriendChats.value
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+
+                val sortedFriendChats = getSortedChats(
+                    approvedChatsState = friendChats,
+                    chatRepositoryViewModel = chatRepositoryViewModel,
+                    userCache = userCache,
+                    currentUserID = currentUserID
+                )
+
                 Box {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp),
                     ) {
-                        items(friendList) { friend ->
-                            if(friend.uid in hideBlockedUsers) return@items
+                        // changed Friends Tab to be chats based instead of users based
+                        items(sortedFriendChats) { chat ->
+                            val chatID = chat["chatID"] as String
+                            val participants = chat["participants"] as List<String>
+                            val friendId = participants.first { it != currentUserID }
+
+                            if(friendId in hideBlockedUsers) return@items
+
+                            val friendUser = friendList.firstOrNull { it.uid == friendId } ?: User(
+                                uid = friendId,
+                                name = "Loading...",
+                                photoUrl = null
+                            )
+
+                            val lastMessage = chat["lastMessage"] as? String ?: ""
+                            val timestamp = chat["lastTimestamp"] as? com.google.firebase.Timestamp
+
+                            val previewText = if (lastMessage.isBlank()) {
+                                "Start conversation"
+                            } else {
+                                lastMessage
+                            }
                             UserListItem(
-                                user = friend,
+                                user = friendUser,
+                                subtitle = previewText,
+                                timeText = formatTimestamp(timestamp),
                                 trailingContent = {
                                     var showMenu by remember { mutableStateOf(false) }
                                     Box {
@@ -145,14 +184,14 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.MoreVert,
                                                 contentDescription = "Options",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
                                         DropdownMenu(
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
@@ -160,15 +199,15 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.PersonRemove,
                                                             contentDescription = "Remove Friend",
-                                                            tint = NavText
+                                                            tint = MaterialTheme.colorScheme.onTertiary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Remove Friend", color = NavText)
+                                                        Text("Remove Friend", color = MaterialTheme.colorScheme.onTertiary)
                                                     }
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    friendToRemove = friend.uid to friend.name
+                                                    friendToRemove = friendId to friendUser.name
                                                 }
                                             )
 
@@ -178,15 +217,15 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
-                                                            tint = HeaderRed
+                                                            tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = HeaderRed)
+                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    friendToBlock = friend.uid to friend.name
+                                                    friendToBlock = friendId to friendUser.name
                                                 }
                                             )
 
@@ -207,10 +246,13 @@ fun UserListScreen (
                                     }
                                 },
                                 onClick = {
-                                    navController.navigate(Routes.MESSAGES + "/${friend.uid}")
+                                    navController.navigate(Routes.MESSAGES + "/${friendId}")
+                                },
+                                onLongPress = {
+                                    selectedChatID = chatID
+                                    showActionSheet = true
                                 }
                             )
-                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
@@ -219,22 +261,22 @@ fun UserListScreen (
             //General tab
             1 -> {
                 val approvedChatsState = chatRepositoryViewModel.getGeneralChats.value
-                val userNameCache = remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
 
                 val alphabetizedChats = getSortedChats(
                     approvedChatsState = approvedChatsState,
                     chatRepositoryViewModel = chatRepositoryViewModel,
-                    userNameCache = userNameCache,
+                    userCache = userCache,
                     currentUserID = currentUserID
                 )
                 Box {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp),
                     ) {
                         items(alphabetizedChats) { chat ->
+                            val chatID = chat["chatID"] as? String ?: return@items
+
                             val participants = chat["participants"] as? List<*> ?: return@items
 
                             val otherUserID = participants
@@ -243,15 +285,25 @@ fun UserListScreen (
 
                             if(otherUserID in hideBlockedUsers) return@items
 
-                            val userName = userNameCache.value[otherUserID] ?: "Loading Chat..."
-
-                            val user = User(
+                            val user = userCache.value[otherUserID] ?: User(
                                 uid = otherUserID,
-                                name = userName
+                                name = "Loading Chat...",
+                                photoUrl = null
                             )
+
+                            val lastMessage = chat["lastMessage"] as? String ?: ""
+                            val timestamp = chat["lastTimestamp"] as? Timestamp
+
+                            val previewText = if (lastMessage.isBlank()) {
+                                "Start conversation"
+                            } else {
+                                lastMessage
+                            }
 
                             UserListItem(
                                 user = user,
+                                subtitle = previewText,
+                                timeText = formatTimestamp(timestamp),
                                 trailingContent = {
                                     var showMenu by remember { mutableStateOf(false) }
                                     Box {
@@ -261,14 +313,14 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.MoreVert,
                                                 contentDescription = "Options",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
                                         DropdownMenu(
                                             expanded = showMenu,
                                             onDismissRequest = { showMenu = false },
-                                            containerColor = Background
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
@@ -276,15 +328,16 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.PersonAdd,
                                                             contentDescription = "Add Friend",
-                                                            tint = NavText
+                                                            tint = MaterialTheme.colorScheme.onTertiary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Add Friend", color = NavText)
+                                                        Text("Add Friend", color = MaterialTheme.colorScheme.onTertiary)
                                                     }
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    userToAdd = otherUserID to userName
+                                                    userToAdd = otherUserID to user.name
+
                                                 }
                                             )
 
@@ -294,15 +347,15 @@ fun UserListScreen (
                                                         Icon(
                                                             imageVector = Icons.Default.Block,
                                                             contentDescription = "Block User",
-                                                            tint = HeaderRed
+                                                            tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = HeaderRed)
+                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 },
                                                 onClick = {
                                                     showMenu = false
-                                                    userToBlock = otherUserID to userName
+                                                    userToBlock = otherUserID to user.name
                                                 }
                                             )
 
@@ -324,9 +377,12 @@ fun UserListScreen (
                                 },
                                 onClick = {
                                     navController.navigate(Routes.MESSAGES + "/${user.uid}")
+                                },
+                                onLongPress = {
+                                    selectedChatID = chatID
+                                    showActionSheet = true
                                 }
                             )
-                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
@@ -336,12 +392,12 @@ fun UserListScreen (
             2 -> {
                 val messageRequestState = chatRepositoryViewModel.messageRequests.value
 
-                val userNameCache = remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+                val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
 
                 val alphabetizedChats = getSortedChats(
                     approvedChatsState = messageRequestState,
                     chatRepositoryViewModel = chatRepositoryViewModel,
-                    userNameCache = userNameCache,
+                    userCache = userCache,
                     currentUserID = currentUserID
                 )
 
@@ -360,11 +416,10 @@ fun UserListScreen (
                                 .mapNotNull { it as? String }
                                 .firstOrNull{ it != currentUserID } ?:return@items
 
-                            val userName = userNameCache.value[otherUserID] ?: "Loading Request..."
-
-                            val user = User(
+                            val user = userCache.value[otherUserID] ?: User(
                                 uid = otherUserID,
-                                name = userName
+                                name = "Loading Request...",
+                                photoUrl = null
                             )
 
                             UserListItem(
@@ -378,7 +433,9 @@ fun UserListScreen (
                                         IconButton(
                                             onClick = {
                                                 chatRepositoryViewModel.approveRequest(
-                                                    chatID
+                                                    chatID,
+                                                    currentUserID,
+                                                    otherUserID
                                                 )
                                             }
                                         ) {
@@ -386,7 +443,7 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = "Accept Request",
-                                                tint = NavText
+                                                tint = MaterialTheme.colorScheme.onTertiary
                                             )
                                         }
 
@@ -396,13 +453,12 @@ fun UserListScreen (
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "Decline Request",
-                                                tint = HeaderRed
+                                                tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
                                 }
                             )
-                            Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
                 }
@@ -488,114 +544,233 @@ fun UserListScreen (
         )
     }
 
+    if (showActionSheet && selectedChatID != null) {
+        val isMuted = selectedChatID != null && selectedChatID in mutedChats
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showActionSheet = false
+                selectedChatID = null
+            }
+        ) {
+            Text(
+                text = "Chat Actions",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            HorizontalDivider()
+
+            ListItem(
+                headlineContent = { Text("Delete Chat") },
+                leadingContent = { Icon(Icons.Default.Delete, contentDescription = null) },
+                modifier = Modifier.clickable {
+                    chatRepositoryViewModel.onDeleteChat(
+                        userID = currentUserID,
+                        chatID = selectedChatID!!
+                    )
+                    showActionSheet = false
+                    selectedChatID = null
+                }
+            )
+
+            ListItem(
+                headlineContent = {
+                    Text(if (isMuted) "Unmute Chat" else "Mute Chat")
+                },
+                leadingContent = {
+                    if (isMuted) {
+                        Icon(Icons.Default.VolumeUp, contentDescription = null)
+                    } else {
+                        Icon(Icons.Default.VolumeOff, contentDescription = null)
+                    }
+                },
+                modifier = Modifier.clickable {
+                    if (isMuted) {
+                        chatRepositoryViewModel.onUnmuteChat(
+                            chatID = selectedChatID!!
+                        )
+                    } else {
+                        chatRepositoryViewModel.onMuteChat(
+                            chatID = selectedChatID!!
+                        )
+                    }
+                    showActionSheet = false
+                    selectedChatID = null
+                }
+            )
+
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+
 }
 
-@Composable fun UserListItem(
+@Composable
+fun UserListItem(
     user: User,
+    subtitle: String = "",
+    timeText: String? = null,
     trailingContent: @Composable (() -> Unit)? = null,
-    onClick:(() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    onLongPress: (() -> Unit)? = null
 ) {
-    val initial = user.name
-        .trim()
-        .firstOrNull()
-        ?.uppercase() ?: "?"
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .then(
-                if (onClick != null) Modifier.clickable {
-                    onClick()
-                }
-                else Modifier
-            )
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(12.dp)
-            ),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(),
+                    onClick = { onClick?.invoke() },
+                    onLongClick = { onLongPress?.invoke() }
+                )
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // User Icons
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFEFEF)),
-                    contentAlignment = Alignment.Center
+            UserAvatar(
+                name = user.name,
+                photoUrl = user.photoUrl,
+                size = 44
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = initial,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFD32F2F),
-                        fontWeight = FontWeight.SemiBold
+                        text = user.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onTertiary
+                        ),
+                        maxLines = 1
                     )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    if (timeText != null) {
+                        Text(
+                            text = timeText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Text(
-                    text = user.name,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp,
-                        color = TextMuted
+                if (subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                )
+                }
             }
-            trailingContent?.invoke()
+
+            if (trailingContent != null) {
+                Spacer(modifier = Modifier.width(4.dp))
+                trailingContent()
+            }
         }
+
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(start = 64.dp, end = 8.dp)
+        )
+    }
+}
+fun formatTimestamp(timestamp: Timestamp?): String {
+    if (timestamp == null) return ""
+
+    val date = timestamp.toDate()
+    val now = Calendar.getInstance()
+    val msgTime = Calendar.getInstance().apply { time = date }
+
+    return if (
+        now.get(Calendar.DAY_OF_YEAR) == msgTime.get(Calendar.DAY_OF_YEAR) &&
+        now.get(Calendar.YEAR) == msgTime.get(Calendar.YEAR)
+    ) {
+        SimpleDateFormat("h:mm a", Locale.getDefault()).format(date)
+    } else {
+        SimpleDateFormat("MMM d", Locale.getDefault()).format(date)
     }
 }
 
-@Composable fun getSortedChats(
+@Composable
+fun getSortedChats(
     approvedChatsState: List<Map<String, Any>>,
     chatRepositoryViewModel: ChatRepositoryViewModel,
-    userNameCache: MutableState<Map<String, String>>,
+    userCache: MutableState<Map<String, User>>,
     currentUserID: String
-): List<Map<String,Any>> {
+): List<Map<String, Any>> {
     LaunchedEffect(approvedChatsState) {
         val allUserIds = approvedChatsState.flatMap { chat ->
-            val participants = chat["participants"] as? List<*> ?: return@flatMap emptyList<String>()
+            val participants =
+                chat["participants"] as? List<*> ?: return@flatMap emptyList<String>()
             participants.mapNotNull { it as? String }
         }.distinct()
 
-        val userNamesMap = mutableMapOf<String, String>()
-        val deferredResults = allUserIds.map { otherUserID ->
-            async{
-                try{
-                    val userName = chatRepositoryViewModel.userListRepository.getUserNameByID(otherUserID)
-                    userNamesMap[otherUserID] = userName
+        val userMap = mutableMapOf<String, User>()
 
+        val deferredResults = allUserIds.map { otherUserID ->
+            async {
+                try {
+                    val userName =
+                        chatRepositoryViewModel.userListRepository.getUserNameByID(otherUserID)
+                    val photoUrl =
+                        chatRepositoryViewModel.userListRepository.getUserPhotoUrlByID(otherUserID)
+
+                    userMap[otherUserID] = User(
+                        uid = otherUserID,
+                        name = userName,
+                        photoUrl = photoUrl
+                    )
                 } catch (e: Exception) {
-                    userNamesMap[otherUserID] = "Unknown User"
+                    userMap[otherUserID] = User(
+                        uid = otherUserID,
+                        name = "Unknown User",
+                        photoUrl = null
+                    )
                 }
             }
         }
+
         coroutineScope {
             deferredResults.awaitAll()
         }
-        userNameCache.value = userNamesMap
+
+        userCache.value = userMap
     }
 
-    val sortedChats = approvedChatsState.sortedWith (compareBy<Map<String, Any>> { chat ->
-        val filteredParticipants = chat["participants"] as? List<*> ?: return@compareBy ""
-        val filteredOtherUserID = filteredParticipants
-            .mapNotNull { it as? String }
-            .firstOrNull{ it != currentUserID }
-        val userName = userNameCache.value[filteredOtherUserID] ?: "Unknown User"
-        userName.lowercase()
-    }.thenBy { chat ->
-        chat["chatID"] as? String ?: ""
-    })
+    val sortedChats = approvedChatsState.sortedWith(
+        compareBy<Map<String, Any>> { chat ->
+            val filteredParticipants = chat["participants"] as? List<*> ?: return@compareBy ""
+            val filteredOtherUserID = filteredParticipants
+                .mapNotNull { it as? String }
+                .firstOrNull { it != currentUserID }
+
+            val userName = userCache.value[filteredOtherUserID]?.name ?: "Unknown User"
+            userName.lowercase()
+        }.thenBy { chat ->
+            chat["chatID"] as? String ?: ""
+        }
+    )
+
     return sortedChats
 }

@@ -2,10 +2,83 @@
 
 package com.example.phinui.ui.screens
 
-import android.Manifest import android.app.Activity import androidx.activity.compose.rememberLauncherForActivityResult import androidx.activity.result.contract.ActivityResultContracts import androidx.compose.animation.AnimatedVisibility import androidx.compose.animation.fadeIn import androidx.compose.animation.fadeOut import androidx.compose.animation.slideInVertically import androidx.compose.animation.slideOutVertically import androidx.compose.foundation.background import androidx.compose.foundation.clickable import androidx.compose.foundation.horizontalScroll import androidx.compose.foundation.layout.Arrangement import androidx.compose.foundation.layout.Box import androidx.compose.foundation.layout.Column import androidx.compose.foundation.layout.Row import androidx.compose.foundation.layout.fillMaxSize import androidx.compose.foundation.layout.fillMaxWidth import androidx.compose.foundation.layout.padding import androidx.compose.foundation.rememberScrollState import androidx.compose.foundation.shape.RoundedCornerShape import androidx.compose.material3.Card import androidx.compose.material3.CardDefaults import androidx.compose.material3.FilterChip import androidx.compose.material3.FilterChipDefaults import androidx.compose.material3.MaterialTheme import androidx.compose.material3.OutlinedTextField import androidx.compose.material3.OutlinedTextFieldDefaults import androidx.compose.material3.Text import androidx.compose.runtime.Composable import androidx.compose.runtime.LaunchedEffect import androidx.compose.runtime.getValue import androidx.compose.runtime.key import androidx.compose.runtime.mutableStateOf import androidx.compose.runtime.remember import androidx.compose.runtime.saveable.rememberSaveable import androidx.compose.runtime.setValue import androidx.compose.ui.Alignment import androidx.compose.ui.Modifier import androidx.compose.ui.draw.shadow import androidx.compose.ui.graphics.Color import androidx.compose.ui.platform.LocalContext import androidx.compose.ui.unit.dp import com.example.phinui.BuildConfig import com.example.phinui.data.CampusLocation import com.example.phinui.data.fetchCampusLocations import com.example.phinui.data.filterCampusLocations import com.google.android.gms.location.LocationServices import com.google.android.gms.maps.CameraUpdateFactory import com.google.android.gms.maps.model.BitmapDescriptorFactory import com.google.android.gms.maps.model.CameraPosition import com.google.android.gms.maps.model.LatLng import com.google.android.gms.maps.model.LatLngBounds import com.google.android.libraries.places.api.Places import com.google.android.libraries.places.api.model.Place import com.google.android.libraries.places.api.model.RectangularBounds import com.google.android.libraries.places.api.net.FetchPlaceRequest import com.google.android.libraries.places.widget.PlaceAutocomplete import com.google.android.libraries.places.widget.PlaceAutocompleteActivity import com.google.maps.android.compose.GoogleMap import com.google.maps.android.compose.MapProperties import com.google.maps.android.compose.MapUiSettings import com.google.maps.android.compose.Marker import com.google.maps.android.compose.rememberCameraPositionState import com.google.maps.android.compose.rememberMarkerState import kotlinx.coroutines.tasks.await import android.content.Context import android.content.Intent import android.net.Uri
+import android.Manifest
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.example.phinui.BuildConfig
+import com.example.phinui.data.CampusLocation
+import com.example.phinui.data.fetchCampusLocations
+import com.example.phinui.data.filterCampusLocations
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.RectangularBounds
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.widget.PlaceAutocomplete
+import com.google.android.libraries.places.widget.PlaceAutocompleteActivity
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
+import kotlinx.coroutines.tasks.await
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import com.google.android.gms.maps.model.MapStyleOptions
+
+
+import com.example.phinui.ui.navigation.Routes
+import androidx.navigation.NavHostController
 
 @Composable
-fun MapScreen() {
+fun MapScreen(sharedPin: CampusLocation? = null,navController: NavHostController,darkMode: Boolean) {
     val context = LocalContext.current
 
     if (!Places.isInitialized()) {
@@ -17,8 +90,7 @@ fun MapScreen() {
 
     var campusLocations by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
-    var selectedLocation by rememberSaveable { mutableStateOf<CampusLocation?>(null) }
-
+    var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
     val placesClient = remember { Places.createClient(context) }
 
     val fusedLocationClient = remember {
@@ -46,6 +118,17 @@ fun MapScreen() {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(campusCenter, 16f)
     }
+
+    val darkMapStyle = """
+        [
+          { "elementType": "geometry", "stylers": [{ "color": "#121212" }] },
+          { "elementType": "labels.text.fill", "stylers": [{ "color": "#B0B0B0" }] },
+          { "elementType": "labels.text.stroke", "stylers": [{ "color": "#121212" }] },
+          { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#2C2C2C" }] },
+          { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] },
+          { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#1E1E1E" }] }
+        ]
+    """.trimIndent()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -122,6 +205,25 @@ fun MapScreen() {
         campusLocations = fetchCampusLocations()
     }
 
+    LaunchedEffect(sharedPin, campusLocations) {
+        sharedPin?.let { incomingPin ->
+            val matchingPin = campusLocations.firstOrNull { it.id == incomingPin.id } ?: incomingPin
+
+            selectedCategory = "all"
+            selectedLocation = matchingPin
+            selectedPlaceLatLng = null
+            selectedPlaceName = null
+            searchText = matchingPin.name
+
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(matchingPin.latitude, matchingPin.longitude),
+                    17f
+                )
+            )
+        }
+    }
+
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             val location = fusedLocationClient.lastLocation.await()
@@ -149,7 +251,12 @@ fun MapScreen() {
                 isMyLocationEnabled = hasLocationPermission,
                 latLngBoundsForCameraTarget = campusBounds,
                 minZoomPreference = 15f,
-                maxZoomPreference = 20f
+                maxZoomPreference = 20f,
+                mapStyleOptions =  if (darkMode) {
+                    MapStyleOptions(darkMapStyle)
+                } else {
+                    null
+                }
             ),
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = true
@@ -212,10 +319,10 @@ fun MapScreen() {
                 placeholder = { Text("Search for a place") },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    disabledContainerColor = Color.White,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
                     disabledBorderColor = Color.Transparent,
-                    disabledTextColor = Color.Black,
-                    disabledPlaceholderColor = Color.Gray
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -225,7 +332,7 @@ fun MapScreen() {
                 .align(Alignment.TopCenter)
                 .padding(top = 96.dp)
                 .shadow(8.dp, RoundedCornerShape(24.dp))
-                .background(Color.White, RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             CategoryFilterBar(
@@ -249,6 +356,12 @@ fun MapScreen() {
                     .padding(16.dp),
                 onDismiss = {
                     selectedLocation = null
+                },
+                onShare = { sharedLocation ->
+                    // Next phase: open friend/chat picker
+                },
+                onVendingStockClick = { vendingLocation ->
+                    navController.navigate("${Routes.VENDING_STOCK}/${vendingLocation.id}")
                 }
             )
         }
@@ -280,8 +393,19 @@ fun CategoryFilterBar(
             FilterChip(
                 selected = selectedCategory == value,
                 onClick = { onCategorySelected(value) },
-                label = { Text(label) },
-                colors = FilterChipDefaults.filterChipColors()
+                label = {
+                    Text(
+                        label,
+                        color = if (selectedCategory == value)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
         }
     }
@@ -291,7 +415,9 @@ fun CategoryFilterBar(
 fun PinInfoCard(
     location: CampusLocation,
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onShare: (CampusLocation) -> Unit,
+    onVendingStockClick: (CampusLocation) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -305,7 +431,7 @@ fun PinInfoCard(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
@@ -320,6 +446,7 @@ fun PinInfoCard(
                     Text(
                         text = location.name,
                         style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -327,7 +454,7 @@ fun PinInfoCard(
                         modifier = Modifier
                             .padding(start = 12.dp)
                             .background(
-                                color = Color(0xFFD32F2F),
+                                color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(50)
                             )
                             .clickable { onDismiss() }
@@ -335,25 +462,26 @@ fun PinInfoCard(
                     ) {
                         Text(
                             text = "Close",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
 
-                if (!location.category.isNullOrBlank()) {
+                if (location.category.isNotBlank()) {
                     Text(
                         text = location.category.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
 
-                if (!location.description.isNullOrBlank()) {
+                if (location.description.isNotBlank()) {
                     Text(
                         text = location.description,
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -361,38 +489,64 @@ fun PinInfoCard(
                 Text(
                     text = "Lat: ${location.latitude}, Lng: ${location.longitude}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
-                Box(
+                Row(
                     modifier = Modifier
-                        .padding(top = 16.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(50)
-                        )
-                        .clickable {
-                            openGoogleMapsDirections(
-                                location.latitude,
-                                location.longitude,
-                                location.name,
-                                context
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+
+                    if (location.category.equals("vending", ignoreCase = true)) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .clickable { onVendingStockClick(location) }
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = "Stock",
+                                color = MaterialTheme.colorScheme.surface,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = "Directions",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(50)
+                            )
+                            .clickable {
+                                openGoogleMapsDirections(
+                                    location.latitude,
+                                    location.longitude,
+                                    location.name,
+                                    context
+                                )
+                            }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "Directions",
+                            color = MaterialTheme.colorScheme.surface,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 private fun markerHueForCategory(category: String?): Float {
     return when (category?.lowercase()) {
         "restroom" -> BitmapDescriptorFactory.HUE_AZURE

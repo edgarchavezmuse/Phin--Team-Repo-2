@@ -10,6 +10,10 @@ import com.example.phinui.components.messages.UserListRepository
 import com.example.phinui.data.friends.FriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
+import com.example.phinui.data.CampusLocation
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class ChatRepositoryViewModel (
     private val chatRepository: ChatRepository = ChatRepository(),
@@ -28,6 +32,9 @@ class ChatRepositoryViewModel (
 
     val confirmSendMessageRequest = mutableStateOf<String?>(null)
 
+    private val _mutedChats = MutableStateFlow<Set<String>>(emptySet())
+    val mutedChats = _mutedChats.asStateFlow()
+
     // FOR FILTERING FRIENDS FROM GENERAL
     val friendsList = mutableStateOf<List<User>>(emptyList())
 
@@ -40,14 +47,37 @@ class ChatRepositoryViewModel (
                         name = it.second["name"] as? String ?: "Unknown"
                     )
                 }
+                    .sortedBy { it.name.lowercase() }
             }, onError = { exception -> Log.e("Friends", "Error", exception) }
         )
+    }
+
+    val getFriendChats = derivedStateOf {
+        val friendIDs = friendsList.value.map { it.uid }.toSet()
+
+        approvedChats.value.filter { chat ->
+            val participants = chat["participants"] as? List<*> ?: return@filter false
+
+            val otherUserID = participants
+                .mapNotNull { it as? String }
+                .firstOrNull { it != currentUserID }
+
+            otherUserID != null && otherUserID in friendIDs
+        }
     }
 
     fun startListening(userID: String) {
         chatRepository.listenChats(userID) { chats ->
             approvedChats.value = chats
         }
+    }
+
+    fun callGetChatID(firstUserID: String, secondUserID: String): String {
+        return chatRepository.getChatID(firstUserID, secondUserID)
+    }
+
+    fun callCheckForNewMessage(senderUserID: String, receiverUserID: String, newMessage: (List<Map<String, Any>>) -> Unit) {
+        chatRepository.checkForNewMessage(senderUserID, receiverUserID, newMessage)
     }
 
     val getGeneralChats = derivedStateOf {
@@ -73,8 +103,18 @@ class ChatRepositoryViewModel (
     }
 
     fun loadApprovedChats(userID: String) {
-        chatRepository.listenChats(userID) {
-            approvedChats.value = it
+        chatRepository.listenChats(userID) { chats ->
+            approvedChats.value = chats
+
+            // extract muted chat IDs
+            val mutedSet = chats.mapNotNull { chat ->
+                val mutedBy = chat["mutedBy"] as? List<String> ?: emptyList()
+                val chatID = chat["chatID"] as? String ?: return@mapNotNull null
+
+                if (mutedBy.contains(userID)) chatID else null
+            }.toSet()
+
+            _mutedChats.value = mutedSet
         }
     }
 
@@ -120,9 +160,9 @@ class ChatRepositoryViewModel (
                 senderUserID in userIDs && receiverUserID in userIDs
             }
 
-            val isMessageRequestApproved =
-                checkChat?.get("messageRequestApproved") as? Boolean ?: false
-            if (isMessageRequestApproved) {
+            val requestState = checkChat?.get("requestState") as? String
+
+            if (requestState == "approved" || requestState == "pending") {
                 return@runTransaction "CHAT_EXISTS"
             }
 
@@ -156,8 +196,37 @@ class ChatRepositoryViewModel (
         }
     }
 
-    fun approveRequest(chatID: String) {
-        chatRepository.approveMessageRequest(chatID)
+    fun callSendMessage(senderUserID: String, receiverUserID: String, messageText: String) {
+        chatRepository.sendMessage(senderUserID, receiverUserID, messageText)
+    }
+
+    fun callSendStudySessionInvitation(
+        senderUserID: String,
+        receiverUserID: String,
+        studySessionTitle: String,
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+
+    ) {
+        chatRepository.sendStudySessionInvitation(senderUserID, receiverUserID, studySessionTitle, studySessionDescription, startTime, endTime)
+    }
+
+    fun callRespondStudySessionInvitation(
+        chatID: String,
+        messageID: String,
+        senderUserID: String,
+        invitationResponse: String
+    ) {
+        chatRepository.respondStudySessionInvitation(chatID, messageID, senderUserID, invitationResponse)
+    }
+
+    fun approveRequest(
+        chatID: String,
+        senderUserID: String,
+        receiverUserID: String
+    ) {
+        chatRepository.approveMessageRequest(chatID, senderUserID, receiverUserID)
     }
 
     fun denyRequest(chatID: String) {
@@ -183,6 +252,30 @@ class ChatRepositoryViewModel (
 
     fun onChatClosed(userID: String) {
         chatRepository.setActiveChat(userID, null)
+    }
+
+    fun onDeleteChat(userID: String, chatID: String) {
+        chatRepository.deleteChat(userID, chatID)
+    }
+
+    fun onMuteChat(chatID: String) {
+        chatRepository.muteChat(currentUserID!!, chatID)
+    }
+
+    fun onUnmuteChat(chatID: String) {
+        chatRepository.unmuteChat(currentUserID!!, chatID)
+    }
+
+    fun callSendPinMessage(
+        senderUserID: String,
+        receiverUserID: String,
+        location: CampusLocation
+    ) {
+        chatRepository.sendPinMessage(
+            senderUserID = senderUserID,
+            receiverUserID = receiverUserID,
+            location = location
+        )
     }
 
 }

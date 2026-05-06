@@ -66,9 +66,17 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.example.phinui.components.people.ActiveChatDialog
 import androidx.compose.material3.*
 import com.example.phinui.components.people.PendingFriendRequestDialog
+import androidx.compose.foundation.clickable
+import androidx.navigation.NavHostController
+import com.example.phinui.ui.components.UserProfilePreviewDialog
+import com.example.phinui.data.model.PreviewUser
+import com.example.phinui.ui.navigation.Routes
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PeopleScreen() {
+fun PeopleScreen(
+    navController: NavHostController
+) {
     val repo = remember { FriendRepository() }
     val db = remember { FirebaseFirestore.getInstance() }
     val auth = remember { FirebaseAuth.getInstance() }
@@ -79,6 +87,8 @@ fun PeopleScreen() {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     var search by remember { mutableStateOf("") }
+    var majorFilter by remember { mutableStateOf("All Majors") }
+    var majorMenuExpanded by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var blockedUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var blockedByOthers by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -88,10 +98,13 @@ fun PeopleScreen() {
     var alreadyFriendUser by remember { mutableStateOf<String?>(null) }
     var allUsers by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     var pendingRequestUser by remember { mutableStateOf<String?>(null) }
+    var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToUnblock by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    val chats = chatRepositoryViewModel.approvedChats.value
 
     LaunchedEffect(Unit) {
         val uid = auth.currentUser?.uid ?: return@LaunchedEffect
@@ -181,7 +194,7 @@ fun PeopleScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -189,7 +202,7 @@ fun PeopleScreen() {
             text = "People",
             fontSize = 28.sp,
             fontWeight = FontWeight.SemiBold,
-            color = NavText
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -213,29 +226,94 @@ fun PeopleScreen() {
 
         when (selectedTab) {
             0 -> {
-                OutlinedTextField(
-                    value = search,
-                    onValueChange = { search = it },
-                    label = { Text("Search users by name") },
+                val majors = listOf("All Majors") +
+                        allUsers.mapNotNull { (_, user) ->
+                            (user["major"] as? String)?.trim()
+                        }
+                            .filter { it.isNotBlank() }
+                            .map { it.lowercase() }            // normalize
+                            .distinct()                        // remove duplicates
+                            .map { it.split(" ").joinToString(" ") { word ->
+                                word.replaceFirstChar { c -> c.uppercase() }  // Title Case
+                            }}
+                            .sorted()
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { keyboardController?.hide() }
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        label = { Text("Search users") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Search
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSearch = { keyboardController?.hide() }
+                        )
                     )
-                )
+
+                    Box {
+                        IconButton(
+                            onClick = { majorMenuExpanded = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Filter by major",
+                                tint = MaterialTheme.colorScheme.onTertiary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = majorMenuExpanded,
+                            onDismissRequest = { majorMenuExpanded = false },
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ) {
+                            majors.forEach { major ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = major,
+                                            color = MaterialTheme.colorScheme.onTertiary
+                                        )
+                                    },
+                                    onClick = {
+                                        majorFilter = major
+                                        majorMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (majorFilter != "All Majors") {
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Major: $majorFilter",
+                        color = TextMuted,
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 val usersToDisplay =
                     if (search.isBlank()) allUsers else searchResults
 
-                val visibleUsers = usersToDisplay.filter { (uid, _) ->
+                val visibleUsers = usersToDisplay.filter { (uid, user) ->
+                    val major = user["major"] as? String ?: ""
+
                     blockedUsers.none { (blockedUid, _) -> blockedUid == uid } &&
-                            uid !in blockedByOthers
+                            uid !in blockedByOthers &&
+                            (majorFilter == "All Majors" || major.equals(majorFilter, ignoreCase = true))
                 }
 
                 LazyColumn(
@@ -244,6 +322,20 @@ fun PeopleScreen() {
                     items(visibleUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
+
+                        val currentUserId = chatRepositoryViewModel.currentUserID
+
+                        val chatForUser = chats.firstOrNull { chat ->
+                            val participants = chat["participants"] as? List<*> ?: return@firstOrNull false
+                            val ids = participants.mapNotNull { it as? String }
+
+                            currentUserId != null && currentUserId in ids && uid in ids
+                        }
+
+                        val requestState = chatForUser?.get("requestState") as? String
+                        val showSendMessage = requestState == "approved"
+                        val label = if (showSendMessage) "Send Message" else "Send Message Request"
 
                         Row(
                             modifier = Modifier
@@ -256,7 +348,20 @@ fun PeopleScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name, 44)
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(
@@ -264,7 +369,7 @@ fun PeopleScreen() {
                                 ) {
                                     Text(
                                         text = name,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -285,14 +390,14 @@ fun PeopleScreen() {
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
                                         contentDescription = "Person Options",
-                                        tint = NavText
+                                        tint = MaterialTheme.colorScheme.onTertiary
                                     )
                                 }
 
                                 DropdownMenu(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false },
-                                    containerColor = Background
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ) {
                                     DropdownMenuItem(
                                         text = {
@@ -300,7 +405,7 @@ fun PeopleScreen() {
                                                 Icon(
                                                     imageVector = Icons.Default.PersonAdd,
                                                     contentDescription = "Add Friend",
-                                                    tint = NavText
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text("Add Friend")
@@ -326,21 +431,26 @@ fun PeopleScreen() {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Icon(
                                                     imageVector = Icons.Default.Email,
-                                                    contentDescription = "Send Message Request",
-                                                    tint = NavText
+                                                    contentDescription = label,
+                                                    tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Send Message Request", color = NavText)
+                                                Text(label, color = MaterialTheme.colorScheme.onTertiary)
                                             }
                                         },
                                         onClick = {
                                             val senderID = chatRepositoryViewModel.currentUserID
                                                 ?: return@DropdownMenuItem
-                                            chatRepositoryViewModel.sendMessageRequest(
-                                                senderID,
-                                                uid,
-                                                name
-                                            )
+
+                                            if (showSendMessage) {
+                                                navController.navigate(Routes.MESSAGES + "/$uid")
+                                            } else {
+                                                chatRepositoryViewModel.sendMessageRequest(
+                                                    senderID,
+                                                    uid,
+                                                    name
+                                                )
+                                            }
                                             showMenu = false
                                         }
                                     )
@@ -351,10 +461,10 @@ fun PeopleScreen() {
                                                 Icon(
                                                     imageVector = Icons.Default.Block,
                                                     contentDescription = "Block User",
-                                                    tint = HeaderRed
+                                                    tint = MaterialTheme.colorScheme.primary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Block User", color = HeaderRed)
+                                                Text("Block User", color = MaterialTheme.colorScheme.primary)
                                             }
                                         },
                                         onClick = {
@@ -376,6 +486,7 @@ fun PeopleScreen() {
                     items(blockedUsers) { (uid, user) ->
                         val name = user["name"] as? String ?: "Unknown"
                         val email = user["email"] as? String ?: ""
+                        val photoUrl = user["photoUrl"] as? String
 
                         Row(
                             modifier = Modifier
@@ -388,7 +499,20 @@ fun PeopleScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                UserAvatar(name, 44)
+                                UserAvatar(
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    size = 44,
+                                    modifier = Modifier.clickable {
+                                        previewUser = PreviewUser(
+                                            name = name,
+                                            email = email,
+                                            photoUrl = photoUrl,
+                                            major = user["major"] as? String ?: "",
+                                            bio = user["bio"] as? String ?: ""
+                                        )
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(12.dp))
 
                                 Column(
@@ -396,7 +520,7 @@ fun PeopleScreen() {
                                 ) {
                                     Text(
                                         text = name,
-                                        color = NavText
+                                        color = MaterialTheme.colorScheme.onTertiary
                                     )
 
                                     Text(
@@ -416,7 +540,7 @@ fun PeopleScreen() {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Unblock User",
-                                    tint = HeaderRed
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -502,6 +626,17 @@ fun PeopleScreen() {
                 )
             },
             onDismiss = { userToUnblock = null }
+        )
+    }
+
+    previewUser?.let { user ->
+        UserProfilePreviewDialog(
+            name = user.name,
+            email = user.email,
+            photoUrl = user.photoUrl,
+            major = user.major,
+            bio = user.bio,
+            onDismiss = { previewUser = null }
         )
     }
 

@@ -3,15 +3,15 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 // import functions file
-// const {syncEvents} = require("./events");
 const friendRequest = require("./friendRequestNotif");
 const acceptRequest = require("./acceptFriendRequestNotif");
 const newMessage = require("./newMessageNotif");
 const messageRequest = require("./messageRequestNotif");
 const acceptMessageRequest = require("./acceptMessageRequestNotif");
+const inviteStudySession = require("./inviteStudySessionNotif");
+const acceptInvite = require("./acceptInviteNotif");
 
 // exports to Firebase
-// exports.syncEvents = syncEvents;
 exports.sendFriendRequestNotification =
 friendRequest.sendFriendRequestNotification;
 
@@ -26,4 +26,10 @@ messageRequest.sendMessageRequestNotification;
 
 exports.sendAcceptMessageRequestNotification =
 acceptMessageRequest.sendAcceptMessageRequestNotification;
+
+exports.sendInviteNotification =
+inviteStudySession.sendInviteNotification;
+
+exports.sendAcceptInvite =
+acceptInvite.sendAcceptInviteNotification;
 

@@ -2,21 +2,12 @@ package com.example.phinui.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,18 +18,40 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.phinui.screens.BottomBarType
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.Background
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Message
-import androidx.compose.material.icons.filled.Home
+import com.example.phinui.ui.theme.HeaderRed
 
 data class BottomNavItem(
     val label: String,
     val icon: ImageVector,
     val route: String
 )
+
+@Composable
+fun ChosenBottomBar(
+    navController: NavHostController,
+    waveAnimation: WaveAnimationState,
+    type: BottomBarType
+) {
+    when (type) {
+
+        BottomBarType.ON -> {
+            CustomBottomBar(
+                navController
+            )
+        }
+
+        BottomBarType.OFF -> {
+            // don't render it
+        }
+
+        BottomBarType.WAVE -> {
+            WaveBottomBar(waveAnimation)
+        }
+    }
+}
 
 @Composable
 fun CustomBottomBar(
@@ -59,30 +72,68 @@ fun CustomBottomBar(
             .fillMaxWidth()
             .navigationBarsPadding(),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        color = Background,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            bottomItems.forEach { item ->
-                BottomBarItem(
-                    label = item.label,
-                    icon = item.icon,
-                    selected = currentRoute == item.route,
-                    onClick = {
+            // icons
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                bottomItems.forEach { item ->
+                    BottomBarItem(
+                        label = item.label,
+                        icon = item.icon,
+                        selected = currentRoute?.startsWith(item.route) == true,
+                        onClick = {
                             navController.navigate(item.route) {
                                 launchSingleTop = true
                                 restoreState = true
-
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun WaveBottomBar(waveAnimation: WaveAnimationState) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+
+            // waves
+            AnimatedWaves(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                waveColor = MaterialTheme.colorScheme.primary,
+                height = 90.dp,
+                showShip = true,
+                shipSize = 18.dp,
+                shipVerticalOffset = 15f,
+                frontPhase = waveAnimation.frontPhase,
+                backPhase = waveAnimation.backPhase,
+                shipProgress = waveAnimation.shipProgress,
+                bobPhase = waveAnimation.bobPhase
+            )
+
         }
     }
 }
@@ -94,9 +145,9 @@ fun BottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeBackground = Color(0xFFFFE3E3)
-    val activeColor = Color(0xFFD62828)
-    val inactiveColor = Color(0xFF2C2C2C)
+    val activeBackground = MaterialTheme.colorScheme.surfaceVariant
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.secondary
 
     Column(
         modifier = Modifier

@@ -68,21 +68,40 @@ import java.util.TimeZone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TimePickerDefaults
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun AddEventScreen(
+    existingEvent: CalendarEvent? = null,
     onSaveEvent: (CalendarEvent) -> Unit,
     onBackClick: () -> Unit
 ) {
-    var eventName by rememberSaveable { mutableStateOf("") }
-    var eventDate by rememberSaveable { mutableStateOf("") }
-    var eventLocation by rememberSaveable { mutableStateOf("") }
-    var eventDescription by rememberSaveable { mutableStateOf("") }
-    var eventStartTime by rememberSaveable { mutableStateOf("") }
-    var eventEndTime by rememberSaveable { mutableStateOf("") }
-    var isAllDay by rememberSaveable { mutableStateOf(false) }
-    var selectedReminder by rememberSaveable { mutableStateOf<Int?>(null) }
+    var eventName by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.title ?: "")
+    }
+    var eventDate by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.let { extractEventDate(it) } ?: "")
+    }
+    var eventLocation by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.location ?: "")
+    }
+    var eventDescription by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.description ?: "")
+    }
+    var eventStartTime by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.let { extractStartTime12Hour(it) } ?: "")
+    }
+    var eventEndTime by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.let { extractEndTime12Hour(it) } ?: "")
+    }
+    var isAllDay by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.isAllDay ?: false)
+    }
+    var selectedReminder by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.reminderMinutes?.firstOrNull())
+    }
+
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -103,7 +122,9 @@ fun AddEventScreen(
     var customReminderUnit by rememberSaveable { mutableStateOf("Minutes") }
     var showCustomReminderUnitMenu by remember { mutableStateOf(false) }
     var customReminderError by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedColorHex by rememberSaveable { mutableStateOf("#FF1F1F") }
+    var selectedColorHex by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.colorHex ?: "#FF1F1F")
+    }
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
 
     val presetColors = listOf(
@@ -117,15 +138,15 @@ fun AddEventScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.Top
     ) {
         Text(
-            text = "Add Event",
+            text = if (existingEvent == null) "Add Event" else "Edit Event",
             fontSize = 28.sp,
-            color = NavText
+            color = MaterialTheme.colorScheme.onTertiary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -162,7 +183,7 @@ fun AddEventScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(20.dp)
                 )
                 .clickable { isAllDay = !isAllDay }
@@ -173,7 +194,7 @@ fun AddEventScreen(
                 Text(
                     text = "All-day",
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color(0xFF3A342E)
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -189,11 +210,11 @@ fun AddEventScreen(
                 checked = isAllDay,
                 onCheckedChange = { isAllDay = it },
                 colors = androidx.compose.material3.SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFFFF2A2A),
-                    uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFE7E2DC),
-                    uncheckedBorderColor = Color(0xFFE7E2DC)
+                    checkedThumbColor = MaterialTheme.colorScheme.surface,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.primary,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surface,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -270,7 +291,7 @@ fun AddEventScreen(
                     .fillMaxWidth()
                     .clickable { showReminderMenu = true },
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp,
                 shadowElevation = 2.dp
             ) {
@@ -292,14 +313,14 @@ fun AddEventScreen(
                         Text(
                             text = selectedReminder?.let { formatSingleReminderLabel(it) } ?: "None",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF111111)
+                            color = MaterialTheme.colorScheme.onTertiary
                         )
                     }
 
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = "Reminder",
-                        tint = Color(0xFFFF1F1F)
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -310,10 +331,10 @@ fun AddEventScreen(
                 modifier = Modifier
                     .fillMaxWidth(0.92f)
                     .background(
-                        color = Color(0xFFF7F5F2),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(18.dp)
                     ),
-                containerColor = Color(0xFFF7F5F2),
+                containerColor = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp
             ) {
                 reminderOptions.forEach { (label, value) ->
@@ -321,7 +342,7 @@ fun AddEventScreen(
                         text = {
                             Text(
                                 text = label,
-                                color = Color(0xFF111111),
+                                color = MaterialTheme.colorScheme.onTertiary,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         },
@@ -351,7 +372,7 @@ fun AddEventScreen(
             Text(
                 text = "Accent Color",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFF111111)
+                color = MaterialTheme.colorScheme.onTertiary
             )
 
             Surface(
@@ -359,7 +380,7 @@ fun AddEventScreen(
                     .fillMaxWidth()
                     .clickable { showColorPicker = !showColorPicker },
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp,
                 shadowElevation = 2.dp
             ) {
@@ -395,7 +416,7 @@ fun AddEventScreen(
                     Text(
                         text = if (showColorPicker) "Hide" else "Choose",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color(0xFFFF1F1F)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -403,7 +424,7 @@ fun AddEventScreen(
             if (showColorPicker) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = Color(0xFFF7F5F2),
+                    color = MaterialTheme.colorScheme.surface,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -469,16 +490,18 @@ fun AddEventScreen(
                         "Please select an end time."
 
                     else -> {
+                        val eventId = existingEvent?.id ?: System.currentTimeMillis().toString()
+                        val eventSource = existingEvent?.source ?: CalendarSource.LOCAL
                         val newEvent = if (isAllDay) {
                             CalendarEvent(
-                                id = System.currentTimeMillis().toString(),
+                                id = eventId,
                                 title = trimmedName,
                                 start = trimmedDate,
                                 end = trimmedDate,
                                 location = trimmedLocation.ifBlank { null },
                                 reminderMinutes = selectedReminder?.let { listOf(it) }
                                     ?: emptyList(),
-                                source = CalendarSource.LOCAL,
+                                source = eventSource,
                                 description = trimmedDescription.ifBlank { null },
                                 isAllDay = true,
                                 colorHex = selectedColorHex
@@ -493,14 +516,14 @@ fun AddEventScreen(
                             }
 
                             CalendarEvent(
-                                id = System.currentTimeMillis().toString(),
+                                id = eventId,
                                 title = trimmedName,
                                 start = "${trimmedDate}T$start24",
                                 end = "${trimmedDate}T$end24",
                                 location = trimmedLocation.ifBlank { null },
                                 reminderMinutes = selectedReminder?.let { listOf(it) }
                                     ?: emptyList(),
-                                source = CalendarSource.LOCAL,
+                                source = eventSource,
                                 description = trimmedDescription.ifBlank { null },
                                 isAllDay = false,
                                 colorHex = selectedColorHex
@@ -512,17 +535,10 @@ fun AddEventScreen(
                 }
             }
         ) {
-            Text("Save Event")
+            Text(if (existingEvent == null) "Save Event" else "Update Event")
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        TextButton(
-            onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Cancel")
-        }
     }
 
     if (showStartPicker) {
@@ -561,11 +577,11 @@ fun AddEventScreen(
     }
 
     if (showCustomReminderDialog) {
-        val accentRed = Color(0xFFFF1F1F)
-        val cardColor = Color(0xFFF7F5F2)
-        val titleColor = Color(0xFF111111)
-        val bodyColor = Color(0xFF444444)
-        val fieldColor = Color.White
+        val accentRed = MaterialTheme.colorScheme.primary
+        val cardColor = MaterialTheme.colorScheme.surface
+        val titleColor = MaterialTheme.colorScheme.onTertiary
+        val bodyColor = MaterialTheme.colorScheme.onSurfaceVariant
+        val fieldColor = MaterialTheme.colorScheme.surface
 
         AlertDialog(
             onDismissRequest = {
@@ -606,9 +622,9 @@ fun AddEventScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = accentRed,
-                            unfocusedBorderColor = Color(0xFFD6D0C8),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.surface,
                             focusedLabelColor = accentRed,
-                            unfocusedLabelColor = Color(0xFF777777),
+                            unfocusedLabelColor = MaterialTheme.colorScheme.surface,
                             cursorColor = accentRed,
                             focusedContainerColor = fieldColor,
                             unfocusedContainerColor = fieldColor
@@ -655,7 +671,7 @@ fun AddEventScreen(
                         DropdownMenu(
                             expanded = showCustomReminderUnitMenu,
                             onDismissRequest = { showCustomReminderUnitMenu = false },
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ) {
                             listOf("Minutes", "Hours", "Days").forEach { unit ->
                                 DropdownMenuItem(
@@ -700,7 +716,7 @@ fun AddEventScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = accentRed,
-                        contentColor = Color.White
+                        contentColor = MaterialTheme.colorScheme.surface
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -744,9 +760,9 @@ private fun EventTimePickerDialog(
 
     var showDial by rememberSaveable { mutableStateOf(false) }
 
-    val accentRed = Color(0xFFFF1F1F)
-    val cardColor = Color(0xFFF7F5F2)
-    val titleColor = Color(0xFF111111)
+    val accentRed = MaterialTheme.colorScheme.primary
+    val cardColor = MaterialTheme.colorScheme.surface
+    val titleColor = MaterialTheme.colorScheme.onTertiary
     val bodyColor = Color(0xFF444444)
 
     Dialog(
@@ -801,9 +817,41 @@ private fun EventTimePickerDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (showDial) {
-                        TimePicker(state = timePickerState)
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.onSecondary,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                selectorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     } else {
-                        TimeInput(state = timePickerState)
+                        TimeInput(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                timeSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.onSecondary,
+                                timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+
+                                periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                periodSelectorSelectedContentColor = MaterialTheme.colorScheme.tertiary,
+
+                                periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
                     }
                 }
 
@@ -831,7 +879,7 @@ private fun EventTimePickerDialog(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = accentRed,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.surface
                         ),
                         shape = RoundedCornerShape(14.dp)
                     ) {
@@ -875,6 +923,61 @@ private fun isValidDate(date: String): Boolean {
     return regex.matches(date)
 }
 
+private fun extractEventDate(event: CalendarEvent): String {
+    return try {
+        if (event.start.contains("T")) {
+            event.start.substring(0, 10)
+        } else {
+            event.start
+        }
+    } catch (_: Exception) {
+        ""
+    }
+}
+
+private fun extractStartTime12Hour(event: CalendarEvent): String {
+    if (event.isAllDay) return ""
+
+    return try {
+        val time24 = if (event.start.contains("T")) {
+            event.start.substring(11, 16)
+        } else {
+            ""
+        }
+
+        if (time24.isBlank()) "" else format24To12Hour(time24)
+    } catch (_: Exception) {
+        ""
+    }
+}
+
+private fun extractEndTime12Hour(event: CalendarEvent): String {
+    if (event.isAllDay) return ""
+
+    return try {
+        val time24 = if (event.end.contains("T")) {
+            event.end.substring(11, 16)
+        } else {
+            ""
+        }
+
+        if (time24.isBlank()) "" else format24To12Hour(time24)
+    } catch (_: Exception) {
+        ""
+    }
+}
+
+private fun format24To12Hour(time24: String): String {
+    return try {
+        val (hourStr, minuteStr) = time24.split(":")
+        val hour24 = hourStr.toInt()
+        val minute = minuteStr.toInt()
+        formatTo12Hour(hour24, minute)
+    } catch (_: Exception) {
+        ""
+    }
+}
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun EventDatePickerDialog(
@@ -882,7 +985,7 @@ private fun EventDatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    val accentRed = Color(0xFFFF1F1F)
+    val accentRed = MaterialTheme.colorScheme.primary
 
     val initialMillis = remember(initialDate) {
         parseIsoDateToMillis(initialDate)
@@ -905,7 +1008,7 @@ private fun EventDatePickerDialog(
                 enabled = datePickerState.selectedDateMillis != null,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accentRed,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.surface
                 ),
                 shape = RoundedCornerShape(14.dp)
             ) {
@@ -918,25 +1021,25 @@ private fun EventDatePickerDialog(
             }
         },
         colors = DatePickerDefaults.colors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         DatePicker(
             state = datePickerState,
             showModeToggle = true,
             colors = DatePickerDefaults.colors(
-                containerColor = Color.White,
-                titleContentColor = Color.Black,
-                headlineContentColor = Color.Black,
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onTertiary,
+                headlineContentColor = MaterialTheme.colorScheme.onTertiary,
                 weekdayContentColor = Color.DarkGray,
                 subheadContentColor = Color.DarkGray,
                 selectedDayContainerColor = accentRed,
-                selectedDayContentColor = Color.White,
+                selectedDayContentColor = MaterialTheme.colorScheme.surface,
                 todayDateBorderColor = accentRed,
                 todayContentColor = accentRed,
                 selectedYearContainerColor = accentRed,
-                selectedYearContentColor = Color.White,
-                dayContentColor = Color.Black,
+                selectedYearContentColor = MaterialTheme.colorScheme.surface,
+                dayContentColor = MaterialTheme.colorScheme.onTertiary,
                 disabledDayContentColor = Color.LightGray
             )
         )
