@@ -55,6 +55,7 @@ import com.example.phinui.ui.theme.PhinUITheme
 import com.example.phinui.viewmodel.MainActivityViewModel
 import com.example.phinui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
+import com.example.phinui.ui.theme.Background
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,7 +126,7 @@ fun PhinUIApp(
         PhinUITheme(darkMode = false) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.background
+                containerColor = Background
             ) { innerPadding ->
                 Box(
                     modifier = Modifier
