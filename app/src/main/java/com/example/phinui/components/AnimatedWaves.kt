@@ -48,7 +48,7 @@ fun AnimatedWaves(
     shipProgress: Float,
     bobPhase: Float
 ) {
-    val labelColor = MaterialTheme.colorScheme.onTertiary
+    val labelColor = MaterialTheme.colorScheme.onBackground
 
     Canvas(
         modifier = modifier
