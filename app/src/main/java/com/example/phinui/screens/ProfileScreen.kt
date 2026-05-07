@@ -58,6 +58,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
+import androidx.compose.material3.OutlinedTextFieldDefaults
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
@@ -80,6 +81,39 @@ fun ProfileScreen(navController: NavHostController) {
 
     var showConfirm by remember { mutableStateOf(false) }
     var showPhotoMenu by remember { mutableStateOf(false) }
+
+    var majorMenuExpanded by remember { mutableStateOf(false) }
+    val majorOptions = listOf(
+        "No Major",
+        "Anthropology",
+        "Applied Physics",
+        "Art",
+        "Biology",
+        "Business",
+        "Chemistry",
+        "Chicana/o Studies",
+        "Communication",
+        "Computer Science",
+        "Dance Studies",
+        "Early Childhood Studies",
+        "Economics",
+        "English",
+        "Environmental Science & Resource Management",
+        "Global Studies",
+        "Health Science",
+        "History",
+        "Information Technology",
+        "Liberal Studies",
+        "Mathematics",
+        "Mechatronics Engineering",
+        "Music",
+        "Nursing",
+        "Political Science",
+        "Psychology",
+        "Sociology",
+        "Spanish",
+        "Theatre and Performance Studies"
+    )
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -392,13 +426,46 @@ fun ProfileScreen(navController: NavHostController) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        OutlinedTextField(
-                            value = major,
-                            onValueChange = { major = it },
-                            label = { Text("Major") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = if (major.isBlank()) "No Major" else major,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Major") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { majorMenuExpanded = true },
+                                singleLine = true,
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onTertiary,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onTertiary,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledContainerColor = Color.Transparent
+                                )
+                            )
+
+                            DropdownMenu(
+                                expanded = majorMenuExpanded,
+                                onDismissRequest = { majorMenuExpanded = false },
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ) {
+                                majorOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = option,
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                        },
+                                        onClick = {
+                                            major = if (option == "No Major") "" else option
+                                            majorMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
