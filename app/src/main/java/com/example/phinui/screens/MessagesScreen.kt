@@ -218,7 +218,7 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(messages) {
-        chatRepositoryViewModel.markChatsAsRead(senderUserID, chatID)
+        chatRepositoryViewModel.markChatsAsRead(senderUserID, resolvedChatID)
 
         if (messages.isNotEmpty()) {
             val lastMessage = messages.size - 1
