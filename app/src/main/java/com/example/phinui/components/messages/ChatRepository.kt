@@ -57,6 +57,15 @@ class ChatRepository {
             FieldValue.arrayRemove(senderUserID, receiverUserID)
         )
 
+        // add count for unread messages
+        batch.update(
+            chatRef,
+            mapOf(
+                "unreadCounts.$receiverUserID" to FieldValue.increment(1),
+                "unreadCounts.$senderUserID" to 0
+            )
+        )
+
         // commit everything atomically
         batch.commit()
 
@@ -305,7 +314,14 @@ class ChatRepository {
             ),
             SetOptions.merge()
         )
+    }
 
+    fun unreadCountChats(userID: String, chatID: String) {
+        val unreadCountRef = database
+            .collection("chats")
+            .document(chatID)
+
+        unreadCountRef.update("unreadCounts.$userID", 0)
     }
 
     fun deleteChat(userID: String, chatID: String) {

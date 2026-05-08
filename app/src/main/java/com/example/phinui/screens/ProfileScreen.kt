@@ -30,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,14 +52,15 @@ import coil.compose.AsyncImage
 import com.example.phinui.notifications.FCMTokenManager.clearToken
 import com.example.phinui.notifications.FCMTokenManager.deleteDeviceToken
 import com.example.phinui.ui.navigation.Routes
-import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.NavText
-import com.example.phinui.ui.theme.PrimaryRed
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavHostController) {
     val auth = FirebaseAuth.getInstance()
@@ -80,6 +82,39 @@ fun ProfileScreen(navController: NavHostController) {
 
     var showConfirm by remember { mutableStateOf(false) }
     var showPhotoMenu by remember { mutableStateOf(false) }
+
+    var majorMenuExpanded by remember { mutableStateOf(false) }
+    val majorOptions = listOf(
+        "No Major",
+        "Anthropology",
+        "Applied Physics",
+        "Art",
+        "Biology",
+        "Business",
+        "Chemistry",
+        "Chicana/o Studies",
+        "Communication",
+        "Computer Science",
+        "Dance Studies",
+        "Early Childhood Studies",
+        "Economics",
+        "English",
+        "Environmental Science & Resource Management",
+        "Global Studies",
+        "Health Science",
+        "History",
+        "Information Technology",
+        "Liberal Studies",
+        "Mathematics",
+        "Mechatronics Engineering",
+        "Music",
+        "Nursing",
+        "Political Science",
+        "Psychology",
+        "Sociology",
+        "Spanish",
+        "Theatre and Performance Studies"
+    )
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -392,13 +427,51 @@ fun ProfileScreen(navController: NavHostController) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        OutlinedTextField(
-                            value = major,
-                            onValueChange = { major = it },
-                            label = { Text("Major") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        ExposedDropdownMenuBox(
+                            expanded = majorMenuExpanded,
+                            onExpandedChange = { majorMenuExpanded = !majorMenuExpanded },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = if (major.isBlank()) "No Major" else major,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Major") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = majorMenuExpanded)
+                                },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    unfocusedLabelColor = MaterialTheme.colorScheme.onTertiary,
+                                    focusedTextColor = MaterialTheme.colorScheme.onTertiary,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onTertiary,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent
+                                )
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = majorMenuExpanded,
+                                onDismissRequest = { majorMenuExpanded = false },
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ) {
+                                majorOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option) },
+                                        onClick = {
+                                            major = if (option == "No Major") "" else option
+                                            majorMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
