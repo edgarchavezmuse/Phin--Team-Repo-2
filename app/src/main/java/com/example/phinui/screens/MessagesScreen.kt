@@ -304,7 +304,6 @@ fun MessagesScreen(
                 val studySessionDescription = message["description"] as? String ?: ""
                 val participants = message["participants"] as? Map<String, String> ?: emptyMap()
                 val myStatus = participants[senderUserID] ?: "PENDING"
-                val receiverStatus = participants[receiverUserID] ?: "PENDING"
 
                 val convertDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                 val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
@@ -435,14 +434,7 @@ fun MessagesScreen(
                 Spacer(modifier = Modifier.width(4.dp))
 
                 Box {
-                    IconButton(
-                        onClick = {
-                            if (!isGroupChat) {
-                                showAttachMenu = true
-                            }
-                        },
-                        enabled = !isGroupChat
-                    ) {
+                    IconButton(onClick = { showAttachMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Menu",
@@ -644,14 +636,25 @@ fun MessagesScreen(
                                 selectedStudyEndTime!!
                             )
 
-                            chatRepositoryViewModel.callSendStudySessionInvitation(
-                                senderUserID = senderUserID,
-                                receiverUserID = receiverUserID,
-                                studySessionTitle = studySessionTitle,
-                                studySessionDescription = studySessionDescription,
-                                startTime = studyStartTime,
-                                endTime = studyEndTime
-                            )
+                            if (isGroupChat) {
+                                chatRepositoryViewModel.callSendGroupStudySessionInvitation(
+                                    senderUserID = senderUserID,
+                                    chatID = resolvedChatID,
+                                    studySessionTitle = studySessionTitle,
+                                    studySessionDescription = studySessionDescription,
+                                    startTime = studyStartTime,
+                                    endTime = studyEndTime
+                                )
+                            } else {
+                                chatRepositoryViewModel.callSendStudySessionInvitation(
+                                    senderUserID = senderUserID,
+                                    receiverUserID = receiverUserID,
+                                    studySessionTitle = studySessionTitle,
+                                    studySessionDescription = studySessionDescription,
+                                    startTime = studyStartTime,
+                                    endTime = studyEndTime
+                                )
+                            }
 
                             val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
                             val convertStudyStartTime = studyStartTime
@@ -1039,8 +1042,9 @@ private fun MessageBubble(
     val studySessionDescription = message["description"] as? String ?: ""
     val participants = message["participants"] as? Map<String, String> ?: emptyMap()
     val myStatus = participants[senderUserID] ?: "PENDING"
-    val receiverStatus = participants[receiverUserID] ?: "PENDING"
-
+    val acceptedCount = participants.values.count { it == "ACCEPTED" }
+    val declinedCount = participants.values.count { it == "DECLINED" }
+    val pendingCount = participants.values.count { it == "PENDING" }
     val convertDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
     val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
@@ -1218,128 +1222,101 @@ private fun MessageBubble(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            when (myStatus) {
-                                "PENDING" -> {
-                                    if (!isMyMessage) {
-                                        Row {
-                                            Button(
-                                                onClick = {
-                                                    val createStudySessionEventTitle =
-                                                        message["title"] as? String ?: "Study Session"
-                                                    val createStudySessionEventDescription =
-                                                        message["description"] as? String ?: ""
-                                                    val createStudySessionEventStartTime =
-                                                        message["startTime"] as? Timestamp
-                                                    val createStudySessionEventEndTime =
-                                                        message["endTime"] as? Timestamp
+                            if (myStatus == "PENDING" && !isMyMessage) {
+                                Row {
+                                    Button(
+                                        onClick = {
+                                            val title = message["title"] as? String ?: "Study Session"
+                                            val description = message["description"] as? String ?: ""
+                                            val startTimestamp = message["startTime"] as? Timestamp
+                                            val endTimestamp = message["endTime"] as? Timestamp
 
-                                                    if (createStudySessionEventStartTime == null ||
-                                                        createStudySessionEventEndTime == null
-                                                    ) {
-                                                        return@Button
-                                                    }
-
-                                                    val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                                    val convertStudySessionEventStartTime =
-                                                        createStudySessionEventStartTime
-                                                            .toDate()
-                                                            .toInstant()
-                                                            .atZone(ZoneId.systemDefault())
-                                                            .toLocalDateTime()
-                                                            .format(timeFormatter)
-
-                                                    val convertStudySessionEventEndTime =
-                                                        createStudySessionEventEndTime
-                                                            .toDate()
-                                                            .toInstant()
-                                                            .atZone(ZoneId.systemDefault())
-                                                            .toLocalDateTime()
-                                                            .format(timeFormatter)
-
-                                                    val createStudySessionEvent = CalendarEvent(
-                                                        id = "",
-                                                        title = createStudySessionEventTitle,
-                                                        description = createStudySessionEventDescription,
-                                                        start = convertStudySessionEventStartTime,
-                                                        end = convertStudySessionEventEndTime,
-                                                        location = null,
-                                                        reminderMinutes = emptyList(),
-                                                        isAllDay = false,
-                                                        colorHex = "#DC2127",
-                                                        source = CalendarSource.LOCAL
-                                                    )
-
-                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                        chatID = messageChatID,
-                                                        messageID = messageID,
-                                                        senderUserID = senderUserID,
-                                                        invitationResponse = "ACCEPTED"
-                                                    )
-
-                                                    calendarViewModel.saveStudySessionEvent(
-                                                        createStudySessionEvent
-                                                    ) { success ->
-                                                        if (success) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "$createStudySessionEventTitle added to your local calendar",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        } else {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Failed to add $createStudySessionEventTitle to your local calendar",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
-                                                    }
-                                                },
-                                                shape = RoundedCornerShape(14.dp)
-                                            ) {
-                                                Text("Accept")
+                                            if (startTimestamp == null || endTimestamp == null) {
+                                                return@Button
                                             }
 
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                            val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
-                                            Button(
-                                                onClick = {
-                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                        chatID = messageChatID,
-                                                        messageID = messageID,
-                                                        senderUserID = senderUserID,
-                                                        invitationResponse = "DECLINED"
-                                                    )
-                                                },
-                                                shape = RoundedCornerShape(14.dp)
-                                            ) {
-                                                Text("Decline")
+                                            val start = startTimestamp
+                                                .toDate()
+                                                .toInstant()
+                                                .atZone(ZoneId.systemDefault())
+                                                .toLocalDateTime()
+                                                .format(timeFormatter)
+
+                                            val end = endTimestamp
+                                                .toDate()
+                                                .toInstant()
+                                                .atZone(ZoneId.systemDefault())
+                                                .toLocalDateTime()
+                                                .format(timeFormatter)
+
+                                            val calendarEvent = CalendarEvent(
+                                                id = "",
+                                                title = title,
+                                                description = description,
+                                                start = start,
+                                                end = end,
+                                                location = null,
+                                                reminderMinutes = emptyList(),
+                                                isAllDay = false,
+                                                colorHex = "#DC2127",
+                                                source = CalendarSource.LOCAL
+                                            )
+
+                                            chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                chatID = messageChatID,
+                                                messageID = messageID,
+                                                senderUserID = senderUserID,
+                                                invitationResponse = "ACCEPTED"
+                                            )
+
+                                            calendarViewModel.saveStudySessionEvent(calendarEvent) { success ->
+                                                if (success) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "$title added to your local calendar",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                } else {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Failed to add $title to your local calendar",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
                                             }
-                                        }
-                                    } else {
-                                        Text(
-                                            "Pending response...",
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.tertiary
-                                        )
+                                        },
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("Accept")
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Button(
+                                        onClick = {
+                                            chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                chatID = messageChatID,
+                                                messageID = messageID,
+                                                senderUserID = senderUserID,
+                                                invitationResponse = "DECLINED"
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("Decline")
                                     }
                                 }
 
-                                "ACCEPTED" -> {
-                                    when (receiverStatus) {
-                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                        "DECLINED" -> Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                    }
-                                }
-
-                                "DECLINED" -> {
-                                    if (receiverStatus == "PENDING") {
-                                        Text("Pending response...", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-                                    } else {
-                                        Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                    }
-                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
+
+                            Text(
+                                text = "$acceptedCount accepted • $pendingCount pending • $declinedCount declined",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
                         }
                     }
                 }

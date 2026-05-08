@@ -322,4 +322,22 @@ class ChatRepositoryViewModel (
         )
     }
 
+    fun callSendGroupStudySessionInvitation(
+        senderUserID: String,
+        chatID: String,
+        studySessionTitle: String,
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+    ) {
+        chatRepository.sendGroupStudySessionInvitation(
+            senderUserID = senderUserID,
+            chatID = chatID,
+            studySessionTitle = studySessionTitle,
+            studySessionDescription = studySessionDescription,
+            startTime = startTime,
+            endTime = endTime
+        )
+    }
+
 }

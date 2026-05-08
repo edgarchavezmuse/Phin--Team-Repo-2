@@ -510,5 +510,60 @@ class ChatRepository {
             }
     }
 
+    fun sendGroupStudySessionInvitation(
+        senderUserID: String,
+        chatID: String,
+        studySessionTitle: String,
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val participantStatuses = participants.associateWith { userID ->
+                    if (userID == senderUserID) "ACCEPTED" else "PENDING"
+                }
+
+                val invitation = hashMapOf(
+                    "type" to "invitation",
+                    "senderID" to senderUserID,
+                    "title" to studySessionTitle,
+                    "description" to studySessionDescription,
+                    "timestamp" to currentTime,
+                    "deleted" to false,
+                    "startTime" to startTime,
+                    "endTime" to endTime,
+                    "participants" to participantStatuses
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to "Study session: $studySessionTitle",
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+                batch.set(messageRef, invitation)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        setActiveChat(senderUserID, chatID)
+                    }
+            }
+    }
 
 }
