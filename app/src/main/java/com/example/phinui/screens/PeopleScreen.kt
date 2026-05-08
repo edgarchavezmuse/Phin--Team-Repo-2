@@ -114,14 +114,18 @@ fun PeopleScreen(
             }
     }
 
-    LaunchedEffect(Unit) {
-        db.collection("users")
-            .get()
-            .addOnSuccessListener { snapshot ->
+    DisposableEffect(Unit) {
+        val usersListener = db.collection("users")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    message = error.message
+                    return@addSnapshotListener
+                }
+
                 val currentUid = auth.currentUser?.uid
 
-                allUsers = snapshot.documents
-                    .mapNotNull { doc ->
+                allUsers = snapshot?.documents
+                    ?.mapNotNull { doc ->
                         val uid = doc.id
                         val data = doc.data
 
@@ -129,10 +133,15 @@ fun PeopleScreen(
                             uid to data
                         } else null
                     }
-                    .sortedBy { (_, data) ->
+                    ?.sortedBy { (_, data) ->
                         (data["name"] as? String)?.trim()?.lowercase() ?: ""
                     }
+                    ?: emptyList()
             }
+
+        onDispose {
+            usersListener.remove()
+        }
     }
 
     LaunchedEffect(Unit) {
