@@ -105,7 +105,18 @@ fun UserListScreen (
     val blockedByOtherUsersList = chatRepositoryViewModel.userListRepository.blockedByOtherUsersList.value
     val hideBlockedUsers = currentUserBlockedList + blockedByOtherUsersList
 
+    val messageRequestsCountState = chatRepositoryViewModel.messageRequests.value
 
+    val userCountCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+
+    val sortedCountChats = getSortedChats(
+        approvedChatsState = messageRequestsCountState,
+        chatRepositoryViewModel = chatRepositoryViewModel,
+        userCache = userCountCache,
+        currentUserID = currentUserID
+    )
+
+    val totalCountChats = sortedCountChats.size
 
     Column(
         modifier = Modifier
@@ -124,7 +135,14 @@ fun UserListScreen (
             }
             Tab(selected = selectedTab == 2,
                 onClick = {selectedTab = 2}) {
-                Text("Requests")
+                if (totalCountChats >= 1) {
+                    Text(
+                        "Requests (${totalCountChats})"
+                    )
+                }
+                else {
+                    Text("Requests")
+                }
             }
         }
 
@@ -391,7 +409,6 @@ fun UserListScreen (
             //Requests tab
             2 -> {
                 val messageRequestState = chatRepositoryViewModel.messageRequests.value
-
                 val userCache = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
 
                 val alphabetizedChats = getSortedChats(
