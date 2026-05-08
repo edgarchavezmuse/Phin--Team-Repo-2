@@ -248,6 +248,11 @@ class ChatRepositoryViewModel (
 
     fun onChatOpened(userID: String, chatID: String) {
         chatRepository.setActiveChat(userID, chatID)
+        chatRepository.unreadCountChats(userID, chatID)
+    }
+
+    fun markChatsAsRead(userID: String, chatID: String) {
+        chatRepository.unreadCountChats(userID, chatID)
     }
 
     fun onChatClosed(userID: String) {

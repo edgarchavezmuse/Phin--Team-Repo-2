@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.example.phinui.ui.navigation.Routes
 import androidx.compose.material3.Text
@@ -20,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
-import com.example.phinui.ui.theme.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
@@ -49,7 +47,6 @@ import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import com.google.firebase.firestore.FirebaseFirestore
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +113,38 @@ fun UserListScreen (
         currentUserID = currentUserID
     )
 
-    val totalCountChats = sortedCountChats.size
+    val totalMessageRequestCount = sortedCountChats.size
+
+    val friendMessagesCount = chatRepositoryViewModel.getFriendChats.value
+    val userCacheCount = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+
+    val generalMessagesStateCount = chatRepositoryViewModel.getGeneralChats.value
+
+    val sortedFriendMessagesCount = getSortedChats(
+        approvedChatsState = friendMessagesCount,
+        chatRepositoryViewModel = chatRepositoryViewModel,
+        userCache = userCacheCount,
+        currentUserID = currentUserID
+    )
+
+    val sortedGeneralMessagesStateCount = getSortedChats(
+        approvedChatsState = generalMessagesStateCount,
+        chatRepositoryViewModel = chatRepositoryViewModel,
+        userCache = userCacheCount,
+        currentUserID = currentUserID
+    )
+
+    val totalFriendsMessagesCount = sortedFriendMessagesCount.sumOf { chat ->
+        val unreadFriendsMessagesCount = chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+        unreadFriendsMessagesCount[currentUserID]?.toInt() ?: 0
+    }
+
+    val totalGeneralMessagesCount = sortedGeneralMessagesStateCount.sumOf { chat ->
+        val unreadGeneralMessagesCount = chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+        unreadGeneralMessagesCount[currentUserID]?.toInt() ?: 0
+    }
 
     Column(
         modifier = Modifier
@@ -127,17 +155,27 @@ fun UserListScreen (
         TabRow(selectedTabIndex = selectedTab) {
             Tab(selected = selectedTab == 0,
                 onClick = {selectedTab = 0}) {
-                Text("Friends")
+                if (totalFriendsMessagesCount > 0) {
+                    Text("Friends (${totalFriendsMessagesCount})")
+                }
+                else {
+                    Text("Friends")
+                }
             }
             Tab(selected = selectedTab == 1,
                 onClick = {selectedTab = 1}) {
-                Text("General")
+                if (totalGeneralMessagesCount > 0) {
+                    Text("General (${totalGeneralMessagesCount})")
+                }
+                else {
+                    Text("General")
+                }
             }
             Tab(selected = selectedTab == 2,
                 onClick = {selectedTab = 2}) {
-                if (totalCountChats >= 1) {
+                if (totalMessageRequestCount > 0) {
                     Text(
-                        "Requests (${totalCountChats})"
+                        "Requests (${totalMessageRequestCount})"
                     )
                 }
                 else {
@@ -173,6 +211,12 @@ fun UserListScreen (
                             val participants = chat["participants"] as List<String>
                             val friendId = participants.first { it != currentUserID }
 
+                            val unreadCounts =
+                                chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+                            val unreadCount =
+                                unreadCounts[currentUserID]?.toInt() ?: 0
+
                             if(friendId in hideBlockedUsers) return@items
 
                             val friendUser = friendList.firstOrNull { it.uid == friendId } ?: User(
@@ -191,6 +235,7 @@ fun UserListScreen (
                             }
                             UserListItem(
                                 user = friendUser,
+                                unreadCount = unreadCount,
                                 subtitle = previewText,
                                 timeText = formatTimestamp(timestamp),
                                 trailingContent = {
@@ -246,20 +291,6 @@ fun UserListScreen (
                                                     friendToBlock = friendId to friendUser.name
                                                 }
                                             )
-
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Delete", color = HeaderRed)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    //chatRepositoryViewModel.denyRequest(chatID)
-//                                                }
-//                                            )
                                         }
                                     }
                                 },
@@ -287,6 +318,7 @@ fun UserListScreen (
                     userCache = userCache,
                     currentUserID = currentUserID
                 )
+
                 Box {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -296,6 +328,12 @@ fun UserListScreen (
                             val chatID = chat["chatID"] as? String ?: return@items
 
                             val participants = chat["participants"] as? List<*> ?: return@items
+
+                            val unreadCounts =
+                                chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+                            val unreadCount =
+                                unreadCounts[currentUserID]?.toInt() ?: 0
 
                             val otherUserID = participants
                                 .mapNotNull { it as? String }
@@ -320,6 +358,7 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
+                                unreadCount = unreadCount,
                                 subtitle = previewText,
                                 timeText = formatTimestamp(timestamp),
                                 trailingContent = {
@@ -376,20 +415,6 @@ fun UserListScreen (
                                                     userToBlock = otherUserID to user.name
                                                 }
                                             )
-
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Delete", color = HeaderRed)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    //chatRepositoryViewModel.denyRequest(chatID)
-//                                                }
-//                                            )
                                         }
                                     }
                                 },
@@ -441,6 +466,7 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
+                                unreadCount = 0,
                                 trailingContent = {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -626,6 +652,7 @@ fun UserListScreen (
 @Composable
 fun UserListItem(
     user: User,
+    unreadCount: Int,
     subtitle: String = "",
     timeText: String? = null,
     trailingContent: @Composable (() -> Unit)? = null,
@@ -665,7 +692,12 @@ fun UserListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = user.name,
+                        text = if (unreadCount > 0) {
+                            user.name + "  ($unreadCount)"
+                        }
+                        else {
+                            user.name
+                        },
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onTertiary
