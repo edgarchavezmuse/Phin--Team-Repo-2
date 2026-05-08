@@ -147,6 +147,27 @@ fun MessagesScreen(
     var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
     var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
 
+    var userNameCache by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+
+    LaunchedEffect(messages) {
+        val senderIDs = messages.mapNotNull { it["senderID"] as? String }.distinct()
+
+        val newNames = mutableMapOf<String, String>()
+
+        senderIDs.forEach { id ->
+            if (!userNameCache.containsKey(id)) {
+                try {
+                    val name = chatRepositoryViewModel.userListRepository.getUserNameByID(id)
+                    newNames[id] = name
+                } catch (_: Exception) {
+                    newNames[id] = "Unknown"
+                }
+            }
+        }
+
+        userNameCache = userNameCache + newNames
+    }
+
     LaunchedEffect(state, isGroupChat) {
         if (isGroupChat) {
             setTopBarTitle("Group Chat", true)
@@ -271,6 +292,7 @@ fun MessagesScreen(
                 val text = message["text"] as? String ?: ""
 
                 val senderID = message["senderID"] as? String ?: ""
+                val senderName = userNameCache[senderID]
                 val isDeleted = message["deleted"] as? Boolean ?: false
                 val messageID = message["messageID"] as? String ?: ""
                 val messageChatID = message["chatID"] as? String ?: ""
@@ -316,6 +338,7 @@ fun MessagesScreen(
                         onHideTimestamp = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
                         },
+                        senderName = if (isGroupChat) senderName else null,
                         onLongPressMine = {
                             selectedMessage.value = message
                             showDeleteDialog.value = true
@@ -1001,6 +1024,7 @@ private fun MessageBubble(
     showTimestamp: Boolean,
     onTapMessage: () -> Unit,
     onHideTimestamp: () -> Unit,
+    senderName: String? = null,
     onLongPressMine: () -> Unit
 ) {
     val type = message["type"] as? String ?: "text"
@@ -1053,6 +1077,15 @@ private fun MessageBubble(
     Column(
         horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
     ) {
+        if (!isMyMessage && !senderName.isNullOrBlank()) {
+            Text(
+                text = senderName,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp, bottom = 3.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .widthIn(max = 280.dp)
