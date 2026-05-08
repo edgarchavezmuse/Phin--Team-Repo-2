@@ -449,32 +449,41 @@ class ChatRepository {
         val messageRef = chatRef.collection("messages").document()
         val currentTime = Timestamp.now()
 
-        val message = hashMapOf(
-            "type" to "text",
-            "senderID" to senderUserID,
-            "text" to messageText,
-            "timestamp" to currentTime,
-            "deleted" to false
-        )
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
 
-        val chatData = hashMapOf(
-            "lastMessage" to messageText,
-            "lastTimestamp" to currentTime
-        )
+                val message = hashMapOf(
+                    "type" to "text",
+                    "senderID" to senderUserID,
+                    "text" to messageText,
+                    "timestamp" to currentTime,
+                    "deleted" to false
+                )
 
-        val batch = database.batch()
+                val chatData = hashMapOf(
+                    "lastMessage" to messageText,
+                    "lastTimestamp" to currentTime
+                )
 
-        batch.set(messageRef, message)
-        batch.set(chatRef, chatData, SetOptions.merge())
-        batch.update(
-            chatRef,
-            "deletedBy",
-            FieldValue.arrayRemove(senderUserID)
-        )
+                val batch = database.batch()
 
-        batch.commit()
+                batch.set(messageRef, message)
+                batch.set(chatRef, chatData, SetOptions.merge())
 
-        setActiveChat(senderUserID, chatID)
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        setActiveChat(senderUserID, chatID)
+                    }
+            }
     }
 
     fun checkMessagesByChatID(
