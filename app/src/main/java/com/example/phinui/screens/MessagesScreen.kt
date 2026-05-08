@@ -103,6 +103,8 @@ fun MessagesScreen(
     receiverUserID: String,
     navController: NavController,
     userListViewModel: UserListViewModel = viewModel(),
+    chatID: String? = null,
+    isGroupChat: Boolean = false,
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
     val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
@@ -128,7 +130,7 @@ fun MessagesScreen(
 
     val selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     val showDeleteDialog = remember { mutableStateOf(false) }
-    val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
+    val resolvedChatID = chatID ?: chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
@@ -145,17 +147,33 @@ fun MessagesScreen(
     var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
     var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state) {
-        when (state) {
-            is UserState.Loading -> setTopBarTitle("Loading...", true)
-            is UserState.Loaded -> setTopBarTitle("Chatting with ${state.user.name}", true)
-            else -> {}
+    LaunchedEffect(state, isGroupChat) {
+        if (isGroupChat) {
+            setTopBarTitle("Group Chat", true)
+        } else {
+            when (state) {
+                is UserState.Loading -> setTopBarTitle("Loading...", true)
+                is UserState.Loaded -> setTopBarTitle("Chatting with ${state.user.name}", true)
+                else -> {}
+            }
         }
     }
 
-    LaunchedEffect(senderUserID, receiverUserID) {
-        chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) { newMessages ->
-            messages = newMessages
+    LaunchedEffect(receiverUserID, isGroupChat) {
+        if (!isGroupChat) {
+            userListViewModel.loadSelectedUser(receiverUserID)
+        }
+    }
+
+    LaunchedEffect(senderUserID, receiverUserID, resolvedChatID, isGroupChat) {
+        if (isGroupChat) {
+            chatRepositoryViewModel.callCheckForMessagesByChatID(resolvedChatID) { newMessages ->
+                messages = newMessages
+            }
+        } else {
+            chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) { newMessages ->
+                messages = newMessages
+            }
         }
     }
 
@@ -163,12 +181,8 @@ fun MessagesScreen(
         campusPins = fetchCampusLocations()
     }
 
-    LaunchedEffect(receiverUserID) {
-        userListViewModel.loadSelectedUser(receiverUserID)
-    }
-
     LaunchedEffect(chatID) {
-        chatRepositoryViewModel.onChatOpened(senderUserID, chatID)
+        chatRepositoryViewModel.onChatOpened(senderUserID, resolvedChatID)
     }
 
     DisposableEffect(Unit) {
@@ -221,7 +235,7 @@ fun MessagesScreen(
                             val message = selectedMessage.value ?: return@TextButton
                             chatRepositoryViewModel.onDeleteMessage(
                                 message = message,
-                                chatID = chatID
+                                chatID = resolvedChatID
                             )
                             showDeleteDialog.value = false
                             selectedMessage.value = null
@@ -291,7 +305,7 @@ fun MessagesScreen(
                         navController = navController,
                         chatRepositoryViewModel = chatRepositoryViewModel,
                         calendarViewModel = calendarViewModel,
-                        chatID = chatID,
+                        chatID = resolvedChatID,
                         showTimestamp = messageID in visibleTimestampMessageIds,
                         onTapMessage = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds + messageID
@@ -366,11 +380,19 @@ fun MessagesScreen(
                         Button(
                             onClick = {
                                 if (messageText.isNotBlank()) {
-                                    chatRepositoryViewModel.callSendMessage(
-                                        senderUserID,
-                                        receiverUserID,
-                                        messageText
-                                    )
+                                    if (isGroupChat) {
+                                        chatRepositoryViewModel.callSendGroupMessage(
+                                            senderUserID,
+                                            resolvedChatID,
+                                            messageText
+                                        )
+                                    } else {
+                                        chatRepositoryViewModel.callSendMessage(
+                                            senderUserID,
+                                            receiverUserID,
+                                            messageText
+                                        )
+                                    }
                                     messageText = ""
                                 }
                             },
@@ -390,7 +412,14 @@ fun MessagesScreen(
                 Spacer(modifier = Modifier.width(4.dp))
 
                 Box {
-                    IconButton(onClick = { showAttachMenu = true }) {
+                    IconButton(
+                        onClick = {
+                            if (!isGroupChat) {
+                                showAttachMenu = true
+                            }
+                        },
+                        enabled = !isGroupChat
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Menu",

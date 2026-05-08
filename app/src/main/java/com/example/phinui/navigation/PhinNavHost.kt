@@ -249,6 +249,27 @@ fun PhinNavHost(
         }
 
         composable(
+            route = Routes.GROUP_MESSAGES + "/{chatID}",
+            arguments = listOf(
+                navArgument("chatID") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val chatID = backStackEntry.arguments?.getString("chatID") ?: ""
+
+            MessagesScreen(
+                senderUserID = currentUserID,
+                receiverUserID = "",
+                chatID = chatID,
+                isGroupChat = true,
+                navController = navController,
+                setTopBarTitle = setTopBarTitle
+            )
+        }
+
+        composable(
             route = "${Routes.USERLIST}?tab={tab}",
             arguments = listOf(
                 navArgument("tab") {

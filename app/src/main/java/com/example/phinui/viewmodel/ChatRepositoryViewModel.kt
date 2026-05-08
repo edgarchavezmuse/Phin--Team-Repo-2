@@ -56,6 +56,12 @@ class ChatRepositoryViewModel (
         val friendIDs = friendsList.value.map { it.uid }.toSet()
 
         approvedChats.value.filter { chat ->
+            val chatType = chat["type"] as? String ?: "direct"
+
+            if (chatType == "group") {
+                return@filter chat["groupCategory"] == "friends"
+            }
+
             val participants = chat["participants"] as? List<*> ?: return@filter false
 
             val otherUserID = participants
@@ -275,6 +281,44 @@ class ChatRepositoryViewModel (
             senderUserID = senderUserID,
             receiverUserID = receiverUserID,
             location = location
+        )
+    }
+
+    fun callCreateGroupChat(
+        creatorUserID: String,
+        participantIDs: List<String>,
+        groupName: String,
+        onCreated: (String) -> Unit = {},
+        onError: (Exception) -> Unit = {}
+    ) {
+        chatRepository.createGroupChat(
+            creatorUserID = creatorUserID,
+            participantIDs = participantIDs,
+            groupName = groupName,
+            onCreated = onCreated,
+            onError = onError
+        )
+    }
+
+    fun callSendGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        messageText: String
+    ) {
+        chatRepository.sendGroupMessage(
+            senderUserID = senderUserID,
+            chatID = chatID,
+            messageText = messageText
+        )
+    }
+
+    fun callCheckForMessagesByChatID(
+        chatID: String,
+        newMessage: (List<Map<String, Any>>) -> Unit
+    ) {
+        chatRepository.checkMessagesByChatID(
+            chatID = chatID,
+            newMessage = newMessage
         )
     }
 
