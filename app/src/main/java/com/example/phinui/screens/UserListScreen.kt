@@ -116,7 +116,38 @@ fun UserListScreen (
         currentUserID = currentUserID
     )
 
-    val totalCountChats = sortedCountChats.size
+    val totalMessageRequestCount = sortedCountChats.size
+
+    val friendMessagesCount = chatRepositoryViewModel.getFriendChats.value
+    val userCacheCount = remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+
+    val generalMessagesStateCount = chatRepositoryViewModel.getGeneralChats.value
+
+    val sortedFriendMessagesCount = getSortedChats(
+        approvedChatsState = friendMessagesCount,
+        chatRepositoryViewModel = chatRepositoryViewModel,
+        userCache = userCacheCount,
+        currentUserID = currentUserID
+    )
+
+    val sortedGeneralMessagesStateCount = getSortedChats(
+        approvedChatsState = generalMessagesStateCount,
+        chatRepositoryViewModel = chatRepositoryViewModel,
+        userCache = userCacheCount,
+        currentUserID = currentUserID
+    )
+
+    val totalFriendsMessagesCount = sortedFriendMessagesCount.sumOf { chat ->
+        val unreadFriendsMessagesCount = chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+        unreadFriendsMessagesCount[currentUserID]?.toInt() ?: 0
+    }
+
+    val totalGeneralMessagesCount = sortedGeneralMessagesStateCount.sumOf { chat ->
+        val unreadGeneralMessagesCount = chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+        unreadGeneralMessagesCount[currentUserID]?.toInt() ?: 0
+    }
 
     Column(
         modifier = Modifier
@@ -127,17 +158,27 @@ fun UserListScreen (
         TabRow(selectedTabIndex = selectedTab) {
             Tab(selected = selectedTab == 0,
                 onClick = {selectedTab = 0}) {
-                Text("Friends")
+                if (totalFriendsMessagesCount > 0) {
+                    Text("Friends (${totalFriendsMessagesCount})")
+                }
+                else {
+                    Text("Friends")
+                }
             }
             Tab(selected = selectedTab == 1,
                 onClick = {selectedTab = 1}) {
-                Text("General")
+                if (totalGeneralMessagesCount > 0) {
+                    Text("General (${totalGeneralMessagesCount})")
+                }
+                else {
+                    Text("General")
+                }
             }
             Tab(selected = selectedTab == 2,
                 onClick = {selectedTab = 2}) {
-                if (totalCountChats >= 1) {
+                if (totalMessageRequestCount > 0) {
                     Text(
-                        "Requests (${totalCountChats})"
+                        "Requests (${totalMessageRequestCount})"
                     )
                 }
                 else {
@@ -280,6 +321,7 @@ fun UserListScreen (
                     userCache = userCache,
                     currentUserID = currentUserID
                 )
+                
                 Box {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
