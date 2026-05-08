@@ -179,6 +179,8 @@ fun MessagesScreen(
     }
 
     LaunchedEffect(messages) {
+        chatRepositoryViewModel.markChatsAsRead(senderUserID, chatID)
+
         if (messages.isNotEmpty()) {
             val lastMessage = messages.size - 1
             val userIsNearBottomChat = autoScrollState.layoutInfo.visibleItemsInfo.lastOrNull()

@@ -173,6 +173,12 @@ fun UserListScreen (
                             val participants = chat["participants"] as List<String>
                             val friendId = participants.first { it != currentUserID }
 
+                            val unreadCounts =
+                                chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+                            val unreadCount =
+                                unreadCounts[currentUserID]?.toInt() ?: 0
+
                             if(friendId in hideBlockedUsers) return@items
 
                             val friendUser = friendList.firstOrNull { it.uid == friendId } ?: User(
@@ -191,6 +197,7 @@ fun UserListScreen (
                             }
                             UserListItem(
                                 user = friendUser,
+                                unreadCount = unreadCount,
                                 subtitle = previewText,
                                 timeText = formatTimestamp(timestamp),
                                 trailingContent = {
@@ -246,20 +253,6 @@ fun UserListScreen (
                                                     friendToBlock = friendId to friendUser.name
                                                 }
                                             )
-
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Delete", color = HeaderRed)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    //chatRepositoryViewModel.denyRequest(chatID)
-//                                                }
-//                                            )
                                         }
                                     }
                                 },
@@ -297,6 +290,12 @@ fun UserListScreen (
 
                             val participants = chat["participants"] as? List<*> ?: return@items
 
+                            val unreadCounts =
+                                chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
+
+                            val unreadCount =
+                                unreadCounts[currentUserID]?.toInt() ?: 0
+
                             val otherUserID = participants
                                 .mapNotNull { it as? String }
                                 .firstOrNull{ it != currentUserID } ?:return@items
@@ -320,6 +319,7 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
+                                unreadCount = unreadCount,
                                 subtitle = previewText,
                                 timeText = formatTimestamp(timestamp),
                                 trailingContent = {
@@ -376,20 +376,6 @@ fun UserListScreen (
                                                     userToBlock = otherUserID to user.name
                                                 }
                                             )
-
-//                                            DropdownMenuItem(
-//                                                text = {
-//                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = HeaderRed)
-//                                                        Spacer(modifier = Modifier.width(8.dp))
-//                                                        Text("Delete", color = HeaderRed)
-//                                                    }
-//                                                },
-//                                                onClick = {
-//                                                    showMenu = false
-//                                                    //chatRepositoryViewModel.denyRequest(chatID)
-//                                                }
-//                                            )
                                         }
                                     }
                                 },
@@ -441,6 +427,7 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
+                                unreadCount = 0,
                                 trailingContent = {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -626,6 +613,7 @@ fun UserListScreen (
 @Composable
 fun UserListItem(
     user: User,
+    unreadCount: Int,
     subtitle: String = "",
     timeText: String? = null,
     trailingContent: @Composable (() -> Unit)? = null,
@@ -665,7 +653,12 @@ fun UserListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = user.name,
+                        text = if (unreadCount > 0) {
+                            user.name + "  ($unreadCount)"
+                        }
+                        else {
+                            user.name
+                        },
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onTertiary
