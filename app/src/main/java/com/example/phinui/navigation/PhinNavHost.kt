@@ -249,20 +249,28 @@ fun PhinNavHost(
         }
 
         composable(
-            route = Routes.GROUP_MESSAGES + "/{chatID}",
+            route = Routes.GROUP_MESSAGES + "/{chatID}/{groupName}",
             arguments = listOf(
                 navArgument("chatID") {
+                    type = NavType.StringType
+                },
+                navArgument("groupName") {
                     type = NavType.StringType
                 }
             )
         ) { backStackEntry ->
             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: ""
             val chatID = backStackEntry.arguments?.getString("chatID") ?: ""
+            val groupName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("groupName") ?: "Group Chat",
+                "UTF-8"
+            )
 
             MessagesScreen(
                 senderUserID = currentUserID,
                 receiverUserID = "",
                 chatID = chatID,
+                groupName = groupName,
                 isGroupChat = true,
                 navController = navController,
                 setTopBarTitle = setTopBarTitle

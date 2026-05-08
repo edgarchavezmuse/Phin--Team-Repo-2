@@ -104,6 +104,7 @@ fun MessagesScreen(
     navController: NavController,
     userListViewModel: UserListViewModel = viewModel(),
     chatID: String? = null,
+    groupName: String? = null,
     isGroupChat: Boolean = false,
     setTopBarTitle: (String, Boolean) -> Unit
 ) {
@@ -168,10 +169,14 @@ fun MessagesScreen(
         userNameCache = userNameCache + newNames
     }
 
-    LaunchedEffect(state, isGroupChat) {
+    LaunchedEffect(isGroupChat, groupName) {
         if (isGroupChat) {
-            setTopBarTitle("Group Chat", true)
-        } else {
+            setTopBarTitle(groupName ?: "Group Chat", true)
+        }
+    }
+
+    LaunchedEffect(state, isGroupChat) {
+        if (!isGroupChat) {
             when (state) {
                 is UserState.Loading -> setTopBarTitle("Loading...", true)
                 is UserState.Loaded -> setTopBarTitle("Chatting with ${state.user.name}", true)
@@ -202,14 +207,13 @@ fun MessagesScreen(
         campusPins = fetchCampusLocations()
     }
 
-    LaunchedEffect(chatID) {
+    LaunchedEffect(resolvedChatID) {
         chatRepositoryViewModel.onChatOpened(senderUserID, resolvedChatID)
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(resolvedChatID) {
         onDispose {
             chatRepositoryViewModel.onChatClosed(senderUserID)
-            setTopBarTitle("", false)
         }
     }
 

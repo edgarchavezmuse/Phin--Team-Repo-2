@@ -100,7 +100,9 @@ fun PhinUIApp(
 
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
-    val isInMessages = currentRoute?.startsWith(Routes.MESSAGES) == true
+    val isInMessages =
+        currentRoute?.startsWith(Routes.MESSAGES) == true ||
+                currentRoute?.startsWith(Routes.GROUP_MESSAGES) == true
 
     val showAuthWaves = true // turns waves and ship on and off in Login and Register screens
     val waveAnimation = rememberWaveAnimationState(

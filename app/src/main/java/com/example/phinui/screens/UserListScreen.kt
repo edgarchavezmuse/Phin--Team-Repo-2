@@ -209,7 +209,12 @@ fun UserListScreen (
                                     subtitle = previewText,
                                     timeText = formatTimestamp(timestamp),
                                     onClick = {
-                                        navController.navigate(Routes.GROUP_MESSAGES + "/$chatID")
+                                        navController.navigate(
+                                            Routes.groupMessagesRoute(
+                                                chatID = chatID,
+                                                groupName = groupName
+                                            )
+                                        )
                                     },
                                     onLongPress = {
                                         selectedChatID = chatID
@@ -680,7 +685,12 @@ fun UserListScreen (
                     groupName = groupName,
                     onCreated = { chatID ->
                         showCreateFriendGroupDialog = false
-                        navController.navigate(Routes.GROUP_MESSAGES + "/$chatID")
+                        navController.navigate(
+                            Routes.groupMessagesRoute(
+                                chatID = chatID,
+                                groupName = groupName
+                            )
+                        )
                     }
                 )
             }
