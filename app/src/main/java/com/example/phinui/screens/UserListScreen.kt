@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.example.phinui.ui.navigation.Routes
 import androidx.compose.material3.Text
@@ -20,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.phinui.components.messages.User
-import com.example.phinui.ui.theme.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
@@ -49,7 +47,6 @@ import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import com.google.firebase.firestore.FirebaseFirestore
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -321,7 +318,7 @@ fun UserListScreen (
                     userCache = userCache,
                     currentUserID = currentUserID
                 )
-                
+
                 Box {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
