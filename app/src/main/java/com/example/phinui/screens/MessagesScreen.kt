@@ -127,7 +127,7 @@ fun MessagesScreen(
 
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
-    val initialChatOpen = remember { mutableStateOf(true) }
+    var initialChatOpen by remember { mutableStateOf(true) }
 
     val selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     val showDeleteDialog = remember { mutableStateOf(false) }
@@ -217,27 +217,29 @@ fun MessagesScreen(
         }
     }
 
-    LaunchedEffect(messages) {
+    LaunchedEffect(messages.size) {
         chatRepositoryViewModel.markChatsAsRead(senderUserID, resolvedChatID)
 
-        if (messages.isNotEmpty()) {
-            val lastMessage = messages.size - 1
-            val userIsNearBottomChat = autoScrollState.layoutInfo.visibleItemsInfo.lastOrNull()
-                ?.index
-                ?.let { lastVisibleMessage -> lastMessage - lastVisibleMessage <= autoScrollThreshold }
-                ?: true
+        if (messages.isEmpty()) return@LaunchedEffect
 
-            if (initialChatOpen.value || userIsNearBottomChat) {
-                autoScrollState.animateScrollToItem(lastMessage)
-                initialChatOpen.value = false
-            }
+        val lastMessageIndex = messages.lastIndex
+
+        val lastVisibleIndex = autoScrollState.layoutInfo.visibleItemsInfo
+            .lastOrNull()
+            ?.index
+
+        val userIsNearBottom = lastVisibleIndex == null ||
+                lastMessageIndex - lastVisibleIndex <= autoScrollThreshold
+
+        if (initialChatOpen || userIsNearBottom) {
+            autoScrollState.scrollToItem(lastMessageIndex)
+            initialChatOpen = false
         }
     }
 
-    LaunchedEffect(shouldScrollLatestTimestamp, messages) {
+    LaunchedEffect(shouldScrollLatestTimestamp) {
         if (shouldScrollLatestTimestamp && messages.isNotEmpty()) {
-            delay(50)
-            autoScrollState.animateScrollToItem(messages.lastIndex)
+            autoScrollState.scrollToItem(messages.lastIndex)
             shouldScrollLatestTimestamp = false
         }
     }
@@ -343,7 +345,7 @@ fun MessagesScreen(
                         onHideTimestamp = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
                         },
-                        senderName = if (isGroupChat) senderName else null,
+                        senderName = if (isGroupChat) userNameCache[senderID] ?: "" else null,
                         onLongPressMine = {
                             selectedMessage.value = message
                             showDeleteDialog.value = true
@@ -1087,12 +1089,13 @@ private fun MessageBubble(
     Column(
         horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
     ) {
-        if (!isMyMessage && !senderName.isNullOrBlank()) {
+        if (!isMyMessage && senderName != null) {
             Text(
-                text = senderName,
+                text = senderName.ifBlank { " " },
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (senderName.isBlank()) Color.Transparent
+                else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp, bottom = 3.dp)
             )
         }
