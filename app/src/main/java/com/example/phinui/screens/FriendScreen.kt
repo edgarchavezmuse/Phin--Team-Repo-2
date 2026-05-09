@@ -85,6 +85,7 @@ fun FriendsScreen(
     var requestEmails by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var requestUsers by remember { mutableStateOf<Map<String, Map<String, Any>>>(emptyMap()) }
     var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
+    var mutualFriendsCount by remember { mutableIntStateOf(0) }
 
     var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
     var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -209,6 +210,9 @@ fun FriendsScreen(
                                     photoUrl = photoUrl,
                                     size = 44,
                                     modifier = Modifier.clickable {
+
+                                        mutualFriendsCount = 0
+
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
@@ -216,6 +220,24 @@ fun FriendsScreen(
                                             major = user["major"] as? String ?: "",
                                             bio = user["bio"] as? String ?: ""
                                         )
+
+                                        val myFriendIds = friends.map { it.first }.toSet()
+
+                                        db.collection("users")
+                                            .document(uid)
+                                            .collection("friends")
+                                            .get()
+                                            .addOnSuccessListener { snapshot ->
+
+                                                val otherFriendIds =
+                                                    snapshot.documents.map { it.id }.toSet()
+
+                                                mutualFriendsCount =
+                                                    myFriendIds.intersect(otherFriendIds).size
+                                            }
+                                            .addOnFailureListener {
+                                                mutualFriendsCount = 0
+                                            }
                                     }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -351,6 +373,8 @@ fun FriendsScreen(
                                     photoUrl = photoUrl,
                                     size = 44,
                                     modifier = Modifier.clickable {
+                                        mutualFriendsCount = 0
+
                                         previewUser = PreviewUser(
                                             name = name,
                                             email = email,
@@ -358,6 +382,20 @@ fun FriendsScreen(
                                             major = userData?.get("major") as? String ?: "",
                                             bio = userData?.get("bio") as? String ?: ""
                                         )
+
+                                        val myFriendIds = friends.map { it.first }.toSet()
+
+                                        db.collection("users")
+                                            .document(req.fromUid)
+                                            .collection("friends")
+                                            .get()
+                                            .addOnSuccessListener { snapshot ->
+                                                val otherFriendIds = snapshot.documents.map { it.id }.toSet()
+                                                mutualFriendsCount = myFriendIds.intersect(otherFriendIds).size
+                                            }
+                                            .addOnFailureListener {
+                                                mutualFriendsCount = 0
+                                            }
                                     }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -574,6 +612,7 @@ fun FriendsScreen(
 
     previewUser?.let { user ->
         UserProfilePreviewDialog(
+            mutualFriendsCount = mutualFriendsCount,
             name = user.name,
             email = user.email,
             photoUrl = user.photoUrl,

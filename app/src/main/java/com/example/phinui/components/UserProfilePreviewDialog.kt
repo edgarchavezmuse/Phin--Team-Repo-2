@@ -23,6 +23,7 @@ import com.example.phinui.ui.theme.TextMuted
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfilePreviewDialog(
+    mutualFriendsCount: Int,
     name: String,
     email: String,
     photoUrl: String?,
