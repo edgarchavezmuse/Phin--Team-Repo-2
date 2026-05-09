@@ -65,11 +65,27 @@ fun UserProfilePreviewDialog(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = email.ifBlank { "No email" },
-                color = TextMuted,
-                fontSize = 14.sp
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                Text(
+                    text = email.ifBlank { "No email" },
+                    color = TextMuted,
+                    fontSize = 14.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "$mutualFriendsCount mutual friend${if (mutualFriendsCount == 1) "" else "s"}",
+                    color = MaterialTheme.colorScheme.onTertiary,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 

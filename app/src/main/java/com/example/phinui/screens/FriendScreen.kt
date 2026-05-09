@@ -225,12 +225,14 @@ fun FriendsScreen(
 
                                         db.collection("users")
                                             .document(uid)
-                                            .collection("friends")
                                             .get()
-                                            .addOnSuccessListener { snapshot ->
+                                            .addOnSuccessListener { doc ->
 
                                                 val otherFriendIds =
-                                                    snapshot.documents.map { it.id }.toSet()
+                                                    (doc.get("friends") as? List<*>)
+                                                        ?.mapNotNull { it as? String }
+                                                        ?.toSet()
+                                                        ?: emptySet()
 
                                                 mutualFriendsCount =
                                                     myFriendIds.intersect(otherFriendIds).size
@@ -387,11 +389,17 @@ fun FriendsScreen(
 
                                         db.collection("users")
                                             .document(req.fromUid)
-                                            .collection("friends")
                                             .get()
-                                            .addOnSuccessListener { snapshot ->
-                                                val otherFriendIds = snapshot.documents.map { it.id }.toSet()
-                                                mutualFriendsCount = myFriendIds.intersect(otherFriendIds).size
+                                            .addOnSuccessListener { doc ->
+
+                                                val otherFriendIds =
+                                                    (doc.get("friends") as? List<*>)
+                                                        ?.mapNotNull { it as? String }
+                                                        ?.toSet()
+                                                        ?: emptySet()
+
+                                                mutualFriendsCount =
+                                                    myFriendIds.intersect(otherFriendIds).size
                                             }
                                             .addOnFailureListener {
                                                 mutualFriendsCount = 0
@@ -612,12 +620,12 @@ fun FriendsScreen(
 
     previewUser?.let { user ->
         UserProfilePreviewDialog(
-            mutualFriendsCount = mutualFriendsCount,
             name = user.name,
             email = user.email,
             photoUrl = user.photoUrl,
             major = user.major,
             bio = user.bio,
+            mutualFriendsCount = mutualFriendsCount,
             onDismiss = { previewUser = null }
         )
     }

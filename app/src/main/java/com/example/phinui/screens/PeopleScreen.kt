@@ -378,12 +378,14 @@ fun PeopleScreen(
 
                                         db.collection("users")
                                             .document(uid)
-                                            .collection("friends")
                                             .get()
-                                            .addOnSuccessListener { snapshot ->
+                                            .addOnSuccessListener { doc ->
 
                                                 val otherFriendIds =
-                                                    snapshot.documents.map { it.id }.toSet()
+                                                    (doc.get("friends") as? List<*>)
+                                                        ?.mapNotNull { it as? String }
+                                                        ?.toSet()
+                                                        ?: emptySet()
 
                                                 mutualFriendsCount =
                                                     myFriendIds.intersect(otherFriendIds).size
@@ -550,12 +552,14 @@ fun PeopleScreen(
 
                                         db.collection("users")
                                             .document(uid)
-                                            .collection("friends")
                                             .get()
-                                            .addOnSuccessListener { snapshot ->
+                                            .addOnSuccessListener { doc ->
 
                                                 val otherFriendIds =
-                                                    snapshot.documents.map { it.id }.toSet()
+                                                    (doc.get("friends") as? List<*>)
+                                                        ?.mapNotNull { it as? String }
+                                                        ?.toSet()
+                                                        ?: emptySet()
 
                                                 mutualFriendsCount =
                                                     myFriendIds.intersect(otherFriendIds).size
@@ -683,12 +687,12 @@ fun PeopleScreen(
 
     previewUser?.let { user ->
         UserProfilePreviewDialog(
-            mutualFriendsCount = mutualFriendsCount,
             name = user.name,
             email = user.email,
             photoUrl = user.photoUrl,
             major = user.major,
             bio = user.bio,
+            mutualFriendsCount = mutualFriendsCount,
             onDismiss = { previewUser = null }
         )
     }
