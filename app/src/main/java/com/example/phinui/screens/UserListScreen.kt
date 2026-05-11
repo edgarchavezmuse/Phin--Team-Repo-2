@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
@@ -738,7 +739,7 @@ fun UserListItem(
         }
 
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color(0xFFEAEAEA),
             thickness = 0.8.dp,
             modifier = Modifier.padding(start = 64.dp, end = 8.dp)
         )
