@@ -177,16 +177,6 @@ fun SideMenu(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-
-            // RIGHT SIDE (small white circle → Credits)
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(Color.White, shape = androidx.compose.foundation.shape.CircleShape)
-                    .clickable {
-                        navController.navigate(Routes.CREDITS)
-                    }
-            )
         }
     }
 }
