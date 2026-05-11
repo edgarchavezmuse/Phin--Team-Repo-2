@@ -194,11 +194,11 @@ fun MessagesScreen(
     LaunchedEffect(senderUserID, receiverUserID, resolvedChatID, isGroupChat) {
         if (isGroupChat) {
             chatRepositoryViewModel.callCheckForMessagesByChatID(resolvedChatID) { newMessages ->
-                messages = newMessages
+                messages = sortMessagesByTime(newMessages)
             }
         } else {
             chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) { newMessages ->
-                messages = newMessages
+                messages = sortMessagesByTime(newMessages)
             }
         }
     }
@@ -231,7 +231,11 @@ fun MessagesScreen(
         val userIsNearBottom = lastVisibleIndex == null ||
                 lastMessageIndex - lastVisibleIndex <= autoScrollThreshold
 
-        if (initialChatOpen || userIsNearBottom) {
+        val newestMessageIsMine =
+            (messages.lastOrNull()?.get("senderID") as? String) == senderUserID
+
+        if (initialChatOpen || userIsNearBottom || newestMessageIsMine) {
+            delay(50)
             autoScrollState.scrollToItem(lastMessageIndex)
             initialChatOpen = false
         }
@@ -294,7 +298,9 @@ fun MessagesScreen(
         ) {
             items(
                 items = messages,
-                key = { message -> message["messageID"] as? String ?: message.hashCode().toString() }
+                key = { message ->
+                    message["messageID"] as String
+                }
             ) { message ->
                 val type = message["type"] as? String ?: "text"
                 val text = message["text"] as? String ?: ""
@@ -345,7 +351,7 @@ fun MessagesScreen(
                         onHideTimestamp = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
                         },
-                        senderName = if (isGroupChat) userNameCache[senderID] ?: "" else null,
+                        senderName = if (isGroupChat) senderName else null,
                         onLongPressMine = {
                             selectedMessage.value = message
                             showDeleteDialog.value = true
@@ -773,6 +779,19 @@ fun MessagesScreen(
         }
     }
 
+private fun sortMessagesByTime(
+    newMessages: List<Map<String, Any>>
+): List<Map<String, Any>> {
+    return newMessages.sortedWith(
+        compareBy<Map<String, Any>> { message ->
+            (message["timestamp"] as? Timestamp)?.seconds ?: Long.MAX_VALUE
+        }.thenBy { message ->
+            (message["timestamp"] as? Timestamp)?.nanoseconds ?: Int.MAX_VALUE
+        }.thenBy { message ->
+            message["messageID"] as? String ?: ""
+        }
+    )
+}
 fun convertToCalendarTimestamp(
     selectedStudyDate: String,
     selectedStudyTime: LocalTime
@@ -1091,7 +1110,7 @@ private fun MessageBubble(
     ) {
         if (!isMyMessage && senderName != null) {
             Text(
-                text = senderName.ifBlank { " " },
+                text = senderName,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = if (senderName.isBlank()) Color.Transparent
