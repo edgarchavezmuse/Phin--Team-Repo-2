@@ -3,7 +3,6 @@ package com.example.phinui.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,7 +58,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -77,8 +75,6 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.DeletedMessageColor
-import com.example.phinui.ui.theme.ReceiverUserColor
-import com.example.phinui.ui.theme.SenderUserColor
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
@@ -96,6 +92,7 @@ import java.util.TimeZone
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.TimePickerDefaults
+import com.example.phinui.ui.components.UserAvatar
 
 @Composable
 fun MessagesScreen(
@@ -149,17 +146,22 @@ fun MessagesScreen(
     var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
 
     var userNameCache by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var userPhotoCache by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
     LaunchedEffect(messages) {
         val senderIDs = messages.mapNotNull { it["senderID"] as? String }.distinct()
 
         val newNames = mutableMapOf<String, String>()
+        val newPhotos = mutableMapOf<String, String?>()
 
         senderIDs.forEach { id ->
             if (!userNameCache.containsKey(id)) {
                 try {
                     val name = chatRepositoryViewModel.userListRepository.getUserNameByID(id)
+                    val photoUrl = chatRepositoryViewModel.userListRepository.getUserPhotoUrlByID(id)
+
                     newNames[id] = name
+                    newPhotos[id] = photoUrl
                 } catch (_: Exception) {
                     newNames[id] = "Unknown"
                 }
@@ -167,6 +169,7 @@ fun MessagesScreen(
         }
 
         userNameCache = userNameCache + newNames
+        userPhotoCache = userPhotoCache + newPhotos
     }
 
     LaunchedEffect(isGroupChat, groupName) {
@@ -241,6 +244,20 @@ fun MessagesScreen(
         }
     }
 
+    var groupInitialScrollFixDone by remember(resolvedChatID) { mutableStateOf(false) }
+
+    LaunchedEffect(userNameCache.size, userPhotoCache.size, messages.size, isGroupChat) {
+        if (
+            isGroupChat &&
+            messages.isNotEmpty() &&
+            !groupInitialScrollFixDone
+        ) {
+            delay(250)
+            autoScrollState.scrollToItem(messages.lastIndex)
+            groupInitialScrollFixDone = true
+        }
+    }
+
     LaunchedEffect(shouldScrollLatestTimestamp) {
         if (shouldScrollLatestTimestamp && messages.isNotEmpty()) {
             autoScrollState.scrollToItem(messages.lastIndex)
@@ -307,6 +324,7 @@ fun MessagesScreen(
 
                 val senderID = message["senderID"] as? String ?: ""
                 val senderName = userNameCache[senderID]
+                val senderPhotoUrl = userPhotoCache[senderID]
                 val isDeleted = message["deleted"] as? Boolean ?: false
                 val messageID = message["messageID"] as? String ?: ""
                 val messageChatID = message["chatID"] as? String ?: ""
@@ -351,7 +369,8 @@ fun MessagesScreen(
                         onHideTimestamp = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
                         },
-                        senderName = if (isGroupChat) senderName else null,
+                        senderName = if (isGroupChat) senderName ?: "" else null,
+                        senderPhotoUrl = if (isGroupChat) senderPhotoUrl else null,
                         onLongPressMine = {
                             selectedMessage.value = message
                             showDeleteDialog.value = true
@@ -1055,6 +1074,7 @@ private fun MessageBubble(
     onTapMessage: () -> Unit,
     onHideTimestamp: () -> Unit,
     senderName: String? = null,
+    senderPhotoUrl: String? = null,
     onLongPressMine: () -> Unit
 ) {
     val type = message["type"] as? String ?: "text"
@@ -1105,260 +1125,293 @@ private fun MessageBubble(
         }
     }
 
-    Column(
-        horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = if (isMyMessage) Arrangement.End else Arrangement.Start
     ) {
-        if (!isMyMessage && senderName != null) {
-            Text(
-                text = senderName,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (senderName.isBlank()) Color.Transparent
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 8.dp, bottom = 3.dp)
+        if (!isMyMessage) {
+            UserAvatar(
+                name = senderName ?: "",
+                photoUrl = senderPhotoUrl,
+                size = 32
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
         }
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .background(
-                    color = bubbleColor,
-                    shape = bubbleShape
-                )
-                .combinedClickable(
-                    onClick = {
-                        onTapMessage()
-                    },
-                    onLongClick = {
-                        if (isMyMessage && !isDeleted) {
-                            onLongPressMine()
-                        }
-                    }
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+
+        Column(
+            horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
         ) {
-            if (isDeleted) {
+            if (!isMyMessage) {
                 Text(
-                    text = "This message was deleted",
-                    fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp
+                    text = senderName ?: "",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (senderName.isNullOrBlank()) Color.Transparent
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 3.dp)
                 )
-            } else {
-                when (type) {
-                    "text" -> {
-                        Text(
-                            text = text,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            lineHeight = 20.sp
-                        )
-                    }
-
-                    "pin" -> {
-                        val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
-
-                        val pinId = pin["id"] as? String ?: ""
-                        val pinName = pin["name"] as? String ?: "Shared Pin"
-                        val pinCategory = pin["category"] as? String ?: ""
-                        val pinBuilding = pin["building"] as? String ?: ""
-                        val pinDescription = pin["description"] as? String ?: ""
-                        val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
-                        val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
-
-                        Column {
-                            Text(
-                                text = pinName,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 16.sp
-                            )
-
-                            if (pinCategory.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = pinCategory.replaceFirstChar { it.uppercase() },
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-
-                            if (pinBuilding.isNotBlank()) {
-                                Text(
-                                    text = "Building: $pinBuilding",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-
-                            if (pinDescription.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = pinDescription,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    fontSize = 14.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Button(
-                                onClick = {
-                                    navController.navigate(
-                                        Routes.mapRouteWithPin(
-                                            pinId = pinId,
-                                            pinName = pinName,
-                                            pinCategory = pinCategory,
-                                            pinLatitude = pinLatitude,
-                                            pinLongitude = pinLongitude,
-                                            pinBuilding = pinBuilding,
-                                            pinDescription = pinDescription
-                                        )
-                                    )
-                                },
-                                shape = RoundedCornerShape(14.dp)
-                            ) {
-                                Text("Open Pin")
+            }
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .background(
+                        color = bubbleColor,
+                        shape = bubbleShape
+                    )
+                    .combinedClickable(
+                        onClick = {
+                            onTapMessage()
+                        },
+                        onLongClick = {
+                            if (isMyMessage && !isDeleted) {
+                                onLongPressMine()
                             }
                         }
-                    }
-
-                    "invitation" -> {
-                        Column {
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                if (isDeleted) {
+                    Text(
+                        text = "This message was deleted",
+                        fontStyle = FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
+                } else {
+                    when (type) {
+                        "text" -> {
                             Text(
-                                text = studySessionTitle,
-                                fontWeight = FontWeight.SemiBold,
+                                text = text,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 16.sp
+                                lineHeight = 20.sp
                             )
+                        }
 
-                            if (studySessionDescription.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(6.dp))
+                        "pin" -> {
+                            val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
+
+                            val pinId = pin["id"] as? String ?: ""
+                            val pinName = pin["name"] as? String ?: "Shared Pin"
+                            val pinCategory = pin["category"] as? String ?: ""
+                            val pinBuilding = pin["building"] as? String ?: ""
+                            val pinDescription = pin["description"] as? String ?: ""
+                            val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
+                            val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
+
+                            Column {
                                 Text(
-                                    text = studySessionDescription,
+                                    text = pinName,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.tertiary,
-                                    fontSize = 14.sp
+                                    fontSize = 16.sp
                                 )
-                            }
 
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Text("Date: $displayDate", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-                            Text("Start time: $displayStartTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-                            Text("End time: $displayEndTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            if (myStatus == "PENDING" && !isMyMessage) {
-                                Row {
-                                    Button(
-                                        onClick = {
-                                            val title = message["title"] as? String ?: "Study Session"
-                                            val description = message["description"] as? String ?: ""
-                                            val startTimestamp = message["startTime"] as? Timestamp
-                                            val endTimestamp = message["endTime"] as? Timestamp
-
-                                            if (startTimestamp == null || endTimestamp == null) {
-                                                return@Button
-                                            }
-
-                                            val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-
-                                            val start = startTimestamp
-                                                .toDate()
-                                                .toInstant()
-                                                .atZone(ZoneId.systemDefault())
-                                                .toLocalDateTime()
-                                                .format(timeFormatter)
-
-                                            val end = endTimestamp
-                                                .toDate()
-                                                .toInstant()
-                                                .atZone(ZoneId.systemDefault())
-                                                .toLocalDateTime()
-                                                .format(timeFormatter)
-
-                                            val calendarEvent = CalendarEvent(
-                                                id = "",
-                                                title = title,
-                                                description = description,
-                                                start = start,
-                                                end = end,
-                                                location = null,
-                                                reminderMinutes = emptyList(),
-                                                isAllDay = false,
-                                                colorHex = "#DC2127",
-                                                source = CalendarSource.LOCAL
-                                            )
-
-                                            chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                chatID = messageChatID,
-                                                messageID = messageID,
-                                                senderUserID = senderUserID,
-                                                invitationResponse = "ACCEPTED"
-                                            )
-
-                                            calendarViewModel.saveStudySessionEvent(calendarEvent) { success ->
-                                                if (success) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "$title added to your local calendar",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Failed to add $title to your local calendar",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(14.dp)
-                                    ) {
-                                        Text("Accept")
-                                    }
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    Button(
-                                        onClick = {
-                                            chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                chatID = messageChatID,
-                                                messageID = messageID,
-                                                senderUserID = senderUserID,
-                                                invitationResponse = "DECLINED"
-                                            )
-                                        },
-                                        shape = RoundedCornerShape(14.dp)
-                                    ) {
-                                        Text("Decline")
-                                    }
+                                if (pinCategory.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = pinCategory.replaceFirstChar { it.uppercase() },
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
+                                if (pinBuilding.isNotBlank()) {
+                                    Text(
+                                        text = "Building: $pinBuilding",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
 
-                            Text(
-                                text = "$acceptedCount accepted • $pendingCount pending • $declinedCount declined",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
+                                if (pinDescription.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = pinDescription,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        fontSize = 14.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Button(
+                                    onClick = {
+                                        navController.navigate(
+                                            Routes.mapRouteWithPin(
+                                                pinId = pinId,
+                                                pinName = pinName,
+                                                pinCategory = pinCategory,
+                                                pinLatitude = pinLatitude,
+                                                pinLongitude = pinLongitude,
+                                                pinBuilding = pinBuilding,
+                                                pinDescription = pinDescription
+                                            )
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Text("Open Pin")
+                                }
+                            }
+                        }
+
+                        "invitation" -> {
+                            Column {
+                                Text(
+                                    text = studySessionTitle,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 16.sp
+                                )
+
+                                if (studySessionDescription.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = studySessionDescription,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        fontSize = 14.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Text(
+                                    "Date: $displayDate",
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    "Start time: $displayStartTime",
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    "End time: $displayEndTime",
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 13.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                if (myStatus == "PENDING" && !isMyMessage) {
+                                    Row {
+                                        Button(
+                                            onClick = {
+                                                val title =
+                                                    message["title"] as? String ?: "Study Session"
+                                                val description =
+                                                    message["description"] as? String ?: ""
+                                                val startTimestamp =
+                                                    message["startTime"] as? Timestamp
+                                                val endTimestamp = message["endTime"] as? Timestamp
+
+                                                if (startTimestamp == null || endTimestamp == null) {
+                                                    return@Button
+                                                }
+
+                                                val timeFormatter =
+                                                    DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+                                                val start = startTimestamp
+                                                    .toDate()
+                                                    .toInstant()
+                                                    .atZone(ZoneId.systemDefault())
+                                                    .toLocalDateTime()
+                                                    .format(timeFormatter)
+
+                                                val end = endTimestamp
+                                                    .toDate()
+                                                    .toInstant()
+                                                    .atZone(ZoneId.systemDefault())
+                                                    .toLocalDateTime()
+                                                    .format(timeFormatter)
+
+                                                val calendarEvent = CalendarEvent(
+                                                    id = "",
+                                                    title = title,
+                                                    description = description,
+                                                    start = start,
+                                                    end = end,
+                                                    location = null,
+                                                    reminderMinutes = emptyList(),
+                                                    isAllDay = false,
+                                                    colorHex = "#DC2127",
+                                                    source = CalendarSource.LOCAL
+                                                )
+
+                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                    chatID = messageChatID,
+                                                    messageID = messageID,
+                                                    senderUserID = senderUserID,
+                                                    invitationResponse = "ACCEPTED"
+                                                )
+
+                                                calendarViewModel.saveStudySessionEvent(
+                                                    calendarEvent
+                                                ) { success ->
+                                                    if (success) {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "$title added to your local calendar",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Failed to add $title to your local calendar",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(14.dp)
+                                        ) {
+                                            Text("Accept")
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Button(
+                                            onClick = {
+                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                    chatID = messageChatID,
+                                                    messageID = messageID,
+                                                    senderUserID = senderUserID,
+                                                    invitationResponse = "DECLINED"
+                                                )
+                                            },
+                                            shape = RoundedCornerShape(14.dp)
+                                        ) {
+                                            Text("Decline")
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+
+                                Text(
+                                    text = "$acceptedCount accepted • $pendingCount pending • $declinedCount declined",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (showTimestamp && !timeText.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = timeText,
-                fontSize = 11.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 6.dp)
-            )
+            if (showTimestamp && !timeText.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = timeText,
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 6.dp)
+                )
+            }
         }
     }
 }
