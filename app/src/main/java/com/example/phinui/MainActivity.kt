@@ -225,19 +225,27 @@ fun PhinUIApp(
                 },
                 containerColor = MaterialTheme.colorScheme.surface,
                 bottomBar = {
-                    when (bottomBarType) {
 
-                        null -> {
-                            // empty spacer equal to bottom bar height to prevent jump
-                            Spacer(modifier = Modifier.height(80.dp))
-                        }
+                    // hide bottom bar on credits screen
+                    if (currentRoute == Routes.CREDITS) {
+                        Spacer(modifier = Modifier.height(0.dp))
+                    }
 
-                        else -> {
-                            ChosenBottomBar(
-                                navController,
-                                waveAnimation,
-                                bottomBarType!!
-                            )
+                    else {
+                        when (bottomBarType) {
+
+                            null -> {
+                                // empty spacer equal to bottom bar height to prevent jump
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
+
+                            else -> {
+                                ChosenBottomBar(
+                                    navController,
+                                    waveAnimation,
+                                    bottomBarType!!
+                                )
+                            }
                         }
                     }
                 }

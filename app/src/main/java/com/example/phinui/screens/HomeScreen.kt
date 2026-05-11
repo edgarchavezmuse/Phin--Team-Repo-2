@@ -43,7 +43,7 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        TopHeader()
+        TopHeader(navController = navController)
 
         Column(
             modifier = Modifier
