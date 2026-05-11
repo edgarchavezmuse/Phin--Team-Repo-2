@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.phinui.components.people.BlockFriendDialog
 import com.example.phinui.components.people.BlockUserDialog
@@ -202,20 +203,10 @@ fun UserListScreen (
                     userCache = userCache,
                     currentUserID = currentUserID
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = { showCreateFriendGroupDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Create group chat",
-                            tint = MaterialTheme.colorScheme.onTertiary
-                        )
-                    }
-                }
 
-                Box {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = 8.dp),
@@ -353,8 +344,24 @@ fun UserListScreen (
                             }
                         }
                     }
+                    FloatingActionButton(
+                        onClick = { showCreateFriendGroupDialog = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(20.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create group chat"
+                        )
+                    }
+
                 }
             }
+
+
 
             //General tab
             1 -> {
