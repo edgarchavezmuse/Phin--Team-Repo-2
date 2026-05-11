@@ -100,6 +100,8 @@ fun PeopleScreen(
     var pendingRequestUser by remember { mutableStateOf<String?>(null) }
     var previewUser by remember { mutableStateOf<PreviewUser?>(null) }
     var mutualFriendsCount by remember { mutableIntStateOf(0) }
+    var mutualFriendsList by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+    var showMutualFriendsDialog by remember { mutableStateOf(false) }
 
     var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
     var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -387,11 +389,13 @@ fun PeopleScreen(
                                                         ?.toSet()
                                                         ?: emptySet()
 
-                                                mutualFriendsCount =
-                                                    myFriendIds.intersect(otherFriendIds).size
-                                            }
-                                            .addOnFailureListener {
-                                                mutualFriendsCount = 0
+                                                val mutualIds = myFriendIds.intersect(otherFriendIds)
+
+                                                mutualFriendsCount = mutualIds.size
+
+                                                mutualFriendsList = friends.filter { (friendUid, _) ->
+                                                    friendUid in mutualIds
+                                                }
                                             }
                                     }
                                 )
@@ -561,11 +565,13 @@ fun PeopleScreen(
                                                         ?.toSet()
                                                         ?: emptySet()
 
-                                                mutualFriendsCount =
-                                                    myFriendIds.intersect(otherFriendIds).size
-                                            }
-                                            .addOnFailureListener {
-                                                mutualFriendsCount = 0
+                                                val mutualIds = myFriendIds.intersect(otherFriendIds)
+
+                                                mutualFriendsCount = mutualIds.size
+
+                                                mutualFriendsList = friends.filter { (friendUid, _) ->
+                                                    friendUid in mutualIds
+                                                }
                                             }
                                     }
                                 )
@@ -693,6 +699,9 @@ fun PeopleScreen(
             major = user.major,
             bio = user.bio,
             mutualFriendsCount = mutualFriendsCount,
+            onMutualFriendsClick = {
+                showMutualFriendsDialog = true
+            },
             onDismiss = { previewUser = null }
         )
     }
@@ -714,5 +723,118 @@ fun PeopleScreen(
             Toast.LENGTH_SHORT
         ).show()
         chatRepositoryViewModel.confirmSendMessageRequest.value = null
+    }
+
+    if (showMutualFriendsDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showMutualFriendsDialog = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+
+            title = {
+                Text(
+                    text = "Mutual Friends",
+                    color = MaterialTheme.colorScheme.onTertiary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            },
+
+            text = {
+                Column {
+
+                    if (mutualFriendsList.isEmpty()) {
+
+                        Text(
+                            text = "No mutual friends",
+                            color = TextMuted
+                        )
+
+                    } else {
+
+                        mutualFriendsList.forEach { (friendUid, friend) ->
+
+                            val friendName = friend["name"] as? String ?: "Unknown"
+                            val friendEmail = friend["email"] as? String ?: ""
+                            val friendPhotoUrl = friend["photoUrl"] as? String
+                            val friendMajor = friend["major"] as? String ?: ""
+                            val friendBio = friend["bio"] as? String ?: ""
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        showMutualFriendsDialog = false
+                                        mutualFriendsCount = 0
+                                        mutualFriendsList = emptyList()
+
+                                        previewUser = PreviewUser(
+                                            name = friendName,
+                                            email = friendEmail,
+                                            photoUrl = friendPhotoUrl,
+                                            major = friendMajor,
+                                            bio = friendBio
+                                        )
+
+                                        val myFriendIds = friends.map { it.first }.toSet()
+
+                                        db.collection("users")
+                                            .document(friendUid)
+                                            .get()
+                                            .addOnSuccessListener { doc ->
+                                                val otherFriendIds =
+                                                    (doc.get("friends") as? List<*>)
+                                                        ?.mapNotNull { it as? String }
+                                                        ?.toSet()
+                                                        ?: emptySet()
+
+                                                val mutualIds = myFriendIds.intersect(otherFriendIds)
+
+                                                mutualFriendsCount = mutualIds.size
+
+                                                mutualFriendsList = friends.filter { (uid, _) ->
+                                                    uid in mutualIds
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                mutualFriendsCount = 0
+                                                mutualFriendsList = emptyList()
+                                            }
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                UserAvatar(
+                                    name = friendName,
+                                    photoUrl = friendPhotoUrl,
+                                    size = 40
+                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Text(
+                                    text = friendName,
+                                    color = MaterialTheme.colorScheme.onTertiary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showMutualFriendsDialog = false
+                    }
+                ) {
+                    Text(
+                        text = "Close",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        )
     }
 }

@@ -1,6 +1,7 @@
 package com.example.phinui.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ fun UserProfilePreviewDialog(
     photoUrl: String?,
     major: String,
     bio: String,
+    onMutualFriendsClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
@@ -83,7 +85,11 @@ fun UserProfilePreviewDialog(
                     color = MaterialTheme.colorScheme.onTertiary,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.align(Alignment.Start)
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .clickable(enabled = mutualFriendsCount > 0) {
+                            onMutualFriendsClick()
+                        }
                 )
             }
 
