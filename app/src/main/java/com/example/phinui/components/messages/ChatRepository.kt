@@ -1,5 +1,6 @@
 package com.example.phinui.components.messages
 
+import androidx.compose.runtime.mutableStateOf
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -494,6 +495,20 @@ class ChatRepository {
                         FieldValue.arrayRemove(*participants.toTypedArray())
                     )
                 }
+
+                val unreadMessagesAllParticipants = mutableMapOf<String, Any>()
+
+                participants.forEach {participantID ->
+                    unreadMessagesAllParticipants["unreadCounts.$participantID"] =
+                        if (participantID == senderUserID) {
+                            0
+                        }
+                        else {
+                            FieldValue.increment(1)
+                        }
+                }
+
+                batch.update(chatRef, unreadMessagesAllParticipants)
 
                 batch.commit()
                     .addOnSuccessListener {
