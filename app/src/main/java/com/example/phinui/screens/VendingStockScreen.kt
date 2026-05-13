@@ -26,7 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -34,6 +34,9 @@ import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 
 @Composable
 fun VendingStockScreen(
@@ -41,13 +44,18 @@ fun VendingStockScreen(
     navController: NavHostController
 ) {
     var machineName by remember(locationId) { mutableStateOf("Vending Stock") }
-    var imageUrl by remember(locationId) { mutableStateOf<String?>(null) }
+    var snackImageUrl by remember(locationId) { mutableStateOf<String?>(null) }
+    var drinkImageUrl by remember(locationId) { mutableStateOf<String?>(null) }
+    var selectedStock by remember { mutableStateOf("snacks") }
     var isLoading by remember(locationId) { mutableStateOf(true) }
     var errorMessage by remember(locationId) { mutableStateOf<String?>(null) }
 
+    val currentImageUrl = if (selectedStock == "snacks") snackImageUrl else drinkImageUrl
+
     LaunchedEffect(locationId) {
         isLoading = true
-        imageUrl = null
+        snackImageUrl = null
+        drinkImageUrl = null
         errorMessage = null
 
         try {
@@ -64,18 +72,23 @@ fun VendingStockScreen(
 
             machineName = doc.getString("name") ?: "Vending Stock"
 
-            val imagePath = doc.getString("imagePath")
+            val snackPath = doc.getString("imagePath")
+            val drinkPath = doc.getString("drinkImagePath")
 
-            if (imagePath.isNullOrBlank()) {
-                errorMessage = "No image configured for this machine."
-            } else {
-                Log.d("VendingStockScreen", "Loading imagePath = $imagePath")
-                val ref = storage.reference.child(imagePath)
-                imageUrl = ref.downloadUrl.await().toString()
+            if (!snackPath.isNullOrBlank()) {
+                snackImageUrl = storage.reference.child(snackPath).downloadUrl.await().toString()
+            }
+
+            if (!drinkPath.isNullOrBlank()) {
+                drinkImageUrl = storage.reference.child(drinkPath).downloadUrl.await().toString()
+            }
+
+            if (snackImageUrl == null && drinkImageUrl == null) {
+                errorMessage = "No stock images configured for this machine."
             }
         } catch (e: Exception) {
-            Log.e("VendingStockScreen", "Failed to load vending image", e)
-            errorMessage = e.message ?: "Failed to load image."
+            Log.e("VendingStockScreen", "Failed to load vending images", e)
+            errorMessage = e.message ?: "Failed to load images."
         } finally {
             isLoading = false
         }
@@ -88,10 +101,10 @@ fun VendingStockScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        imageUrl?.let { url ->
+        currentImageUrl?.let { url ->
             AsyncImage(
                 model = url,
-                contentDescription = "Vending machine stock",
+                contentDescription = "$selectedStock vending stock",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,10 +130,48 @@ fun VendingStockScreen(
                     text = machineName,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onTertiary
-
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (selectedStock == "snacks") {
+                        Button(
+                            onClick = { selectedStock = "snacks" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Drinks")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { selectedStock = "snacks" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Drinks")
+                        }
+                    }
+
+                    if (selectedStock == "drinks") {
+                        Button(
+                            onClick = { selectedStock = "drinks" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Snacks")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { selectedStock = "drinks" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Snacks")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 when {
                     isLoading -> {
@@ -128,24 +179,26 @@ fun VendingStockScreen(
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Loading image...")
+                        Text("Loading images...")
                     }
 
-                    imageUrl != null -> {
+                    currentImageUrl != null -> {
                         Text(
-                            text = "Current vending machine stock image.",
+                            text = "Showing current ${selectedStock} stock.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onTertiary
-
                         )
                     }
 
                     else -> {
                         Text(
-                            text = errorMessage ?: "No stock image available.",
+                            text = if (selectedStock == "drinks") {
+                                "No drink stock image available."
+                            } else {
+                                errorMessage ?: "No snack stock image available."
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onTertiary
-
                         )
                     }
                 }
