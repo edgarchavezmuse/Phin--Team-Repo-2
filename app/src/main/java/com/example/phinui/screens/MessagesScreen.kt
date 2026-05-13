@@ -765,11 +765,20 @@ fun MessagesScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        chatRepositoryViewModel.callSendPinMessage(
-                                            senderUserID = senderUserID,
-                                            receiverUserID = receiverUserID,
-                                            location = pin
-                                        )
+                                        if (isGroupChat) {
+                                            chatRepositoryViewModel.callSendPingGroupMessage(
+                                                senderUserID = senderUserID,
+                                                chatID = resolvedChatID,
+                                                location = pin
+                                            )
+                                        }
+                                        else {
+                                            chatRepositoryViewModel.callSendPinMessage(
+                                                senderUserID = senderUserID,
+                                                receiverUserID = receiverUserID,
+                                                location = pin
+                                            )
+                                        }
                                         showPinPickerDialog = false
                                     }
                                     .padding(vertical = 12.dp)

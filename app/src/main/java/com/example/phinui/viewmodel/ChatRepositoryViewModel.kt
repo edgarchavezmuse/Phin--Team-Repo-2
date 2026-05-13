@@ -289,6 +289,18 @@ class ChatRepositoryViewModel (
         )
     }
 
+    fun callSendPingGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        location: CampusLocation
+    ) {
+        chatRepository.sendPinGroupMessage(
+            senderUserID = senderUserID,
+            chatID = chatID,
+            location = location
+        )
+    }
+
     fun callCreateGroupChat(
         creatorUserID: String,
         participantIDs: List<String>,
