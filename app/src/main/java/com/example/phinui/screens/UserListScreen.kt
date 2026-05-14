@@ -921,7 +921,7 @@ fun UserListItem(
         }
 
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color(0xFFEAEAEA),
             thickness = 0.8.dp,
             modifier = Modifier.padding(start = 64.dp, end = 8.dp)
         )
