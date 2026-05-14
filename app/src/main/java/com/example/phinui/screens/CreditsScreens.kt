@@ -77,6 +77,29 @@ fun CreditsScreen() {
                         center = star
                     )
                 }
+
+                // Delphinus constellation
+                val delphinusStars = listOf(
+                    Offset(size.width * 0.36f, size.height * 0.17f), // top left
+                    Offset(size.width * 0.54f, size.height * 0.185f), // top right
+                    Offset(size.width * 0.60f, size.height * 0.255f), // middle right
+                    Offset(size.width * 0.72f, size.height * 0.43f), // lower tail
+                    Offset(size.width * 0.43f, size.height * 0.23f)  // center left
+                )
+
+                delphinusStars.forEachIndexed { index, star ->
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.5f),
+                        radius = if (index == 3) 13f else 11f,
+                        center = star
+                    )
+
+                    drawCircle(
+                        color = Color.White.copy(alpha = 1f),
+                        radius = if (index == 3) 5f else 6f,
+                        center = star
+                    )
+                }
             }
         }
 
