@@ -89,13 +89,13 @@ fun CreditsScreen() {
 
                 delphinusStars.forEachIndexed { index, star ->
                     drawCircle(
-                        color = Color.White.copy(alpha = 0.16f),
+                        color = Color.White.copy(alpha = 0.5f),
                         radius = if (index == 3) 13f else 11f,
                         center = star
                     )
 
                     drawCircle(
-                        color = Color.White.copy(alpha = 0.95f),
+                        color = Color.White.copy(alpha = 1f),
                         radius = if (index == 3) 5f else 6f,
                         center = star
                     )
