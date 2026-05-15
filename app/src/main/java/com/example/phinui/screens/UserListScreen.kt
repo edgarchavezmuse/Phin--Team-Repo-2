@@ -385,103 +385,118 @@ fun UserListScreen (
 
                             val participants = chat["participants"] as? List<*> ?: return@items
 
+                            val chatType = chat["type"] as? String
+                                ?: if (participants.size > 2) "group" else "direct"
+
                             val unreadCounts =
                                 chat["unreadCounts"] as? Map<String, Long> ?: emptyMap()
 
                             val unreadCount =
                                 unreadCounts[currentUserID]?.toInt() ?: 0
 
-                            val otherUserID = participants
-                                .mapNotNull { it as? String }
-                                .firstOrNull{ it != currentUserID } ?:return@items
-
-                            if(otherUserID in hideBlockedUsers) return@items
-
-                            val user = userCache.value[otherUserID] ?: User(
-                                uid = otherUserID,
-                                name = "Loading Chat...",
-                                photoUrl = null
-                            )
-
-                            val lastMessage = chat["lastMessage"] as? String ?: ""
-                            val timestamp = chat["lastTimestamp"] as? Timestamp
-
-                            val previewText = if (lastMessage.isBlank()) {
-                                "Start conversation"
-                            } else {
-                                lastMessage
+                            if (chatType != "direct") {
+                                return@items
                             }
+                            else {
 
-                            UserListItem(
-                                user = user,
-                                unreadCount = unreadCount,
-                                subtitle = previewText,
-                                timeText = formatTimestamp(timestamp),
-                                trailingContent = {
-                                    var showMenu by remember { mutableStateOf(false) }
-                                    Box {
-                                        IconButton(
-                                            onClick = { showMenu = !showMenu }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.MoreVert,
-                                                contentDescription = "Options",
-                                                tint = MaterialTheme.colorScheme.onTertiary
-                                            )
-                                        }
+                                val otherUserID = participants
+                                    .mapNotNull { it as? String }
+                                    .firstOrNull { it != currentUserID } ?: return@items
 
-                                        DropdownMenu(
-                                            expanded = showMenu,
-                                            onDismissRequest = { showMenu = false },
-                                            containerColor = MaterialTheme.colorScheme.surface
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.PersonAdd,
-                                                            contentDescription = "Add Friend",
-                                                            tint = MaterialTheme.colorScheme.onTertiary
-                                                        )
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Add Friend", color = MaterialTheme.colorScheme.onTertiary)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    showMenu = false
-                                                    userToAdd = otherUserID to user.name
+                                if (otherUserID in hideBlockedUsers) return@items
 
-                                                }
-                                            )
+                                val user = userCache.value[otherUserID] ?: User(
+                                    uid = otherUserID,
+                                    name = "Loading Chat...",
+                                    photoUrl = null
+                                )
 
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Block,
-                                                            contentDescription = "Block User",
-                                                            tint = MaterialTheme.colorScheme.primary
-                                                        )
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Block User", color = MaterialTheme.colorScheme.primary)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    showMenu = false
-                                                    userToBlock = otherUserID to user.name
-                                                }
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    navController.navigate(Routes.MESSAGES + "/${user.uid}")
-                                },
-                                onLongPress = {
-                                    selectedChatID = chatID
-                                    showActionSheet = true
+                                val lastMessage = chat["lastMessage"] as? String ?: ""
+                                val timestamp = chat["lastTimestamp"] as? Timestamp
+
+                                val previewText = if (lastMessage.isBlank()) {
+                                    "Start conversation"
+                                } else {
+                                    lastMessage
                                 }
-                            )
+
+                                UserListItem(
+                                    user = user,
+                                    unreadCount = unreadCount,
+                                    subtitle = previewText,
+                                    timeText = formatTimestamp(timestamp),
+                                    trailingContent = {
+                                        var showMenu by remember { mutableStateOf(false) }
+                                        Box {
+                                            IconButton(
+                                                onClick = { showMenu = !showMenu }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MoreVert,
+                                                    contentDescription = "Options",
+                                                    tint = MaterialTheme.colorScheme.onTertiary
+                                                )
+                                            }
+
+                                            DropdownMenu(
+                                                expanded = showMenu,
+                                                onDismissRequest = { showMenu = false },
+                                                containerColor = MaterialTheme.colorScheme.surface
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.PersonAdd,
+                                                                contentDescription = "Add Friend",
+                                                                tint = MaterialTheme.colorScheme.onTertiary
+                                                            )
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text(
+                                                                "Add Friend",
+                                                                color = MaterialTheme.colorScheme.onTertiary
+                                                            )
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        showMenu = false
+                                                        userToAdd = otherUserID to user.name
+
+                                                    }
+                                                )
+
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Block,
+                                                                contentDescription = "Block User",
+                                                                tint = MaterialTheme.colorScheme.primary
+                                                            )
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text(
+                                                                "Block User",
+                                                                color = MaterialTheme.colorScheme.primary
+                                                            )
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        showMenu = false
+                                                        userToBlock = otherUserID to user.name
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        navController.navigate(Routes.MESSAGES + "/${user.uid}")
+                                    },
+                                    onLongPress = {
+                                        selectedChatID = chatID
+                                        showActionSheet = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }

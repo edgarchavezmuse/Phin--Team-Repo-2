@@ -92,6 +92,13 @@ class ChatRepositoryViewModel (
         val filterOutFriends = approvedChats.value.filter{ chat ->
             val participants = chat["participants"] as? List<*> ?: return@filter false
 
+            val chatType = chat["type"] as? String
+                ?: if (participants.size > 2) "group" else "direct"
+
+            if (chatType != "direct") {
+                return@filter false
+            }
+
             val otherUserID = participants
                 .mapNotNull { it as? String }
                 .firstOrNull{ it != currentUserID }
@@ -285,6 +292,18 @@ class ChatRepositoryViewModel (
         chatRepository.sendPinMessage(
             senderUserID = senderUserID,
             receiverUserID = receiverUserID,
+            location = location
+        )
+    }
+
+    fun callSendPingGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        location: CampusLocation
+    ) {
+        chatRepository.sendPinGroupMessage(
+            senderUserID = senderUserID,
+            chatID = chatID,
             location = location
         )
     }

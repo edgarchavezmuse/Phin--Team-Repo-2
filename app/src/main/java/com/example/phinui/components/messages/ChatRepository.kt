@@ -1,5 +1,7 @@
 package com.example.phinui.components.messages
 
+import androidx.compose.animation.core.snap
+import androidx.compose.runtime.mutableStateOf
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -423,6 +425,80 @@ class ChatRepository {
         setActiveChat(senderUserID, messageProperties.chatID)
     }
 
+    fun sendPinGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        location: CampusLocation
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val pinPayload = hashMapOf(
+                    "id" to location.id,
+                    "name" to location.name,
+                    "category" to location.category,
+                    "latitude" to location.latitude,
+                    "longitude" to location.longitude,
+                    "building" to location.building,
+                    "description" to location.description,
+                    "isActive" to location.isActive,
+                    "source" to "campus"
+                )
+
+                val message = hashMapOf(
+                    "type" to "pin",
+                    "senderID" to senderUserID,
+                    "text" to "",
+                    "timestamp" to currentTime,
+                    "deleted" to false,
+                    "pin" to pinPayload
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to "Shared a pin: ${location.name}",
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+
+                batch.set(messageRef, message)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+
+                    val unreadPinMessageAllParticipants = mutableMapOf<String, Any>()
+                    participants.forEach { participantID ->
+                        unreadPinMessageAllParticipants["unreadCounts.$participantID"] =
+                            if (participantID == senderUserID) {
+                                0
+                            } else {
+                                FieldValue.increment(1)
+                            }
+                    }
+
+                    batch.update(
+                        chatRef,
+                        unreadPinMessageAllParticipants
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener{
+                        setActiveChat(senderUserID, chatID)
+                }
+            }
+    }
+
     fun createGroupChat(
         creatorUserID: String,
         participantIDs: List<String>,
@@ -494,6 +570,20 @@ class ChatRepository {
                         FieldValue.arrayRemove(*participants.toTypedArray())
                     )
                 }
+
+                val unreadMessagesAllParticipants = mutableMapOf<String, Any>()
+
+                participants.forEach {participantID ->
+                    unreadMessagesAllParticipants["unreadCounts.$participantID"] =
+                        if (participantID == senderUserID) {
+                            0
+                        }
+                        else {
+                            FieldValue.increment(1)
+                        }
+                }
+
+                batch.update(chatRef, unreadMessagesAllParticipants)
 
                 batch.commit()
                     .addOnSuccessListener {
@@ -572,6 +662,21 @@ class ChatRepository {
                         chatRef,
                         "deletedBy",
                         FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+
+                    val unreadStudySessionMessageAllParticipants = mutableMapOf<String, Any>()
+                    participants.forEach { participantID ->
+                        unreadStudySessionMessageAllParticipants["unreadCounts.$participantID"] =
+                            if (participantID == senderUserID) {
+                                0
+                            } else {
+                                FieldValue.increment(1)
+                            }
+                    }
+
+                    batch.update(
+                        chatRef,
+                        unreadStudySessionMessageAllParticipants
                     )
                 }
 
