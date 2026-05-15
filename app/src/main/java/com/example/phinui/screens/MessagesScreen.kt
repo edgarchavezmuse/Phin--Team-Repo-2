@@ -151,9 +151,14 @@ fun MessagesScreen(
     val friendList = friendRepositoryViewModel.friendsList.value
     val friendRepository = remember { FriendRepository() }
     var myName by remember { mutableStateOf("") }
+    var groupParticipantIDs by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    LaunchedEffect(messages) {
-        val senderIDs = messages.mapNotNull { it["senderID"] as? String }.distinct()
+    LaunchedEffect(messages, groupParticipantIDs) {
+        val senderIDs = if (isGroupChat) {
+            groupParticipantIDs
+        } else {
+            messages.mapNotNull { it["senderID"] as? String }.distinct()
+        }
 
         val newNames = mutableMapOf<String, String>()
         val newPhotos = mutableMapOf<String, String?>()
@@ -291,6 +296,19 @@ fun MessagesScreen(
             .addOnSuccessListener {
                 myName = it.getString("name") ?: ""
             }
+    }
+
+    LaunchedEffect(resolvedChatID, isGroupChat) {
+        if (isGroupChat) {
+            chatRepositoryViewModel.firebaseFirestoreAuthenticated
+                .collection("chats")
+                .document(resolvedChatID)
+                .get()
+                .addOnSuccessListener { document ->
+                    groupParticipantIDs =
+                        document.get("participants") as? List<String> ?: emptyList()
+                }
+        }
     }
 
     Column(
@@ -795,7 +813,8 @@ fun MessagesScreen(
                 modifier = Modifier.padding(16.dp)
             )
 
-            userNameCache.forEach { (userID, name) ->
+            groupParticipantIDs.forEach { userID ->
+                val name = userNameCache[userID] ?: "Loading..."
 
                 Row(
                     modifier = Modifier
