@@ -237,10 +237,11 @@ fun MessagesScreen(
         val newestMessageIsMine =
             (messages.lastOrNull()?.get("senderID") as? String) == senderUserID
 
-        if (initialChatOpen || userIsNearBottom || newestMessageIsMine) {
-            delay(50)
+        if (initialChatOpen) {
             autoScrollState.scrollToItem(lastMessageIndex)
             initialChatOpen = false
+        } else if (userIsNearBottom || newestMessageIsMine) {
+            autoScrollState.animateScrollToItem(lastMessageIndex)
         }
     }
 
@@ -1106,7 +1107,7 @@ private fun MessageBubble(
     val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
     val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
     val displayEndTime = endTime?.toDate()?.let { convertTime.format(it) } ?: ""
-
+    val isGroupSender = senderName != null || senderPhotoUrl != null
     val bubbleColor = when {
         isDeleted -> DeletedMessageColor
         //isMyMessage -> SenderUserColor
@@ -1138,7 +1139,7 @@ private fun MessageBubble(
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = if (isMyMessage) Arrangement.End else Arrangement.Start
     ) {
-        if (!isMyMessage) {
+        if (!isMyMessage && isGroupSender) {
             UserAvatar(
                 name = senderName ?: "",
                 photoUrl = senderPhotoUrl,
@@ -1151,7 +1152,7 @@ private fun MessageBubble(
         Column(
             horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
         ) {
-            if (!isMyMessage) {
+            if (!isMyMessage && isGroupSender) {
                 Text(
                     text = senderName ?: "",
                     fontSize = 12.sp,
