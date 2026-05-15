@@ -93,7 +93,6 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.TimePickerDefaults
 import com.example.phinui.ui.components.UserAvatar
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
 
@@ -107,7 +106,8 @@ fun MessagesScreen(
     chatID: String? = null,
     groupName: String? = null,
     isGroupChat: Boolean = false,
-    setTopBarTitle: (String, Boolean) -> Unit
+    setTopBarTitle: (String, Boolean) -> Unit,
+    setGroupInfoButton: (Boolean, (() -> Unit)?) -> Unit = { _, _ -> }
 ) {
     val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
     val context = LocalContext.current
@@ -272,6 +272,19 @@ fun MessagesScreen(
         }
     }
 
+    DisposableEffect(isGroupChat) {
+
+        if (isGroupChat) {
+            setGroupInfoButton(true) {
+                showParticipantsSheet = true
+            }
+        }
+
+        onDispose {
+            setGroupInfoButton(false, null)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -312,23 +325,6 @@ fun MessagesScreen(
                     }
                 }
             )
-        }
-
-        if (isGroupChat) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(
-                    onClick = { showParticipantsSheet = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Group info",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
         }
 
         LazyColumn(
