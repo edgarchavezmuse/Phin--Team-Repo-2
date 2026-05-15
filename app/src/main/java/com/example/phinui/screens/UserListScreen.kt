@@ -826,8 +826,8 @@ fun CreateFriendGroupDialog(
                             errorMessage = "Enter a group name"
                         }
 
-                        selectedFriendIDs.isEmpty() -> {
-                            errorMessage = "Select at least one friend"
+                        selectedFriendIDs.isEmpty() || selectedFriendIDs.size < 2 -> {
+                            errorMessage = "Select at least two friends"
                         }
 
                         else -> {
@@ -1007,13 +1007,24 @@ fun getSortedChats(
 
     val sortedChats = approvedChatsState.sortedWith(
         compareBy<Map<String, Any>> { chat ->
-            val filteredParticipants = chat["participants"] as? List<*> ?: return@compareBy ""
-            val filteredOtherUserID = filteredParticipants
-                .mapNotNull { it as? String }
-                .firstOrNull { it != currentUserID }
+            val filteredParticipants = chat["participants"] as? List<*> ?: emptyList<Any>()
 
-            val userName = userCache.value[filteredOtherUserID]?.name ?: "Unknown User"
-            userName.lowercase()
+            val chatType = chat["type"] as? String
+                ?: if (filteredParticipants.size > 2) "group" else "direct"
+
+            val sortBasedOnChatType = when (chatType) {
+                "group" -> chat["groupName"] as? String ?: "group chat"
+
+                else -> {
+
+                    val filteredOtherUserID = filteredParticipants
+                        .mapNotNull { it as? String }
+                        .firstOrNull { it != currentUserID }
+
+                    userCache.value[filteredOtherUserID]?.name ?: "Unknown User"
+                }
+            }
+            sortBasedOnChatType.lowercase()
         }.thenBy { chat ->
             chat["chatID"] as? String ?: ""
         }
