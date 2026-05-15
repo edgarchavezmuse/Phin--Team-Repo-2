@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.ShortText
@@ -49,9 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.example.phinui.notifications.FCMTokenManager.clearToken
-import com.example.phinui.notifications.FCMTokenManager.deleteDeviceToken
-import com.example.phinui.ui.navigation.Routes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -73,12 +69,15 @@ fun ProfileScreen(navController: NavHostController) {
     var major by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
     var photoUrl by remember { mutableStateOf<String?>(null) }
+    var pendingPhotoUrl by remember { mutableStateOf<String?>(null) }
+    var photoMarkedForRemoval by remember { mutableStateOf(false) }
 
     var isEditing by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var isUploadingPhoto by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val displayPhotoUrl = if (isEditing) pendingPhotoUrl else photoUrl
 
     var showConfirm by remember { mutableStateOf(false) }
     var showPhotoMenu by remember { mutableStateOf(false) }
@@ -137,17 +136,9 @@ fun ProfileScreen(navController: NavHostController) {
             .addOnSuccessListener { downloadUri ->
                 val newPhotoUrl = downloadUri.toString()
 
-                db.collection("users")
-                    .document(uid)
-                    .set(mapOf("photoUrl" to newPhotoUrl), SetOptions.merge())
-                    .addOnSuccessListener {
-                        photoUrl = newPhotoUrl
-                        isUploadingPhoto = false
-                    }
-                    .addOnFailureListener { e ->
-                        isUploadingPhoto = false
-                        errorMessage = e.message ?: "Failed to save photo URL."
-                    }
+                pendingPhotoUrl = newPhotoUrl
+                photoMarkedForRemoval = false
+                isUploadingPhoto = false
             }
             .addOnFailureListener { e ->
                 isUploadingPhoto = false
@@ -156,40 +147,8 @@ fun ProfileScreen(navController: NavHostController) {
     }
 
     fun removeProfilePhoto() {
-        val uid = user?.uid ?: return
-
-        val photoRef = storage.reference.child("profile_photos/$uid")
-
-        isUploadingPhoto = true
-        errorMessage = null
-
-        photoRef.delete()
-            .addOnSuccessListener {
-                db.collection("users")
-                    .document(uid)
-                    .update("photoUrl", null)
-                    .addOnSuccessListener {
-                        photoUrl = null
-                        isUploadingPhoto = false
-                    }
-                    .addOnFailureListener { e ->
-                        isUploadingPhoto = false
-                        errorMessage = e.message ?: "Failed to update profile."
-                    }
-            }
-            .addOnFailureListener { e ->
-                db.collection("users")
-                    .document(uid)
-                    .update("photoUrl", null)
-                    .addOnSuccessListener {
-                        photoUrl = null
-                        isUploadingPhoto = false
-                    }
-                    .addOnFailureListener { firestoreError ->
-                        isUploadingPhoto = false
-                        errorMessage = firestoreError.message ?: "Failed to remove photo."
-                    }
-            }
+        pendingPhotoUrl = null
+        photoMarkedForRemoval = true
     }
 
     LaunchedEffect(user?.uid) {
@@ -294,9 +253,9 @@ fun ProfileScreen(navController: NavHostController) {
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                if (!photoUrl.isNullOrBlank()) {
+                if (!displayPhotoUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = photoUrl,
+                        model = displayPhotoUrl,
                         contentDescription = "Profile photo",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -326,6 +285,8 @@ fun ProfileScreen(navController: NavHostController) {
                             showPhotoMenu = true
                         } else {
                             isEditing = true
+                            pendingPhotoUrl = photoUrl
+                            photoMarkedForRemoval = false
                         }
                     },
                 contentAlignment = Alignment.Center
@@ -354,7 +315,7 @@ fun ProfileScreen(navController: NavHostController) {
                         }
                     )
 
-                    if (!photoUrl.isNullOrBlank()) {
+                    if (!displayPhotoUrl.isNullOrBlank()) {
                         DropdownMenuItem(
                             text = { Text("Remove Photo", color = MaterialTheme.colorScheme.primary) },
                             onClick = {
@@ -505,20 +466,6 @@ fun ProfileScreen(navController: NavHostController) {
                         ProfileInfoRow(
                             icon = {
                                 Icon(
-                                    imageVector = Icons.Outlined.Email,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            label = "Email Address",
-                            value = email
-                        )
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        ProfileInfoRow(
-                            icon = {
-                                Icon(
                                     imageVector = Icons.Outlined.School,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
@@ -580,6 +527,8 @@ fun ProfileScreen(navController: NavHostController) {
                                     major = document.getString("major") ?: ""
                                     bio = document.getString("bio") ?: ""
                                     photoUrl = document.getString("photoUrl")
+                                    pendingPhotoUrl = photoUrl
+                                    photoMarkedForRemoval = false
                                     isEditing = false
                                     errorMessage = null
                                 }
@@ -610,13 +559,16 @@ fun ProfileScreen(navController: NavHostController) {
                         val updatedProfile = mapOf(
                             "name" to name.trim(),
                             "major" to major.trim(),
-                            "bio" to bio.trim()
+                            "bio" to bio.trim(),
+                            "photoUrl" to pendingPhotoUrl
                         )
 
                         db.collection("users")
                             .document(uid)
                             .set(updatedProfile, SetOptions.merge())
                             .addOnSuccessListener {
+                                photoUrl = pendingPhotoUrl
+                                photoMarkedForRemoval = false
                                 isSaving = false
                                 isEditing = false
                             }
@@ -637,34 +589,6 @@ fun ProfileScreen(navController: NavHostController) {
                 ) {
                     Text(if (isSaving) "Saving..." else "Save")
                 }
-            }
-        } else {
-            Button(
-                onClick = {
-                    clearToken()
-                    deleteDeviceToken()
-                    auth.signOut()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Logout,
-                    contentDescription = "Log out"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Log Out")
             }
         }
     }
