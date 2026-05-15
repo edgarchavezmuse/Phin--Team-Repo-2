@@ -466,20 +466,6 @@ fun ProfileScreen(navController: NavHostController) {
                         ProfileInfoRow(
                             icon = {
                                 Icon(
-                                    imageVector = Icons.Outlined.Email,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            label = "Email Address",
-                            value = email
-                        )
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        ProfileInfoRow(
-                            icon = {
-                                Icon(
                                     imageVector = Icons.Outlined.School,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
