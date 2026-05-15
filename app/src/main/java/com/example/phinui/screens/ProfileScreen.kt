@@ -638,34 +638,6 @@ fun ProfileScreen(navController: NavHostController) {
                     Text(if (isSaving) "Saving..." else "Save")
                 }
             }
-        } else {
-            Button(
-                onClick = {
-                    clearToken()
-                    deleteDeviceToken()
-                    auth.signOut()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Logout,
-                    contentDescription = "Log out"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Log Out")
-            }
         }
     }
 }
