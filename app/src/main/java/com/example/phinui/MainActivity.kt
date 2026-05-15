@@ -56,6 +56,7 @@ import com.example.phinui.viewmodel.MainActivityViewModel
 import com.example.phinui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 import com.example.phinui.ui.theme.Background
+import androidx.compose.material.icons.filled.Info
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

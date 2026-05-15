@@ -93,7 +93,11 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.TimePickerDefaults
 import com.example.phinui.ui.components.UserAvatar
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessagesScreen(
     senderUserID: String,
@@ -147,6 +151,8 @@ fun MessagesScreen(
 
     var userNameCache by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var userPhotoCache by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
+
+    var showParticipantsSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(messages) {
         val senderIDs = messages.mapNotNull { it["senderID"] as? String }.distinct()
@@ -306,6 +312,23 @@ fun MessagesScreen(
                     }
                 }
             )
+        }
+
+        if (isGroupChat) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = { showParticipantsSheet = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Group info",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
 
         LazyColumn(
@@ -751,6 +774,51 @@ fun MessagesScreen(
                 }
             )
         }
+
+    if (showParticipantsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showParticipantsSheet = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+
+            Text(
+                text = "Participants",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            userNameCache.forEach { (userID, name) ->
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    UserAvatar(
+                        name = name,
+                        photoUrl = userPhotoCache[userID],
+                        size = 40
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = name,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
 
         if (showPinPickerDialog) {
             AlertDialog(
