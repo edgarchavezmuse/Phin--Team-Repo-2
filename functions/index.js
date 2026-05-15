@@ -10,6 +10,7 @@ const messageRequest = require("./messageRequestNotif");
 const acceptMessageRequest = require("./acceptMessageRequestNotif");
 const inviteStudySession = require("./inviteStudySessionNotif");
 const acceptInvite = require("./acceptInviteNotif");
+const pin = require("./pinNotif");
 
 // exports to Firebase
 exports.sendFriendRequestNotification =
@@ -32,4 +33,7 @@ inviteStudySession.sendInviteNotification;
 
 exports.sendAcceptInvite =
 acceptInvite.sendAcceptInviteNotification;
+
+exports.sendPinNotification =
+pin.sendPinNotification;
 

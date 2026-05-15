@@ -61,7 +61,8 @@ fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     darkModeEnabled: Boolean,
-    setTopBarTitle: (String, Boolean) -> Unit
+    setTopBarTitle: (String, Boolean) -> Unit,
+    setGroupInfoButton: (Boolean, (() -> Unit)?) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
     val context = LocalContext.current
@@ -245,6 +246,36 @@ fun PhinNavHost(
                 setTopBarTitle = { title, isMessages ->
                     setTopBarTitle(title, isMessages)
                 }
+            )
+        }
+
+        composable(
+            route = Routes.GROUP_MESSAGES + "/{chatID}/{groupName}",
+            arguments = listOf(
+                navArgument("chatID") {
+                    type = NavType.StringType
+                },
+                navArgument("groupName") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val chatID = backStackEntry.arguments?.getString("chatID") ?: ""
+            val groupName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("groupName") ?: "Group Chat",
+                "UTF-8"
+            )
+
+            MessagesScreen(
+                senderUserID = currentUserID,
+                receiverUserID = "",
+                chatID = chatID,
+                groupName = groupName,
+                isGroupChat = true,
+                navController = navController,
+                setTopBarTitle = setTopBarTitle,
+                setGroupInfoButton = setGroupInfoButton
             )
         }
 
