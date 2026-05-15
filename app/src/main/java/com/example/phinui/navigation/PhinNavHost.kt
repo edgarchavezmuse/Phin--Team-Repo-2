@@ -61,7 +61,8 @@ fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     darkModeEnabled: Boolean,
-    setTopBarTitle: (String, Boolean) -> Unit
+    setTopBarTitle: (String, Boolean) -> Unit,
+    setGroupInfoButton: (Boolean, (() -> Unit)?) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
     val context = LocalContext.current
@@ -273,7 +274,8 @@ fun PhinNavHost(
                 groupName = groupName,
                 isGroupChat = true,
                 navController = navController,
-                setTopBarTitle = setTopBarTitle
+                setTopBarTitle = setTopBarTitle,
+                setGroupInfoButton = setGroupInfoButton
             )
         }
 

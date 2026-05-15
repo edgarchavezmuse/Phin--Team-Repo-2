@@ -93,7 +93,13 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.TimePickerDefaults
 import com.example.phinui.ui.components.UserAvatar
-
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.phinui.data.friends.FriendRepository
+import com.example.phinui.viewmodel.FriendRepositoryViewModel
+import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
+import androidx.compose.material.icons.filled.PersonAdd
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessagesScreen(
     senderUserID: String,
@@ -103,9 +109,13 @@ fun MessagesScreen(
     chatID: String? = null,
     groupName: String? = null,
     isGroupChat: Boolean = false,
-    setTopBarTitle: (String, Boolean) -> Unit
+    setTopBarTitle: (String, Boolean) -> Unit,
+    setGroupInfoButton: (Boolean, (() -> Unit)?) -> Unit = { _, _ -> }
 ) {
     val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
+    val friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
+        factory = FriendRepositoryViewModelFactory(FriendRepository())
+    )
     val context = LocalContext.current
     val reminderScheduler = remember { ReminderScheduler(context) }
     val calendarViewModel: CalendarViewModel = viewModel(
@@ -114,42 +124,41 @@ fun MessagesScreen(
             reminderScheduler = reminderScheduler
         )
     )
-
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
-
     var showPinPickerDialog by remember { mutableStateOf(false) }
     var campusPins by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
     var showAttachMenu by remember { mutableStateOf(false) }
-
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
     var initialChatOpen by remember { mutableStateOf(true) }
-
     val selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     val showDeleteDialog = remember { mutableStateOf(false) }
     val resolvedChatID = chatID ?: chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
-
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
-
     var selectedStudyDate by remember { mutableStateOf("") }
     var selectedStudyStartTime by remember { mutableStateOf<LocalTime?>(null) }
     var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null) }
-
     var showStudySessionInviteDialog by remember { mutableStateOf(false) }
-
     val state = userListViewModel.userState
-
     var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
     var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
-
     var userNameCache by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var userPhotoCache by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
+    var showParticipantsSheet by remember { mutableStateOf(false) }
+    val friendList = friendRepositoryViewModel.friendsList.value
+    val friendRepository = remember { FriendRepository() }
+    var myName by remember { mutableStateOf("") }
+    var groupParticipantIDs by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    LaunchedEffect(messages) {
-        val senderIDs = messages.mapNotNull { it["senderID"] as? String }.distinct()
+    LaunchedEffect(messages, groupParticipantIDs) {
+        val senderIDs = if (isGroupChat) {
+            groupParticipantIDs
+        } else {
+            messages.mapNotNull { it["senderID"] as? String }.distinct()
+        }
 
         val newNames = mutableMapOf<String, String>()
         val newPhotos = mutableMapOf<String, String?>()
@@ -263,6 +272,42 @@ fun MessagesScreen(
         if (shouldScrollLatestTimestamp && messages.isNotEmpty()) {
             autoScrollState.scrollToItem(messages.lastIndex)
             shouldScrollLatestTimestamp = false
+        }
+    }
+
+    DisposableEffect(isGroupChat) {
+
+        if (isGroupChat) {
+            setGroupInfoButton(true) {
+                showParticipantsSheet = true
+            }
+        }
+
+        onDispose {
+            setGroupInfoButton(false, null)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        chatRepositoryViewModel.firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(senderUserID)
+            .get()
+            .addOnSuccessListener {
+                myName = it.getString("name") ?: ""
+            }
+    }
+
+    LaunchedEffect(resolvedChatID, isGroupChat) {
+        if (isGroupChat) {
+            chatRepositoryViewModel.firebaseFirestoreAuthenticated
+                .collection("chats")
+                .document(resolvedChatID)
+                .get()
+                .addOnSuccessListener { document ->
+                    groupParticipantIDs =
+                        document.get("participants") as? List<String> ?: emptyList()
+                }
         }
     }
 
@@ -751,6 +796,94 @@ fun MessagesScreen(
                 }
             )
         }
+
+    if (showParticipantsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showParticipantsSheet = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+
+            Text(
+                text = "Participants",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            groupParticipantIDs.forEach { userID ->
+                val name = userNameCache[userID] ?: "Loading..."
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    UserAvatar(
+                        name = name,
+                        photoUrl = userPhotoCache[userID],
+                        size = 40
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = name,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    val isMe = userID == senderUserID
+                    val isAlreadyFriend = friendList.any { it.uid == userID }
+
+                    if (!isMe && !isAlreadyFriend) {
+                        IconButton(
+                            onClick = {
+                                friendRepository.sendFriendRequest(
+                                    userID,
+                                    myName,
+                                    {
+                                        Toast.makeText(
+                                            context,
+                                            "Friend request sent",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    {
+                                        val niceMessage = when (it.message) {
+                                            "PENDING_REQUEST_EXISTS" -> "Friend request already pending"
+                                            "ALREADY_FRIENDS" -> "You are already friends"
+                                            else -> "Failed to send friend request"
+                                        }
+
+                                        Toast.makeText(
+                                            context,
+                                            niceMessage,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = "Add friend",
+                                tint = Color.Black
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
 
         if (showPinPickerDialog) {
             AlertDialog(

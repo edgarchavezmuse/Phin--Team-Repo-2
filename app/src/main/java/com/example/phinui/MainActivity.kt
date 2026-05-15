@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,6 +56,10 @@ import com.example.phinui.viewmodel.MainActivityViewModel
 import com.example.phinui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 import com.example.phinui.ui.theme.Background
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,6 +101,9 @@ fun PhinUIApp(
 
     val topBarTitle = mainActivityViewModel.topBarTitle
     val isMessages = mainActivityViewModel.isMessagesScreen
+
+    val showGroupInfoButton = mainActivityViewModel.showGroupInfoButton
+    val onGroupInfoClick = mainActivityViewModel.onGroupInfoClick
 
     val hideNavigationUi =
         currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER
@@ -156,6 +163,9 @@ fun PhinUIApp(
                         darkModeEnabled = darkModeEnabled,
                         setTopBarTitle = { title, isMessages ->
                             mainActivityViewModel.setTitle(title, isMessages)
+                        },
+                        setGroupInfoButton = { show, onClick ->
+                            mainActivityViewModel.setGroupInfoButton(show, onClick)
                         }
                     )
                 }
@@ -188,14 +198,34 @@ fun PhinUIApp(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    topBarTitle,
-                                    fontSize = if (isMessages) 18.sp
-                                    else MaterialTheme.typography.titleLarge.fontSize,
-                                    fontWeight = if (isMessages) FontWeight.Bold
-                                    else FontWeight.Normal,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        topBarTitle,
+                                        fontSize = if (isMessages) 18.sp
+                                        else MaterialTheme.typography.titleLarge.fontSize,
+                                        fontWeight = if (isMessages) FontWeight.Bold
+                                        else FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+
+                                    if (showGroupInfoButton) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+
+                                        IconButton(
+                                            onClick = { onGroupInfoClick?.invoke() },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Info,
+                                                contentDescription = "Group info",
+                                                tint = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         },
                         navigationIcon = {
@@ -250,6 +280,9 @@ fun PhinUIApp(
                     darkModeEnabled = darkModeEnabled,
                     setTopBarTitle = { title, isMessages ->
                         mainActivityViewModel.setTitle(title, isMessages)
+                    },
+                    setGroupInfoButton = { show, onClick ->
+                        mainActivityViewModel.setGroupInfoButton(show, onClick)
                     }
                 )
             }
