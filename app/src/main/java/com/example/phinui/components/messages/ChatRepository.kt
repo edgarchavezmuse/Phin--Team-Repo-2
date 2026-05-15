@@ -337,10 +337,28 @@ class ChatRepository {
                     val participants = snapshot.get("participants") as? List<String> ?: emptyList()
                     val isFriendChat = snapshot.getBoolean("isFriendChat") ?: false
 
-                    val bothDeleted = participants.all { deletedBy.contains(it) }
+                    val chatType = snapshot["type"] as? String ?: "direct"
 
-                    if (bothDeleted && !isFriendChat) {
+                    val allDeleted = participants.all { deletedBy.contains(it) }
+
+                    if (allDeleted && !isFriendChat) {
                         chatRef.update("requestState", "none")
+                            .addOnSuccessListener {
+                                if (chatType == "group") {
+                                    chatRef.collection("messages")
+                                        .get()
+                                        .addOnSuccessListener { removeMessage ->
+                                            val messagesBatch = database.batch()
+                                            removeMessage.documents.forEach { messagesDoc ->
+                                                messagesBatch.delete(messagesDoc.reference)
+                                            }
+
+                                            messagesBatch.commit().addOnSuccessListener {
+                                                chatRef.delete()
+                                            }
+                                        }
+                                }
+                            }
                     }
                 }
             }
