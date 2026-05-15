@@ -37,6 +37,7 @@ class ChatRepository {
 
         // chat metadata
         val chatData = hashMapOf(
+            "type" to "direct",
             "lastMessage" to messageText,
             "lastTimestamp" to messageProperties.currentTime,
             "participants" to listOf(senderUserID, receiverUserID),
@@ -194,6 +195,7 @@ class ChatRepository {
 
         messageProperties.chatReference.update(
             mapOf(
+                "type" to "direct",
                 "lastMessage" to "",
                 "lastTimestamp" to messageProperties.currentTime,
                 "participants" to listOf(senderUserID, receiverUserID),
@@ -204,6 +206,7 @@ class ChatRepository {
         ).addOnFailureListener {
             messageProperties.chatReference.set(
                 mapOf(
+                    "type" to "direct",
                     "lastMessage" to "",
                     "lastTimestamp" to messageProperties.currentTime,
                     "participants" to listOf(senderUserID, receiverUserID),
@@ -400,6 +403,7 @@ class ChatRepository {
         )
 
         val chatData = hashMapOf(
+            "type" to "direct",
             "lastMessage" to "Shared a pin: ${location.name}",
             "lastTimestamp" to messageProperties.currentTime,
             "participants" to listOf(senderUserID, receiverUserID),
@@ -417,6 +421,165 @@ class ChatRepository {
         batch.commit()
 
         setActiveChat(senderUserID, messageProperties.chatID)
+    }
+
+    fun createGroupChat(
+        creatorUserID: String,
+        participantIDs: List<String>,
+        groupName: String,
+        onCreated: (String) -> Unit = {},
+        onError: (Exception) -> Unit = {}
+    ) {
+        val chatRef = chatsCollection.document()
+        val chatID = chatRef.id
+        val currentTime = Timestamp.now()
+
+        val allParticipants = (participantIDs + creatorUserID).distinct()
+
+        val chatData = hashMapOf(
+            "type" to "group",
+            "groupCategory" to "friends",
+            "groupName" to groupName,
+            "createdBy" to creatorUserID,
+            "participants" to allParticipants,
+            "lastMessage" to "",
+            "lastTimestamp" to currentTime,
+            "requestState" to "approved"
+        )
+
+        chatRef.set(chatData)
+            .addOnSuccessListener {
+                onCreated(chatID)
+            }
+            .addOnFailureListener { error ->
+                onError(error)
+            }
+    }
+
+    fun sendGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        messageText: String
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val message = hashMapOf(
+                    "type" to "text",
+                    "senderID" to senderUserID,
+                    "text" to messageText,
+                    "timestamp" to currentTime,
+                    "deleted" to false
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to messageText,
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+
+                batch.set(messageRef, message)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        setActiveChat(senderUserID, chatID)
+                    }
+            }
+    }
+
+    fun checkMessagesByChatID(
+        chatID: String,
+        newMessage: (List<Map<String, Any>>) -> Unit
+    ) {
+        chatsCollection
+            .document(chatID)
+            .collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+
+                val messages = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+
+                    data.toMutableMap().apply {
+                        put("messageID", doc.id)
+                        put("chatID", chatID)
+                    }
+                }
+
+                newMessage(messages)
+            }
+    }
+
+    fun sendGroupStudySessionInvitation(
+        senderUserID: String,
+        chatID: String,
+        studySessionTitle: String,
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val participantStatuses = participants.associateWith { userID ->
+                    if (userID == senderUserID) "ACCEPTED" else "PENDING"
+                }
+
+                val invitation = hashMapOf(
+                    "type" to "invitation",
+                    "senderID" to senderUserID,
+                    "title" to studySessionTitle,
+                    "description" to studySessionDescription,
+                    "timestamp" to currentTime,
+                    "deleted" to false,
+                    "startTime" to startTime,
+                    "endTime" to endTime,
+                    "participants" to participantStatuses
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to "Study session: $studySessionTitle",
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+                batch.set(messageRef, invitation)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        setActiveChat(senderUserID, chatID)
+                    }
+            }
     }
 
 }
