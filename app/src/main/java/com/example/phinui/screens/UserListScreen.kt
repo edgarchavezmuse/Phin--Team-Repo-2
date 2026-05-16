@@ -239,6 +239,8 @@ fun UserListScreen (
                                         name = groupName,
                                         photoUrl = null
                                     ),
+                                    chatID = chatID,
+                                    mutedChats = mutedChats,
                                     unreadCount = unreadCount,
                                     subtitle = previewText,
                                     timeText = formatTimestamp(timestamp),
@@ -269,6 +271,8 @@ fun UserListScreen (
 
                                 UserListItem(
                                     user = friendUser,
+                                    chatID = chatID,
+                                    mutedChats = mutedChats,
                                     unreadCount = unreadCount,
                                     subtitle = previewText,
                                     timeText = formatTimestamp(timestamp),
@@ -422,6 +426,8 @@ fun UserListScreen (
 
                                 UserListItem(
                                     user = user,
+                                    chatID = chatID,
+                                    mutedChats = mutedChats,
                                     unreadCount = unreadCount,
                                     subtitle = previewText,
                                     timeText = formatTimestamp(timestamp),
@@ -537,6 +543,8 @@ fun UserListScreen (
 
                             UserListItem(
                                 user = user,
+                                chatID = chatID,
+                                mutedChats = mutedChats,
                                 unreadCount = 0,
                                 trailingContent = {
                                     Row(
@@ -850,6 +858,8 @@ fun CreateFriendGroupDialog(
 @Composable
 fun UserListItem(
     user: User,
+    chatID: String,
+    mutedChats: Set<String>,
     unreadCount: Int,
     subtitle: String = "",
     timeText: String? = null,
@@ -915,19 +925,36 @@ fun UserListItem(
                     }
                 }
 
-                if (subtitle.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 18.sp
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (subtitle.isNotBlank()) {
+                        Text(
+                            text = subtitle,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 18.sp
+                            ),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    if (mutedChats.contains(chatID)) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            Icons.Default.VolumeOff,
+                            "",
+                            tint = MaterialTheme.colorScheme.onTertiary
+                        )
+                    }
                 }
+
             }
+
+
 
             if (trailingContent != null) {
                 Spacer(modifier = Modifier.width(4.dp))
