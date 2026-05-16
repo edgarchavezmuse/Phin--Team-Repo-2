@@ -91,6 +91,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.TimePickerDefaults
 import com.example.phinui.ui.components.UserAvatar
 import androidx.compose.material3.ModalBottomSheet
@@ -99,6 +100,14 @@ import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.viewmodel.FriendRepositoryViewModel
 import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
+import com.example.phinui.components.people.BlockFriendDialog
+import com.example.phinui.components.people.BlockUserDialog
+import com.example.phinui.components.people.RemoveFriendDialog
+import com.example.phinui.components.people.SendFriendRequestDialog
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessagesScreen(
@@ -126,15 +135,19 @@ fun MessagesScreen(
     )
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
+
     var showPinPickerDialog by remember { mutableStateOf(false) }
     var campusPins by remember { mutableStateOf<List<CampusLocation>>(emptyList()) }
     var showAttachMenu by remember { mutableStateOf(false) }
+
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
+
     var initialChatOpen by remember { mutableStateOf(true) }
     val selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     val showDeleteDialog = remember { mutableStateOf(false) }
     val resolvedChatID = chatID ?: chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
@@ -142,16 +155,25 @@ fun MessagesScreen(
     var selectedStudyStartTime by remember { mutableStateOf<LocalTime?>(null) }
     var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null) }
     var showStudySessionInviteDialog by remember { mutableStateOf(false) }
+
     val state = userListViewModel.userState
     var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
     var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
+
     var userNameCache by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var userPhotoCache by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
     var showParticipantsSheet by remember { mutableStateOf(false) }
+
     val friendList = friendRepositoryViewModel.friendsList.value
     val friendRepository = remember { FriendRepository() }
     var myName by remember { mutableStateOf("") }
     var groupParticipantIDs by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    var showDirectChatInfoSheet by remember { mutableStateOf(false) }
+    var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     LaunchedEffect(messages, groupParticipantIDs) {
         val senderIDs = if (isGroupChat) {
@@ -276,10 +298,11 @@ fun MessagesScreen(
     }
 
     DisposableEffect(isGroupChat) {
-
-        if (isGroupChat) {
-            setGroupInfoButton(true) {
+        setGroupInfoButton(true) {
+            if (isGroupChat) {
                 showParticipantsSheet = true
+            } else {
+                showDirectChatInfoSheet = true
             }
         }
 
@@ -309,6 +332,16 @@ fun MessagesScreen(
                         document.get("participants") as? List<String> ?: emptyList()
                 }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        chatRepositoryViewModel.firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(senderUserID)
+            .get()
+            .addOnSuccessListener {
+                myName = it.getString("name") ?: ""
+            }
     }
 
     Column(
@@ -797,6 +830,74 @@ fun MessagesScreen(
             )
         }
 
+    if (showDirectChatInfoSheet) {
+        val isFriend = friendList.any { it.uid == receiverUserID }
+        val receiverName = userNameCache[receiverUserID] ?: "this user"
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showDirectChatInfoSheet = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Text(
+                text = "Chat Actions",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            HorizontalDivider()
+
+            if (isFriend) {
+                ListItem(
+                    headlineContent = { Text("Remove Friend") },
+                    leadingContent = {
+                        Icon(Icons.Default.PersonRemove, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable {
+                        showDirectChatInfoSheet = false
+                        friendToRemove = receiverUserID to receiverName
+                    }
+                )
+            } else {
+                ListItem(
+                    headlineContent = { Text("Add Friend") },
+                    leadingContent = {
+                        Icon(Icons.Default.PersonAdd, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable {
+                        showDirectChatInfoSheet = false
+                        userToAdd = receiverUserID to receiverName
+                    }
+                )
+            }
+
+            ListItem(
+                headlineContent = { Text("Block User") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Block,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier.clickable {
+                    showDirectChatInfoSheet = false
+
+                    if (isFriend) {
+                        friendToBlock = receiverUserID to receiverName
+                    } else {
+                        userToBlock = receiverUserID to receiverName
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
     if (showParticipantsSheet) {
         ModalBottomSheet(
             onDismissRequest = {
@@ -883,6 +984,80 @@ fun MessagesScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    userToAdd?.let { (uid, name) ->
+        SendFriendRequestDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.sendFriendRequest(
+                    uid,
+                    myName,
+                    {
+                        userToAdd = null
+                    },
+                    {
+                        userToAdd = null
+                    }
+                )
+            },
+            onDismiss = { userToAdd = null }
+        )
+    }
+
+    userToBlock?.let { (uid, name) ->
+        BlockUserDialog(
+            name = name,
+            isFriend = false,
+            onConfirm = {
+                friendRepository.blockUser(
+                    uid,
+                    {
+                        userToBlock = null
+                    },
+                    {
+                        userToBlock = null
+                    }
+                )
+            },
+            onDismiss = { userToBlock = null }
+        )
+    }
+
+    friendToRemove?.let { (uid, name) ->
+        RemoveFriendDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.removeFriend(
+                    friendUid = uid,
+                    onSuccess = {
+                        friendToRemove = null
+                    },
+                    onError = {
+                        friendToRemove = null
+                    }
+                )
+            },
+            onDismiss = { friendToRemove = null }
+        )
+    }
+
+    friendToBlock?.let { (uid, name) ->
+        BlockFriendDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.blockUser(
+                    blockedUid = uid,
+                    onSuccess = {
+                        friendToBlock = null
+                    },
+                    onError = {
+                        friendToBlock = null
+                    }
+                )
+            },
+            onDismiss = { friendToBlock = null }
+        )
     }
 
         if (showPinPickerDialog) {

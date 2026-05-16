@@ -245,7 +245,8 @@ fun PhinNavHost(
                 navController = navController,
                 setTopBarTitle = { title, isMessages ->
                     setTopBarTitle(title, isMessages)
-                }
+                },
+                setGroupInfoButton = setGroupInfoButton
             )
         }
 

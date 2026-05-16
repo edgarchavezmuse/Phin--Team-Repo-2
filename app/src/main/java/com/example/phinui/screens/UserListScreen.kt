@@ -276,67 +276,6 @@ fun UserListScreen (
                                     unreadCount = unreadCount,
                                     subtitle = previewText,
                                     timeText = formatTimestamp(timestamp),
-                                    trailingContent = {
-                                        var showMenu by remember { mutableStateOf(false) }
-
-                                        Box {
-                                            IconButton(onClick = { showMenu = !showMenu }) {
-                                                Icon(
-                                                    imageVector = Icons.Default.MoreVert,
-                                                    contentDescription = "Options",
-                                                    tint = MaterialTheme.colorScheme.onTertiary
-                                                )
-                                            }
-
-                                            DropdownMenu(
-                                                expanded = showMenu,
-                                                onDismissRequest = { showMenu = false },
-                                                containerColor = MaterialTheme.colorScheme.surface
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.PersonRemove,
-                                                                contentDescription = "Remove Friend",
-                                                                tint = MaterialTheme.colorScheme.onTertiary
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(
-                                                                "Remove Friend",
-                                                                color = MaterialTheme.colorScheme.onTertiary
-                                                            )
-                                                        }
-                                                    },
-                                                    onClick = {
-                                                        showMenu = false
-                                                        friendToRemove = friendId to friendUser.name
-                                                    }
-                                                )
-
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Block,
-                                                                contentDescription = "Block User",
-                                                                tint = MaterialTheme.colorScheme.primary
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(
-                                                                "Block User",
-                                                                color = MaterialTheme.colorScheme.primary
-                                                            )
-                                                        }
-                                                    },
-                                                    onClick = {
-                                                        showMenu = false
-                                                        friendToBlock = friendId to friendUser.name
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    },
                                     onClick = {
                                         navController.navigate(Routes.MESSAGES + "/${friendId}")
                                     },
@@ -431,69 +370,6 @@ fun UserListScreen (
                                     unreadCount = unreadCount,
                                     subtitle = previewText,
                                     timeText = formatTimestamp(timestamp),
-                                    trailingContent = {
-                                        var showMenu by remember { mutableStateOf(false) }
-                                        Box {
-                                            IconButton(
-                                                onClick = { showMenu = !showMenu }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.MoreVert,
-                                                    contentDescription = "Options",
-                                                    tint = MaterialTheme.colorScheme.onTertiary
-                                                )
-                                            }
-
-                                            DropdownMenu(
-                                                expanded = showMenu,
-                                                onDismissRequest = { showMenu = false },
-                                                containerColor = MaterialTheme.colorScheme.surface
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.PersonAdd,
-                                                                contentDescription = "Add Friend",
-                                                                tint = MaterialTheme.colorScheme.onTertiary
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(
-                                                                "Add Friend",
-                                                                color = MaterialTheme.colorScheme.onTertiary
-                                                            )
-                                                        }
-                                                    },
-                                                    onClick = {
-                                                        showMenu = false
-                                                        userToAdd = otherUserID to user.name
-
-                                                    }
-                                                )
-
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Block,
-                                                                contentDescription = "Block User",
-                                                                tint = MaterialTheme.colorScheme.primary
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(
-                                                                "Block User",
-                                                                color = MaterialTheme.colorScheme.primary
-                                                            )
-                                                        }
-                                                    },
-                                                    onClick = {
-                                                        showMenu = false
-                                                        userToBlock = otherUserID to user.name
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    },
                                     onClick = {
                                         navController.navigate(Routes.MESSAGES + "/${user.uid}")
                                     },
