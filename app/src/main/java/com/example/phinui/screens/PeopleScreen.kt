@@ -55,9 +55,6 @@ import com.example.phinui.components.people.SendFriendRequestDialog
 import com.example.phinui.components.people.UnblockUserDialog
 import com.example.phinui.data.friends.FriendRepository
 import com.example.phinui.ui.components.UserAvatar
-import com.example.phinui.ui.theme.Background
-import com.example.phinui.ui.theme.HeaderRed
-import com.example.phinui.ui.theme.NavText
 import com.example.phinui.ui.theme.TextMuted
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -67,10 +64,12 @@ import com.example.phinui.components.people.ActiveChatDialog
 import androidx.compose.material3.*
 import com.example.phinui.components.people.PendingFriendRequestDialog
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
 import androidx.navigation.NavHostController
 import com.example.phinui.ui.components.UserProfilePreviewDialog
 import com.example.phinui.data.model.PreviewUser
 import com.example.phinui.ui.navigation.Routes
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -245,9 +244,11 @@ fun PeopleScreen(
                             .filter { it.isNotBlank() }
                             .map { it.lowercase() }            // normalize
                             .distinct()                        // remove duplicates
-                            .map { it.split(" ").joinToString(" ") { word ->
-                                word.replaceFirstChar { c -> c.uppercase() }  // Title Case
-                            }}
+                            .map {
+                                it.split(" ").joinToString(" ") { word ->
+                                    word.replaceFirstChar { c -> c.uppercase() }  // Title Case
+                                }
+                            }
                             .sorted()
 
                 Row(
@@ -325,7 +326,10 @@ fun PeopleScreen(
 
                     blockedUsers.none { (blockedUid, _) -> blockedUid == uid } &&
                             uid !in blockedByOthers &&
-                            (majorFilter == "All Majors" || major.equals(majorFilter, ignoreCase = true))
+                            (majorFilter == "All Majors" || major.equals(
+                                majorFilter,
+                                ignoreCase = true
+                            ))
                 }
 
                 LazyColumn(
@@ -339,7 +343,8 @@ fun PeopleScreen(
                         val currentUserId = chatRepositoryViewModel.currentUserID
 
                         val chatForUser = chats.firstOrNull { chat ->
-                            val participants = chat["participants"] as? List<*> ?: return@firstOrNull false
+                            val participants =
+                                chat["participants"] as? List<*> ?: return@firstOrNull false
                             val ids = participants.mapNotNull { it as? String }
 
                             currentUserId != null && currentUserId in ids && uid in ids
@@ -389,13 +394,15 @@ fun PeopleScreen(
                                                         ?.toSet()
                                                         ?: emptySet()
 
-                                                val mutualIds = myFriendIds.intersect(otherFriendIds)
+                                                val mutualIds =
+                                                    myFriendIds.intersect(otherFriendIds)
 
                                                 mutualFriendsCount = mutualIds.size
 
-                                                mutualFriendsList = friends.filter { (friendUid, _) ->
-                                                    friendUid in mutualIds
-                                                }
+                                                mutualFriendsList =
+                                                    friends.filter { (friendUid, _) ->
+                                                        friendUid in mutualIds
+                                                    }
                                             }
                                     }
                                 )
@@ -472,7 +479,10 @@ fun PeopleScreen(
                                                     tint = MaterialTheme.colorScheme.onTertiary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text(label, color = MaterialTheme.colorScheme.onTertiary)
+                                                Text(
+                                                    label,
+                                                    color = MaterialTheme.colorScheme.onTertiary
+                                                )
                                             }
                                         },
                                         onClick = {
@@ -501,7 +511,10 @@ fun PeopleScreen(
                                                     tint = MaterialTheme.colorScheme.primary
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Block User", color = MaterialTheme.colorScheme.primary)
+                                                Text(
+                                                    "Block User",
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
                                             }
                                         },
                                         onClick = {
@@ -517,93 +530,137 @@ fun PeopleScreen(
             }
 
             1 -> {
-                LazyColumn(
+                Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(blockedUsers) { (uid, user) ->
-                        val name = user["name"] as? String ?: "Unknown"
-                        val email = user["email"] as? String ?: ""
-                        val photoUrl = user["photoUrl"] as? String
-
-                        Row(
+                    if (blockedUsers.isEmpty()) {
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                UserAvatar(
-                                    name = name,
-                                    photoUrl = photoUrl,
-                                    size = 44,
-                                    modifier = Modifier.clickable {
+                            Icon(
+                                imageVector = Icons.Default.Block,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(64.dp)
+                            )
 
-                                        mutualFriendsCount = 0
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                                        previewUser = PreviewUser(
-                                            name = name,
-                                            email = email,
-                                            photoUrl = photoUrl,
-                                            major = user["major"] as? String ?: "",
-                                            bio = user["bio"] as? String ?: ""
-                                        )
+                            Text(
+                                text = "No blocked users",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                                        val myFriendIds = friends.map { it.first }.toSet()
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                                        db.collection("users")
-                                            .document(uid)
-                                            .get()
-                                            .addOnSuccessListener { doc ->
+                            Text(
+                                text = "People you block will appear here.",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(blockedUsers) { (uid, user) ->
+                                val name = user["name"] as? String ?: "Unknown"
+                                val email = user["email"] as? String ?: ""
+                                val photoUrl = user["photoUrl"] as? String
 
-                                                val otherFriendIds =
-                                                    (doc.get("friends") as? List<*>)
-                                                        ?.mapNotNull { it as? String }
-                                                        ?.toSet()
-                                                        ?: emptySet()
-
-                                                val mutualIds = myFriendIds.intersect(otherFriendIds)
-
-                                                mutualFriendsCount = mutualIds.size
-
-                                                mutualFriendsList = friends.filter { (friendUid, _) ->
-                                                    friendUid in mutualIds
-                                                }
-                                            }
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column(
-                                    modifier = Modifier.fillMaxWidth()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = name,
-                                        color = MaterialTheme.colorScheme.onTertiary
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        UserAvatar(
+                                            name = name,
+                                            photoUrl = photoUrl,
+                                            size = 44,
+                                            modifier = Modifier.clickable {
 
-                                    Text(
-                                        text = email,
-                                        color = TextMuted,
-                                        fontSize = 12.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
+                                                mutualFriendsCount = 0
 
-                            IconButton(
-                                onClick = {
-                                    userToUnblock = uid to name
+                                                previewUser = PreviewUser(
+                                                    name = name,
+                                                    email = email,
+                                                    photoUrl = photoUrl,
+                                                    major = user["major"] as? String ?: "",
+                                                    bio = user["bio"] as? String ?: ""
+                                                )
+
+                                                val myFriendIds = friends.map { it.first }.toSet()
+
+                                                db.collection("users")
+                                                    .document(uid)
+                                                    .get()
+                                                    .addOnSuccessListener { doc ->
+
+                                                        val otherFriendIds =
+                                                            (doc.get("friends") as? List<*>)
+                                                                ?.mapNotNull { it as? String }
+                                                                ?.toSet()
+                                                                ?: emptySet()
+
+                                                        val mutualIds =
+                                                            myFriendIds.intersect(otherFriendIds)
+
+                                                        mutualFriendsCount = mutualIds.size
+
+                                                        mutualFriendsList =
+                                                            friends.filter { (friendUid, _) ->
+                                                                friendUid in mutualIds
+                                                            }
+                                                    }
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = name,
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+
+                                            Text(
+                                                text = email,
+                                                color = TextMuted,
+                                                fontSize = 12.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            userToUnblock = uid to name
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Unblock User",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Unblock User",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
                             }
                         }
                     }
