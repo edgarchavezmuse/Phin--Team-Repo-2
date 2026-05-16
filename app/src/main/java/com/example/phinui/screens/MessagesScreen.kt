@@ -995,15 +995,42 @@ fun MessagesScreen(
                     myName,
                     {
                         userToAdd = null
+
+                        Toast.makeText(
+                            context,
+                            "Friend request sent to $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     {
                         userToAdd = null
+
+                        val niceMessage = when (it.message) {
+                            "PENDING_REQUEST_EXISTS" -> {
+                                "Friend request to $name already pending"
+                            }
+
+                            "ALREADY_FRIENDS" -> {
+                                "You are already friends with $name"
+                            }
+
+                            else -> {
+                                "Failed to send friend request"
+                            }
+                        }
+
+                        Toast.makeText(
+                            context,
+                            niceMessage,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },
             onDismiss = { userToAdd = null }
         )
     }
+
 
     userToBlock?.let { (uid, name) ->
         BlockUserDialog(
@@ -1014,9 +1041,21 @@ fun MessagesScreen(
                     uid,
                     {
                         userToBlock = null
+
+                        Toast.makeText(
+                            context,
+                            "$name blocked",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     {
                         userToBlock = null
+
+                        Toast.makeText(
+                            context,
+                            "Failed to block $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },
@@ -1032,9 +1071,21 @@ fun MessagesScreen(
                     friendUid = uid,
                     onSuccess = {
                         friendToRemove = null
+
+                        Toast.makeText(
+                            context,
+                            "$name removed",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     onError = {
                         friendToRemove = null
+
+                        Toast.makeText(
+                            context,
+                            "Failed to remove $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },
@@ -1050,9 +1101,20 @@ fun MessagesScreen(
                     blockedUid = uid,
                     onSuccess = {
                         friendToBlock = null
+
+                        Toast.makeText(
+                            context,
+                            "$name blocked",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     onError = {
                         friendToBlock = null
+                        Toast.makeText(
+                            context,
+                            "Failed to block $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },
