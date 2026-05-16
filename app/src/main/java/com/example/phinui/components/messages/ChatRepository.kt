@@ -226,11 +226,14 @@ class ChatRepository {
         receiverUserID: String
     ) {
         chatsCollection.document(chatID)
-            .update(
+            .set(
                 mapOf(
+                    "type" to "direct",
                     "requestState" to "approved",
+                    "isFriendChat" to true,
                     "deletedBy" to FieldValue.arrayRemove(senderUserID, receiverUserID)
-                )
+                ),
+                SetOptions.merge()
             )
     }
 
