@@ -143,14 +143,14 @@ fun VendingStockScreen(
                             onClick = { selectedStock = "snacks" },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Drinks")
+                            Text("Snacks")
                         }
                     } else {
                         OutlinedButton(
                             onClick = { selectedStock = "snacks" },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Drinks")
+                            Text("Snacks")
                         }
                     }
 
@@ -159,14 +159,14 @@ fun VendingStockScreen(
                             onClick = { selectedStock = "drinks" },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Snacks")
+                            Text("Drinks")
                         }
                     } else {
                         OutlinedButton(
                             onClick = { selectedStock = "drinks" },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Snacks")
+                            Text("Drinks")
                         }
                     }
                 }
