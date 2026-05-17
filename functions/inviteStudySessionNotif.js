@@ -10,31 +10,14 @@ exports.sendInviteNotification = onDocumentCreated(
       const message = event.data.data();
       if (!message) return null;
 
-      const {deleted, type, participants} = message;
+      const {senderID, deleted, type} = message;
       const chatId = event.params.chatId;
 
       // check if it's a study session invite
-      if (type !== "invitation" || !participants) return null;
+      if (type !== "invitation" || !senderID) return null;
 
       // ignore deleted messages
       if (deleted) return null;
-
-      const senderId = Object.keys(participants).find(
-          (userId) => participants[userId] === "ACCEPTED",
-      );
-
-      const receiverId = Object.keys(participants).find(
-          (userId) => participants[userId] === "PENDING",
-      );
-
-      if (!senderId) {
-        console.log("Missing senderId");
-        return null;
-      } else if (!receiverId) {
-        console.log("Missing receiverId");
-        return null;
-      }
-
 
       try {
         const db = admin.firestore();
@@ -42,54 +25,104 @@ exports.sendInviteNotification = onDocumentCreated(
         const chatDoc = await db.collection("chats").doc(chatId).get();
         const chatData = chatDoc.data();
 
-        if (!chatData || !chatData.participants) return null;
+        if (!chatData) return null;
 
-        const receiverDoc = await db.collection("users").doc(receiverId).get();
-        const receiverData = receiverDoc.data();
+        const mutedBy = chatData.mutedBy || [];
+        const participants = chatData.participants || [];
 
-        const fcmToken = receiverData ? receiverData.fcmToken : null;
-        const activeChatID = receiverData ? receiverData.activeChatID : null;
-        const lastActive = receiverData ? receiverData.lastActive : null;
+        const receiverIds = participants.filter(
+            (uid) => uid !== senderID,
+        );
 
-        if (!fcmToken) {
-          console.log("No FCM token for receiving user");
-          return null;
-        } else {
-          console.log("FCM token for invite: ", fcmToken);
-        }
+        if (!receiverIds.length) return null;
 
-        const senderDoc = await db.collection("users").doc(senderId).get();
+        const isGroupChat = chatData.type === "group";
+        const uri = isGroupChat ?
+        `phin://group_messages/${chatId}/${chatData.groupName}` :
+        `phin://messages/${senderID}`;
+
+        const senderDoc = await db.collection("users").doc(senderID).get();
         const senderName = senderDoc.data() ? senderDoc.data().name : "Someone";
 
-        const now = Date.now();
-        const lastActiveTime =
-            lastActive && typeof lastActive.toMillis === "function" ?
-            lastActive.toMillis() : 0;
+        // send notif to every receiver
+        await Promise.all(
+            receiverIds.map(async (receiverId) => {
+              try {
+              // skip muted users
+                if (mutedBy.includes(receiverId)) {
+                  console.log(
+                      `Chat is muted by ${receiverId}. Skipping notification`,
+                  );
+                  return;
+                }
 
-        const isInChat = activeChatID === chatId;
-        const isActive = (now - lastActiveTime) < 120000;
+                const receiverDoc = await db
+                    .collection("users")
+                    .doc(receiverId)
+                    .get();
 
-        // only send if receiver is not on chat screen
-        if (isInChat && isActive) {
-          console.log("User is currently in this chat. Skipping notification");
-          return null;
-        }
+                const receiverData = receiverDoc.data();
 
-        await admin.messaging().send({
-          token: fcmToken,
-          data: {
-            type: "INVITE",
-            title: "Study Session Invite",
-            body: `${senderName} sent you a study session invite`,
-            uri: `phin://messages/${senderId}`,
-          },
-        });
+                if (!receiverData) return;
 
-        console.log("Study session invite notification sent!");
+                const fcmToken = receiverData.fcmToken;
+                const activeChatID = receiverData.activeChatID;
+                const lastActive = receiverData.lastActive;
+
+                if (!fcmToken) {
+                  console.log(`No FCM token for user ${receiverId}`);
+                  return;
+                } else {
+                  console.log(
+                      `FCM token for user ${receiverId} is ${fcmToken}`,
+                  );
+                }
+
+                const now = Date.now();
+
+                const lastActiveTime =
+              lastActive &&
+              typeof lastActive.toMillis === "function" ?
+              lastActive.toMillis() :
+              0;
+
+                const isInChat = activeChatID === chatId;
+                const isActive = (now - lastActiveTime) < 120000;
+
+                // skip notif if currently viewing chat
+                if (isInChat && isActive) {
+                  console.log(
+                      `${receiverId} is currently in chat. Skipping`,
+                  );
+                  return;
+                }
+
+                await admin.messaging().send({
+                  token: fcmToken,
+                  data: {
+                    type: "INVITE",
+                    title: "Study Session Invite",
+                    body: `${senderName} sent you a study session invite`,
+                    uri: uri,
+                  },
+                });
+
+                console.log(`Study session notif sent to ${receiverId}`);
+              } catch (err) {
+                console.error(
+                    `Error sending study session notif to ${receiverId}: `,
+                    err,
+                );
+              }
+            }),
+        );
+
         return null;
       } catch (error) {
         console.error(
-            "Error sending study session invite notification: ", error);
+            "Error sending study session notifications: ",
+            error,
+        );
         return null;
       }
     },

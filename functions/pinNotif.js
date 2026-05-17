@@ -24,67 +24,103 @@ exports.sendPinNotification = onDocumentCreated(
 
         const chatDoc = await db.collection("chats").doc(chatId).get();
         const chatData = chatDoc.data();
+
+        if (!chatData) return null;
+
         const mutedBy = chatData.mutedBy || [];
+        const participants = chatData.participants || [];
 
-        if (!chatData || !chatData.participants) return null;
-
-        const receiverId = chatData.participants.find(
+        const receiverIds = participants.filter(
             (uid) => uid !== senderID,
         );
 
-        if (!receiverId) return null;
+        if (!receiverIds.length) return null;
 
-        if (mutedBy.includes(receiverId)) {
-          console.log("Chat is muted by receiver. Skipping notification");
-          return null;
-        }
-
-        const receiverDoc = await db.collection("users").doc(receiverId).get();
-        const receiverData = receiverDoc.data();
-
-        const fcmToken = receiverData ? receiverData.fcmToken : null;
-        const activeChatID = receiverData ? receiverData.activeChatID : null;
-        const lastActive = receiverData ? receiverData.lastActive : null;
-
-        if (!fcmToken) {
-          console.log("No FCM token for receiving user");
-          return null;
-        } else {
-          console.log("FCM token for messaging: ", fcmToken);
-        }
+        const isGroupChat = chatData.type === "group";
+        const uri = isGroupChat ?
+        `phin://group_messages/${chatId}/${chatData.groupName}` :
+        `phin://messages/${senderID}`;
 
         const senderDoc = await db.collection("users").doc(senderID).get();
         const senderName = senderDoc.data() ? senderDoc.data().name : "Someone";
 
-        const now = Date.now();
-        const lastActiveTime =
-                lastActive && typeof lastActive.toMillis === "function" ?
-                lastActive.toMillis() : 0;
+        // send notif to every receiver
+        await Promise.all(
+            receiverIds.map(async (receiverId) => {
+              try {
+              // skip muted users
+                if (mutedBy.includes(receiverId)) {
+                  console.log(
+                      `Chat is muted by ${receiverId}. Skipping notification`,
+                  );
+                  return;
+                }
 
-        const isInChat = activeChatID === chatId;
-        const isActive = (now - lastActiveTime) < 120000;
+                const receiverDoc = await db
+                    .collection("users")
+                    .doc(receiverId)
+                    .get();
 
-        // only send if user is not on chat screen
-        if (isInChat && isActive) {
-          console.log("User is currently in this chat. Skipping notification");
-          return null;
-        }
+                const receiverData = receiverDoc.data();
 
-        await admin.messaging().send({
-          token: fcmToken,
-          data: {
-            type: "PIN",
-            title: "Incoming Pin",
-            fromUid: senderID,
-            body: `${senderName} sent you a pin`,
-            uri: `phin://messages/${senderID}`,
-          },
-        });
+                if (!receiverData) return;
 
-        console.log("Pin notification sent!");
+                const fcmToken = receiverData.fcmToken;
+                const activeChatID = receiverData.activeChatID;
+                const lastActive = receiverData.lastActive;
+
+                if (!fcmToken) {
+                  console.log(`No FCM token for user ${receiverId}`);
+                  return;
+                } else {
+                  console.log(
+                      `FCM token for usre ${receiverId} is ${fcmToken}`,
+                  );
+                }
+
+                const now = Date.now();
+
+                const lastActiveTime =
+              lastActive &&
+              typeof lastActive.toMillis === "function" ?
+              lastActive.toMillis() :
+              0;
+
+                const isInChat = activeChatID === chatId;
+                const isActive = (now - lastActiveTime) < 120000;
+
+                // skip if currently viewing chat
+                if (isInChat && isActive) {
+                  console.log(
+                      `${receiverId} is currently in chat. Skipping`,
+                  );
+                  return;
+                }
+
+                await admin.messaging().send({
+                  token: fcmToken,
+                  data: {
+                    type: "PIN",
+                    title: "Incoming Pin",
+                    fromUid: senderID,
+                    body: `${senderName} sent you a pin`,
+                    uri: uri,
+                  },
+                });
+
+                console.log(`Pin notification sent to ${receiverId}`);
+              } catch (err) {
+                console.error(
+                    `Error sending pin notification to ${receiverId}: `,
+                    err,
+                );
+              }
+            }),
+        );
+
         return null;
       } catch (error) {
-        console.error("Error sending pin notification: ", error);
+        console.error("Error sending pin notifications: ", error);
         return null;
       }
     },

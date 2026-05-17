@@ -18,7 +18,7 @@ exports.sendAcceptInviteNotification = onDocumentUpdated(
         return null;
       }
 
-      const {type, participants: beforeParticipants} = before;
+      const {senderID, type, participants: beforeParticipants} = before;
       const {deleted, participants: afterParticipants} = after;
       const chatId = event.params.chatId;
 
@@ -27,6 +27,8 @@ exports.sendAcceptInviteNotification = onDocumentUpdated(
 
       // ignore deleted messages
       if (deleted) return null;
+
+      const receiverId = senderID;
 
       let senderId = null;
 
@@ -40,10 +42,6 @@ exports.sendAcceptInviteNotification = onDocumentUpdated(
           break;
         }
       }
-
-      const receiverId = Object.keys(afterParticipants).find(
-          (userId) => userId !== senderId,
-      );
 
       if (!senderId) {
         console.log("Missing senderId");
@@ -61,6 +59,15 @@ exports.sendAcceptInviteNotification = onDocumentUpdated(
 
         if (!chatData || !chatData.participants) return null;
 
+        const mutedBy = chatData.mutedBy || [];
+
+        if (mutedBy.includes(receiverId)) {
+          console.log(
+              `Chat is muted by ${receiverId}. Skipping notification`,
+          );
+          return null;
+        }
+
         const receiverDoc = await db.collection("users").doc(receiverId).get();
         const receiverData = receiverDoc.data();
 
@@ -77,6 +84,12 @@ exports.sendAcceptInviteNotification = onDocumentUpdated(
 
         const senderDoc = await db.collection("users").doc(senderId).get();
         const senderName = senderDoc.data() ? senderDoc.data().name : "Someone";
+
+        const isGroupChat = chatData.type === "group";
+
+        const uri = isGroupChat ?
+        `phin://group_messages/${chatId}/${chatData.groupName}` :
+        `phin://messages/${senderID}`;
 
         const now = Date.now();
         const lastActiveTime =
@@ -99,7 +112,7 @@ exports.sendAcceptInviteNotification = onDocumentUpdated(
             title: "Study Session Invite Accepted",
             fromUid: senderId,
             body: `${senderName} accepted your study session invite`,
-            uri: `phin://messages/${senderId}`,
+            uri: uri,
           },
         });
 

@@ -259,6 +259,11 @@ fun PhinNavHost(
                 navArgument("groupName") {
                     type = NavType.StringType
                 }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "phin://group_messages/{chatID}/{groupName}"
+                }
             )
         ) { backStackEntry ->
             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: ""
