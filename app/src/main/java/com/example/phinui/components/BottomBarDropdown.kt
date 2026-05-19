@@ -35,7 +35,6 @@ fun BottomBarDropdown(
             value = selected.title,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Bottom Bar") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
