@@ -14,6 +14,8 @@ object Routes {
     const val MAP = "map"
 
     const val VENDING_STOCK = "vending_stock"
+
+    const val PIN_SUGGESTIONS = "pinSuggestions"
     const val MAP_WITH_PIN =
         "map?pinId={pinId}&pinName={pinName}&pinCategory={pinCategory}&pinLatitude={pinLatitude}&pinLongitude={pinLongitude}&pinBuilding={pinBuilding}&pinDescription={pinDescription}"
     const val SCHEDULE = "schedule"

@@ -55,6 +55,7 @@ import androidx.credentials.CredentialManager
 import com.example.phinui.screens.SettingsScreen
 
 import com.example.phinui.ui.screens.VendingStockScreen
+import com.example.phinui.ui.screens.PinSuggestionsScreen
 
 @Composable
 fun PhinNavHost(
@@ -620,6 +621,9 @@ fun PhinNavHost(
                 sharedPin = null,
                 darkMode = darkModeEnabled
             )
+        }
+        composable(Routes.PIN_SUGGESTIONS) {
+            PinSuggestionsScreen(navController = navController)
         }
 
         composable(Routes.SETTINGS) {
