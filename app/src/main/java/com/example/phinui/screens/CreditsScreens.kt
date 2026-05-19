@@ -164,25 +164,25 @@ fun CreditsScreen() {
                 ),
                 WaveShip(
                     progress = 0.30f,
-                    label = "Maria",
-                    size = 28.dp,
-                    verticalOffset = 20f
-                ),
-                WaveShip(
-                    progress = 0.50f,
                     label = "Cheese",
                     size = 28.dp,
                     verticalOffset = 20f
                 ),
                 WaveShip(
-                    progress = 0.70f,
+                    progress = 0.50f,
                     label = "David",
                     size = 28.dp,
                     verticalOffset = 20f
                 ),
                 WaveShip(
-                    progress = 0.90f,
+                    progress = 0.70f,
                     label = "Noa",
+                    size = 28.dp,
+                    verticalOffset = 20f
+                ),
+                WaveShip(
+                    progress = 0.90f,
+                    label = "Maria",
                     size = 28.dp,
                     verticalOffset = 20f
                 )
