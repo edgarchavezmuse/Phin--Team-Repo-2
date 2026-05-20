@@ -1,5 +1,6 @@
 package com.example.phinui.ui.components
 
+import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,11 +11,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+data class WaveShip(
+    val progress: Float,
+    val label: String? = null,
+    val size: Dp = 28.dp,
+    val verticalOffset: Float = 33f
+)
 
 @Composable
 fun AnimatedWaves(
@@ -33,11 +42,14 @@ fun AnimatedWaves(
     shipColor: Color = MaterialTheme.colorScheme.onTertiary,
     shipSize: Dp = 28.dp,
     shipVerticalOffset: Float = 33f,
+    ships: List<WaveShip> = emptyList(),
     frontPhase: Float,
     backPhase: Float,
     shipProgress: Float,
     bobPhase: Float
 ) {
+    val labelColor = MaterialTheme.colorScheme.onTertiary
+
     Canvas(
         modifier = modifier
             .fillMaxWidth()
@@ -102,10 +114,27 @@ fun AnimatedWaves(
             color = waveColor.copy(alpha = frontAlpha)
         )
 
-        if (showShip) {
-            val shipWidth = shipSize.toPx() * 1.8f
-            val shipHeight = shipSize.toPx()
-            val shipX = size.width * shipProgress
+        val shipsToDraw =
+            if (ships.isNotEmpty()) {
+                ships
+            } else if (showShip) {
+                listOf(
+                    WaveShip(
+                        progress = shipProgress,
+                        size = shipSize,
+                        verticalOffset = shipVerticalOffset
+                    )
+                )
+            } else {
+                emptyList()
+            }
+
+        shipsToDraw.forEach { ship ->
+            val shipWidth = ship.size.toPx() * 1.8f
+            val shipHeight = ship.size.toPx()
+            val shipX = size.width * ship.progress
+
+            if (shipX < -120f || shipX > size.width + 120f) return@forEach
 
             val frontWaveY = waveY(
                 x = shipX,
@@ -124,12 +153,29 @@ fun AnimatedWaves(
             val bobOffset = size.height * 0.005f * sin(bobPhase)
 
             // target waterline position, ship vert, position
-            val desiredShipY = frontWaveY - shipHeight * 0.50f + bobOffset + shipVerticalOffset
-
-            val shipY = desiredShipY
+            val shipY = frontWaveY - shipHeight * 0.50f + bobOffset + ship.verticalOffset
 
             // tilt based on wave slope
             val tilt = slope * 10f
+
+            ship.label?.let { label ->
+                drawContext.canvas.nativeCanvas.drawText(
+                    label,
+                    shipX - shipWidth * 0.45f,
+                    shipY - shipHeight * 1.15f,
+                    Paint().apply {
+                        color = android.graphics.Color.argb(
+                            (labelColor.alpha * 255).toInt(),
+                            (labelColor.red * 255).toInt(),
+                            (labelColor.green * 255).toInt(),
+                            (labelColor.blue * 255).toInt()
+                        )
+                        textSize = 34f
+                        isAntiAlias = true
+                        textAlign = Paint.Align.LEFT
+                    }
+                )
+            }
 
             rotate(
                 degrees = tilt,

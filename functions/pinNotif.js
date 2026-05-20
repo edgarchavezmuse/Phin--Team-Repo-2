@@ -1,7 +1,7 @@
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 
-exports.sendInviteNotification = onDocumentCreated(
+exports.sendPinNotification = onDocumentCreated(
     {
       region: "us-central1",
       document: "chats/{chatId}/messages/{messageId}",
@@ -10,11 +10,11 @@ exports.sendInviteNotification = onDocumentCreated(
       const message = event.data.data();
       if (!message) return null;
 
-      const {senderID, deleted, type} = message;
+      const {deleted, type, senderID} = message;
       const chatId = event.params.chatId;
 
-      // check if it's a study session invite
-      if (type !== "invitation" || !senderID) return null;
+      // check if it's a pin message
+      if (type !== "pin" || !senderID) return null;
 
       // ignore deleted messages
       if (deleted) return null;
@@ -74,7 +74,7 @@ exports.sendInviteNotification = onDocumentCreated(
                   return;
                 } else {
                   console.log(
-                      `FCM token for user ${receiverId} is ${fcmToken}`,
+                      `FCM token for usre ${receiverId} is ${fcmToken}`,
                   );
                 }
 
@@ -89,7 +89,7 @@ exports.sendInviteNotification = onDocumentCreated(
                 const isInChat = activeChatID === chatId;
                 const isActive = (now - lastActiveTime) < 120000;
 
-                // skip notif if currently viewing chat
+                // skip if currently viewing chat
                 if (isInChat && isActive) {
                   console.log(
                       `${receiverId} is currently in chat. Skipping`,
@@ -100,17 +100,18 @@ exports.sendInviteNotification = onDocumentCreated(
                 await admin.messaging().send({
                   token: fcmToken,
                   data: {
-                    type: "INVITE",
-                    title: "Study Session Invite",
-                    body: `${senderName} sent you a study session invite`,
+                    type: "PIN",
+                    title: "Incoming Pin",
+                    fromUid: senderID,
+                    body: `${senderName} sent you a pin`,
                     uri: uri,
                   },
                 });
 
-                console.log(`Study session notif sent to ${receiverId}`);
+                console.log(`Pin notification sent to ${receiverId}`);
               } catch (err) {
                 console.error(
-                    `Error sending study session notif to ${receiverId}: `,
+                    `Error sending pin notification to ${receiverId}: `,
                     err,
                 );
               }
@@ -119,10 +120,7 @@ exports.sendInviteNotification = onDocumentCreated(
 
         return null;
       } catch (error) {
-        console.error(
-            "Error sending study session notifications: ",
-            error,
-        );
+        console.error("Error sending pin notifications: ", error);
         return null;
       }
     },

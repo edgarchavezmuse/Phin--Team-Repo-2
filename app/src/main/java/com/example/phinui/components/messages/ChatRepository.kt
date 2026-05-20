@@ -1,5 +1,7 @@
 package com.example.phinui.components.messages
 
+import androidx.compose.animation.core.snap
+import androidx.compose.runtime.mutableStateOf
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -37,6 +39,7 @@ class ChatRepository {
 
         // chat metadata
         val chatData = hashMapOf(
+            "type" to "direct",
             "lastMessage" to messageText,
             "lastTimestamp" to messageProperties.currentTime,
             "participants" to listOf(senderUserID, receiverUserID),
@@ -54,6 +57,15 @@ class ChatRepository {
             chatRef,
             "deletedBy",
             FieldValue.arrayRemove(senderUserID, receiverUserID)
+        )
+
+        // add count for unread messages
+        batch.update(
+            chatRef,
+            mapOf(
+                "unreadCounts.$receiverUserID" to FieldValue.increment(1),
+                "unreadCounts.$senderUserID" to 0
+            )
         )
 
         // commit everything atomically
@@ -185,6 +197,7 @@ class ChatRepository {
 
         messageProperties.chatReference.update(
             mapOf(
+                "type" to "direct",
                 "lastMessage" to "",
                 "lastTimestamp" to messageProperties.currentTime,
                 "participants" to listOf(senderUserID, receiverUserID),
@@ -195,6 +208,7 @@ class ChatRepository {
         ).addOnFailureListener {
             messageProperties.chatReference.set(
                 mapOf(
+                    "type" to "direct",
                     "lastMessage" to "",
                     "lastTimestamp" to messageProperties.currentTime,
                     "participants" to listOf(senderUserID, receiverUserID),
@@ -212,11 +226,14 @@ class ChatRepository {
         receiverUserID: String
     ) {
         chatsCollection.document(chatID)
-            .update(
+            .set(
                 mapOf(
+                    "type" to "direct",
                     "requestState" to "approved",
+                    "isFriendChat" to true,
                     "deletedBy" to FieldValue.arrayRemove(senderUserID, receiverUserID)
-                )
+                ),
+                SetOptions.merge()
             )
     }
 
@@ -302,7 +319,14 @@ class ChatRepository {
             ),
             SetOptions.merge()
         )
+    }
 
+    fun unreadCountChats(userID: String, chatID: String) {
+        val unreadCountRef = database
+            .collection("chats")
+            .document(chatID)
+
+        unreadCountRef.update("unreadCounts.$userID", 0)
     }
 
     fun deleteChat(userID: String, chatID: String) {
@@ -316,10 +340,28 @@ class ChatRepository {
                     val participants = snapshot.get("participants") as? List<String> ?: emptyList()
                     val isFriendChat = snapshot.getBoolean("isFriendChat") ?: false
 
-                    val bothDeleted = participants.all { deletedBy.contains(it) }
+                    val chatType = snapshot["type"] as? String ?: "direct"
 
-                    if (bothDeleted && !isFriendChat) {
+                    val allDeleted = participants.all { deletedBy.contains(it) }
+
+                    if (allDeleted && !isFriendChat) {
                         chatRef.update("requestState", "none")
+                            .addOnSuccessListener {
+                                if (chatType == "group") {
+                                    chatRef.collection("messages")
+                                        .get()
+                                        .addOnSuccessListener { removeMessage ->
+                                            val messagesBatch = database.batch()
+                                            removeMessage.documents.forEach { messagesDoc ->
+                                                messagesBatch.delete(messagesDoc.reference)
+                                            }
+
+                                            messagesBatch.commit().addOnSuccessListener {
+                                                chatRef.delete()
+                                            }
+                                        }
+                                }
+                            }
                     }
                 }
             }
@@ -384,6 +426,7 @@ class ChatRepository {
         )
 
         val chatData = hashMapOf(
+            "type" to "direct",
             "lastMessage" to "Shared a pin: ${location.name}",
             "lastTimestamp" to messageProperties.currentTime,
             "participants" to listOf(senderUserID, receiverUserID),
@@ -401,6 +444,268 @@ class ChatRepository {
         batch.commit()
 
         setActiveChat(senderUserID, messageProperties.chatID)
+    }
+
+    fun sendPinGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        location: CampusLocation
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val pinPayload = hashMapOf(
+                    "id" to location.id,
+                    "name" to location.name,
+                    "category" to location.category,
+                    "latitude" to location.latitude,
+                    "longitude" to location.longitude,
+                    "building" to location.building,
+                    "description" to location.description,
+                    "isActive" to location.isActive,
+                    "source" to "campus"
+                )
+
+                val message = hashMapOf(
+                    "type" to "pin",
+                    "senderID" to senderUserID,
+                    "text" to "",
+                    "timestamp" to currentTime,
+                    "deleted" to false,
+                    "pin" to pinPayload
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to "Shared a pin: ${location.name}",
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+
+                batch.set(messageRef, message)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+
+                    val unreadPinMessageAllParticipants = mutableMapOf<String, Any>()
+                    participants.forEach { participantID ->
+                        unreadPinMessageAllParticipants["unreadCounts.$participantID"] =
+                            if (participantID == senderUserID) {
+                                0
+                            } else {
+                                FieldValue.increment(1)
+                            }
+                    }
+
+                    batch.update(
+                        chatRef,
+                        unreadPinMessageAllParticipants
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener{
+                        setActiveChat(senderUserID, chatID)
+                }
+            }
+    }
+
+    fun createGroupChat(
+        creatorUserID: String,
+        participantIDs: List<String>,
+        groupName: String,
+        onCreated: (String) -> Unit = {},
+        onError: (Exception) -> Unit = {}
+    ) {
+        val chatRef = chatsCollection.document()
+        val chatID = chatRef.id
+        val currentTime = Timestamp.now()
+
+        val allParticipants = (participantIDs + creatorUserID).distinct()
+
+        val chatData = hashMapOf(
+            "type" to "group",
+            "groupCategory" to "friends",
+            "groupName" to groupName,
+            "createdBy" to creatorUserID,
+            "participants" to allParticipants,
+            "lastMessage" to "",
+            "lastTimestamp" to currentTime,
+            "requestState" to "approved"
+        )
+
+        chatRef.set(chatData)
+            .addOnSuccessListener {
+                onCreated(chatID)
+            }
+            .addOnFailureListener { error ->
+                onError(error)
+            }
+    }
+
+    fun sendGroupMessage(
+        senderUserID: String,
+        chatID: String,
+        messageText: String
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val message = hashMapOf(
+                    "type" to "text",
+                    "senderID" to senderUserID,
+                    "text" to messageText,
+                    "timestamp" to currentTime,
+                    "deleted" to false
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to messageText,
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+
+                batch.set(messageRef, message)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+                }
+
+                val unreadMessagesAllParticipants = mutableMapOf<String, Any>()
+
+                participants.forEach {participantID ->
+                    unreadMessagesAllParticipants["unreadCounts.$participantID"] =
+                        if (participantID == senderUserID) {
+                            0
+                        }
+                        else {
+                            FieldValue.increment(1)
+                        }
+                }
+
+                batch.update(chatRef, unreadMessagesAllParticipants)
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        setActiveChat(senderUserID, chatID)
+                    }
+            }
+    }
+
+    fun checkMessagesByChatID(
+        chatID: String,
+        newMessage: (List<Map<String, Any>>) -> Unit
+    ) {
+        chatsCollection
+            .document(chatID)
+            .collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+
+                val messages = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+
+                    data.toMutableMap().apply {
+                        put("messageID", doc.id)
+                        put("chatID", chatID)
+                    }
+                }
+
+                newMessage(messages)
+            }
+    }
+
+    fun sendGroupStudySessionInvitation(
+        senderUserID: String,
+        chatID: String,
+        studySessionTitle: String,
+        studySessionDescription: String,
+        startTime: Timestamp,
+        endTime: Timestamp
+    ) {
+        val chatRef = chatsCollection.document(chatID)
+        val messageRef = chatRef.collection("messages").document()
+        val currentTime = Timestamp.now()
+
+        chatRef.get()
+            .addOnSuccessListener { snapshot ->
+                val participants = snapshot.get("participants") as? List<String> ?: emptyList()
+
+                val participantStatuses = participants.associateWith { userID ->
+                    if (userID == senderUserID) "ACCEPTED" else "PENDING"
+                }
+
+                val invitation = hashMapOf(
+                    "type" to "invitation",
+                    "senderID" to senderUserID,
+                    "title" to studySessionTitle,
+                    "description" to studySessionDescription,
+                    "timestamp" to currentTime,
+                    "deleted" to false,
+                    "startTime" to startTime,
+                    "endTime" to endTime,
+                    "participants" to participantStatuses
+                )
+
+                val chatData = hashMapOf(
+                    "lastMessage" to "Study session: $studySessionTitle",
+                    "lastTimestamp" to currentTime
+                )
+
+                val batch = database.batch()
+                batch.set(messageRef, invitation)
+                batch.set(chatRef, chatData, SetOptions.merge())
+
+                if (participants.isNotEmpty()) {
+                    batch.update(
+                        chatRef,
+                        "deletedBy",
+                        FieldValue.arrayRemove(*participants.toTypedArray())
+                    )
+
+                    val unreadStudySessionMessageAllParticipants = mutableMapOf<String, Any>()
+                    participants.forEach { participantID ->
+                        unreadStudySessionMessageAllParticipants["unreadCounts.$participantID"] =
+                            if (participantID == senderUserID) {
+                                0
+                            } else {
+                                FieldValue.increment(1)
+                            }
+                    }
+
+                    batch.update(
+                        chatRef,
+                        unreadStudySessionMessageAllParticipants
+                    )
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        setActiveChat(senderUserID, chatID)
+                    }
+            }
     }
 
 }

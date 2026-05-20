@@ -3,7 +3,6 @@ package com.example.phinui.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,7 +58,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -77,8 +75,6 @@ import com.example.phinui.data.calendar.CalendarSource
 import com.example.phinui.notifications.ReminderScheduler
 import com.example.phinui.ui.navigation.Routes
 import com.example.phinui.ui.theme.DeletedMessageColor
-import com.example.phinui.ui.theme.ReceiverUserColor
-import com.example.phinui.ui.theme.SenderUserColor
 import com.example.phinui.viewmodel.CalendarViewModel
 import com.example.phinui.viewmodel.CalendarViewModelFactory
 import com.example.phinui.viewmodel.ChatRepositoryViewModel
@@ -95,17 +91,40 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.TimePickerDefaults
+import com.example.phinui.ui.components.UserAvatar
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.phinui.data.friends.FriendRepository
+import com.example.phinui.viewmodel.FriendRepositoryViewModel
+import com.example.phinui.viewmodel.FriendRepositoryViewModelFactory
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
+import com.example.phinui.components.people.BlockFriendDialog
+import com.example.phinui.components.people.BlockUserDialog
+import com.example.phinui.components.people.RemoveFriendDialog
+import com.example.phinui.components.people.SendFriendRequestDialog
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessagesScreen(
     senderUserID: String,
     receiverUserID: String,
     navController: NavController,
     userListViewModel: UserListViewModel = viewModel(),
-    setTopBarTitle: (String, Boolean) -> Unit
+    chatID: String? = null,
+    groupName: String? = null,
+    isGroupChat: Boolean = false,
+    setTopBarTitle: (String, Boolean) -> Unit,
+    setGroupInfoButton: (Boolean, (() -> Unit)?) -> Unit = { _, _ -> }
 ) {
     val chatRepositoryViewModel: ChatRepositoryViewModel = viewModel()
+    val friendRepositoryViewModel: FriendRepositoryViewModel = viewModel(
+        factory = FriendRepositoryViewModelFactory(FriendRepository())
+    )
     val context = LocalContext.current
     val reminderScheduler = remember { ReminderScheduler(context) }
     val calendarViewModel: CalendarViewModel = viewModel(
@@ -114,7 +133,6 @@ fun MessagesScreen(
             reminderScheduler = reminderScheduler
         )
     )
-
     var messageText by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<Map<String, Any>>()) }
 
@@ -124,38 +142,98 @@ fun MessagesScreen(
 
     val autoScrollState = rememberLazyListState()
     val autoScrollThreshold = 3
-    val initialChatOpen = remember { mutableStateOf(true) }
 
+    var initialChatOpen by remember { mutableStateOf(true) }
     val selectedMessage = remember { mutableStateOf<Map<String, Any>?>(null) }
     val showDeleteDialog = remember { mutableStateOf(false) }
-    val chatID = chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
+    val resolvedChatID = chatID ?: chatRepositoryViewModel.callGetChatID(senderUserID, receiverUserID)
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
-
     var selectedStudyDate by remember { mutableStateOf("") }
     var selectedStudyStartTime by remember { mutableStateOf<LocalTime?>(null) }
     var selectedStudyEndTime by remember { mutableStateOf<LocalTime?>(null) }
-
     var showStudySessionInviteDialog by remember { mutableStateOf(false) }
 
     val state = userListViewModel.userState
-
     var visibleTimestampMessageIds by remember { mutableStateOf(setOf<String>()) }
     var shouldScrollLatestTimestamp by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state) {
-        when (state) {
-            is UserState.Loading -> setTopBarTitle("Loading...", true)
-            is UserState.Loaded -> setTopBarTitle("Chatting with ${state.user.name}", true)
-            else -> {}
+    var userNameCache by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var userPhotoCache by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
+    var showParticipantsSheet by remember { mutableStateOf(false) }
+
+    val friendList = friendRepositoryViewModel.friendsList.value
+    val friendRepository = remember { FriendRepository() }
+    var myName by remember { mutableStateOf("") }
+    var groupParticipantIDs by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    var showDirectChatInfoSheet by remember { mutableStateOf(false) }
+    var userToAdd by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var userToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendToBlock by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    LaunchedEffect(messages, groupParticipantIDs) {
+        val senderIDs = if (isGroupChat) {
+            groupParticipantIDs
+        } else {
+            messages.mapNotNull { it["senderID"] as? String }.distinct()
+        }
+
+        val newNames = mutableMapOf<String, String>()
+        val newPhotos = mutableMapOf<String, String?>()
+
+        senderIDs.forEach { id ->
+            if (!userNameCache.containsKey(id)) {
+                try {
+                    val name = chatRepositoryViewModel.userListRepository.getUserNameByID(id)
+                    val photoUrl = chatRepositoryViewModel.userListRepository.getUserPhotoUrlByID(id)
+
+                    newNames[id] = name
+                    newPhotos[id] = photoUrl
+                } catch (_: Exception) {
+                    newNames[id] = "Unknown"
+                }
+            }
+        }
+
+        userNameCache = userNameCache + newNames
+        userPhotoCache = userPhotoCache + newPhotos
+    }
+
+    LaunchedEffect(isGroupChat, groupName) {
+        if (isGroupChat) {
+            setTopBarTitle(groupName ?: "Group Chat", true)
         }
     }
 
-    LaunchedEffect(senderUserID, receiverUserID) {
-        chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) { newMessages ->
-            messages = newMessages
+    LaunchedEffect(state, isGroupChat) {
+        if (!isGroupChat) {
+            when (state) {
+                is UserState.Loading -> setTopBarTitle("Loading...", true)
+                is UserState.Loaded -> setTopBarTitle("Chatting with ${state.user.name}", true)
+                else -> {}
+            }
+        }
+    }
+
+    LaunchedEffect(receiverUserID, isGroupChat) {
+        if (!isGroupChat) {
+            userListViewModel.loadSelectedUser(receiverUserID)
+        }
+    }
+
+    LaunchedEffect(senderUserID, receiverUserID, resolvedChatID, isGroupChat) {
+        if (isGroupChat) {
+            chatRepositoryViewModel.callCheckForMessagesByChatID(resolvedChatID) { newMessages ->
+                messages = sortMessagesByTime(newMessages)
+            }
+        } else {
+            chatRepositoryViewModel.callCheckForNewMessage(senderUserID, receiverUserID) { newMessages ->
+                messages = sortMessagesByTime(newMessages)
+            }
         }
     }
 
@@ -163,42 +241,107 @@ fun MessagesScreen(
         campusPins = fetchCampusLocations()
     }
 
-    LaunchedEffect(receiverUserID) {
-        userListViewModel.loadSelectedUser(receiverUserID)
+    LaunchedEffect(resolvedChatID) {
+        chatRepositoryViewModel.onChatOpened(senderUserID, resolvedChatID)
     }
 
-    LaunchedEffect(chatID) {
-        chatRepositoryViewModel.onChatOpened(senderUserID, chatID)
-    }
-
-    DisposableEffect(Unit) {
+    DisposableEffect(resolvedChatID) {
         onDispose {
             chatRepositoryViewModel.onChatClosed(senderUserID)
-            setTopBarTitle("", false)
         }
     }
 
-    LaunchedEffect(messages) {
-        if (messages.isNotEmpty()) {
-            val lastMessage = messages.size - 1
-            val userIsNearBottomChat = autoScrollState.layoutInfo.visibleItemsInfo.lastOrNull()
-                ?.index
-                ?.let { lastVisibleMessage -> lastMessage - lastVisibleMessage <= autoScrollThreshold }
-                ?: true
+    LaunchedEffect(messages.size) {
+        chatRepositoryViewModel.markChatsAsRead(senderUserID, resolvedChatID)
 
-            if (initialChatOpen.value || userIsNearBottomChat) {
-                autoScrollState.animateScrollToItem(lastMessage)
-                initialChatOpen.value = false
-            }
+        if (messages.isEmpty()) return@LaunchedEffect
+
+        val lastMessageIndex = messages.lastIndex
+
+        val lastVisibleIndex = autoScrollState.layoutInfo.visibleItemsInfo
+            .lastOrNull()
+            ?.index
+
+        val userIsNearBottom = lastVisibleIndex == null ||
+                lastMessageIndex - lastVisibleIndex <= autoScrollThreshold
+
+        val newestMessageIsMine =
+            (messages.lastOrNull()?.get("senderID") as? String) == senderUserID
+
+        if (initialChatOpen) {
+            autoScrollState.scrollToItem(lastMessageIndex)
+            initialChatOpen = false
+        } else if (userIsNearBottom || newestMessageIsMine) {
+            autoScrollState.animateScrollToItem(lastMessageIndex)
         }
     }
 
-    LaunchedEffect(shouldScrollLatestTimestamp, messages) {
+    var groupInitialScrollFixDone by remember(resolvedChatID) { mutableStateOf(false) }
+
+    LaunchedEffect(userNameCache.size, userPhotoCache.size, messages.size, isGroupChat) {
+        if (
+            isGroupChat &&
+            messages.isNotEmpty() &&
+            !groupInitialScrollFixDone
+        ) {
+            delay(250)
+            autoScrollState.scrollToItem(messages.lastIndex)
+            groupInitialScrollFixDone = true
+        }
+    }
+
+    LaunchedEffect(shouldScrollLatestTimestamp) {
         if (shouldScrollLatestTimestamp && messages.isNotEmpty()) {
-            delay(50)
-            autoScrollState.animateScrollToItem(messages.lastIndex)
+            autoScrollState.scrollToItem(messages.lastIndex)
             shouldScrollLatestTimestamp = false
         }
+    }
+
+    DisposableEffect(isGroupChat) {
+        setGroupInfoButton(true) {
+            if (isGroupChat) {
+                showParticipantsSheet = true
+            } else {
+                showDirectChatInfoSheet = true
+            }
+        }
+
+        onDispose {
+            setGroupInfoButton(false, null)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        chatRepositoryViewModel.firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(senderUserID)
+            .get()
+            .addOnSuccessListener {
+                myName = it.getString("name") ?: ""
+            }
+    }
+
+    LaunchedEffect(resolvedChatID, isGroupChat) {
+        if (isGroupChat) {
+            chatRepositoryViewModel.firebaseFirestoreAuthenticated
+                .collection("chats")
+                .document(resolvedChatID)
+                .get()
+                .addOnSuccessListener { document ->
+                    groupParticipantIDs =
+                        document.get("participants") as? List<String> ?: emptyList()
+                }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        chatRepositoryViewModel.firebaseFirestoreAuthenticated
+            .collection("users")
+            .document(senderUserID)
+            .get()
+            .addOnSuccessListener {
+                myName = it.getString("name") ?: ""
+            }
     }
 
     Column(
@@ -221,7 +364,7 @@ fun MessagesScreen(
                             val message = selectedMessage.value ?: return@TextButton
                             chatRepositoryViewModel.onDeleteMessage(
                                 message = message,
-                                chatID = chatID
+                                chatID = resolvedChatID
                             )
                             showDeleteDialog.value = false
                             selectedMessage.value = null
@@ -251,12 +394,16 @@ fun MessagesScreen(
         ) {
             items(
                 items = messages,
-                key = { message -> message["messageID"] as? String ?: message.hashCode().toString() }
+                key = { message ->
+                    message["messageID"] as String
+                }
             ) { message ->
                 val type = message["type"] as? String ?: "text"
                 val text = message["text"] as? String ?: ""
 
                 val senderID = message["senderID"] as? String ?: ""
+                val senderName = userNameCache[senderID]
+                val senderPhotoUrl = userPhotoCache[senderID]
                 val isDeleted = message["deleted"] as? Boolean ?: false
                 val messageID = message["messageID"] as? String ?: ""
                 val messageChatID = message["chatID"] as? String ?: ""
@@ -268,7 +415,6 @@ fun MessagesScreen(
                 val studySessionDescription = message["description"] as? String ?: ""
                 val participants = message["participants"] as? Map<String, String> ?: emptyMap()
                 val myStatus = participants[senderUserID] ?: "PENDING"
-                val receiverStatus = participants[receiverUserID] ?: "PENDING"
 
                 val convertDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                 val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
@@ -291,7 +437,7 @@ fun MessagesScreen(
                         navController = navController,
                         chatRepositoryViewModel = chatRepositoryViewModel,
                         calendarViewModel = calendarViewModel,
-                        chatID = chatID,
+                        chatID = resolvedChatID,
                         showTimestamp = messageID in visibleTimestampMessageIds,
                         onTapMessage = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds + messageID
@@ -302,6 +448,8 @@ fun MessagesScreen(
                         onHideTimestamp = {
                             visibleTimestampMessageIds = visibleTimestampMessageIds - messageID
                         },
+                        senderName = if (isGroupChat) senderName ?: "" else null,
+                        senderPhotoUrl = if (isGroupChat) senderPhotoUrl else null,
                         onLongPressMine = {
                             selectedMessage.value = message
                             showDeleteDialog.value = true
@@ -366,11 +514,19 @@ fun MessagesScreen(
                         Button(
                             onClick = {
                                 if (messageText.isNotBlank()) {
-                                    chatRepositoryViewModel.callSendMessage(
-                                        senderUserID,
-                                        receiverUserID,
-                                        messageText
-                                    )
+                                    if (isGroupChat) {
+                                        chatRepositoryViewModel.callSendGroupMessage(
+                                            senderUserID,
+                                            resolvedChatID,
+                                            messageText
+                                        )
+                                    } else {
+                                        chatRepositoryViewModel.callSendMessage(
+                                            senderUserID,
+                                            receiverUserID,
+                                            messageText
+                                        )
+                                    }
                                     messageText = ""
                                 }
                             },
@@ -592,14 +748,25 @@ fun MessagesScreen(
                                 selectedStudyEndTime!!
                             )
 
-                            chatRepositoryViewModel.callSendStudySessionInvitation(
-                                senderUserID = senderUserID,
-                                receiverUserID = receiverUserID,
-                                studySessionTitle = studySessionTitle,
-                                studySessionDescription = studySessionDescription,
-                                startTime = studyStartTime,
-                                endTime = studyEndTime
-                            )
+                            if (isGroupChat) {
+                                chatRepositoryViewModel.callSendGroupStudySessionInvitation(
+                                    senderUserID = senderUserID,
+                                    chatID = resolvedChatID,
+                                    studySessionTitle = studySessionTitle,
+                                    studySessionDescription = studySessionDescription,
+                                    startTime = studyStartTime,
+                                    endTime = studyEndTime
+                                )
+                            } else {
+                                chatRepositoryViewModel.callSendStudySessionInvitation(
+                                    senderUserID = senderUserID,
+                                    receiverUserID = receiverUserID,
+                                    studySessionTitle = studySessionTitle,
+                                    studySessionDescription = studySessionDescription,
+                                    startTime = studyStartTime,
+                                    endTime = studyEndTime
+                                )
+                            }
 
                             val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
                             val convertStudyStartTime = studyStartTime
@@ -663,6 +830,298 @@ fun MessagesScreen(
             )
         }
 
+    if (showDirectChatInfoSheet) {
+        val isFriend = friendList.any { it.uid == receiverUserID }
+        val receiverName = userNameCache[receiverUserID] ?: "this user"
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showDirectChatInfoSheet = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Text(
+                text = "Chat Actions",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            HorizontalDivider()
+
+            if (isFriend) {
+                ListItem(
+                    headlineContent = { Text("Remove Friend") },
+                    leadingContent = {
+                        Icon(Icons.Default.PersonRemove, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable {
+                        showDirectChatInfoSheet = false
+                        friendToRemove = receiverUserID to receiverName
+                    }
+                )
+            } else {
+                ListItem(
+                    headlineContent = { Text("Add Friend") },
+                    leadingContent = {
+                        Icon(Icons.Default.PersonAdd, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable {
+                        showDirectChatInfoSheet = false
+                        userToAdd = receiverUserID to receiverName
+                    }
+                )
+            }
+
+            ListItem(
+                headlineContent = { Text("Block User") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Block,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier.clickable {
+                    showDirectChatInfoSheet = false
+
+                    if (isFriend) {
+                        friendToBlock = receiverUserID to receiverName
+                    } else {
+                        userToBlock = receiverUserID to receiverName
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    if (showParticipantsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showParticipantsSheet = false
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+
+            Text(
+                text = "Participants",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiary,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            groupParticipantIDs.forEach { userID ->
+                val name = userNameCache[userID] ?: "Loading..."
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    UserAvatar(
+                        name = name,
+                        photoUrl = userPhotoCache[userID],
+                        size = 40
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = name,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    val isMe = userID == senderUserID
+                    val isAlreadyFriend = friendList.any { it.uid == userID }
+
+                    if (!isMe && !isAlreadyFriend) {
+                        IconButton(
+                            onClick = {
+                                friendRepository.sendFriendRequest(
+                                    userID,
+                                    myName,
+                                    {
+                                        Toast.makeText(
+                                            context,
+                                            "Friend request sent",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    {
+                                        val niceMessage = when (it.message) {
+                                            "PENDING_REQUEST_EXISTS" -> "Friend request already pending"
+                                            "ALREADY_FRIENDS" -> "You are already friends"
+                                            else -> "Failed to send friend request"
+                                        }
+
+                                        Toast.makeText(
+                                            context,
+                                            niceMessage,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = "Add friend",
+                                tint = Color.Black
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    userToAdd?.let { (uid, name) ->
+        SendFriendRequestDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.sendFriendRequest(
+                    uid,
+                    myName,
+                    {
+                        userToAdd = null
+
+                        Toast.makeText(
+                            context,
+                            "Friend request sent to $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    {
+                        userToAdd = null
+
+                        val niceMessage = when (it.message) {
+                            "PENDING_REQUEST_EXISTS" -> {
+                                "Friend request to $name already pending"
+                            }
+
+                            "ALREADY_FRIENDS" -> {
+                                "You are already friends with $name"
+                            }
+
+                            else -> {
+                                "Failed to send friend request"
+                            }
+                        }
+
+                        Toast.makeText(
+                            context,
+                            niceMessage,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            },
+            onDismiss = { userToAdd = null }
+        )
+    }
+
+
+    userToBlock?.let { (uid, name) ->
+        BlockUserDialog(
+            name = name,
+            isFriend = false,
+            onConfirm = {
+                friendRepository.blockUser(
+                    uid,
+                    {
+                        userToBlock = null
+
+                        Toast.makeText(
+                            context,
+                            "$name blocked",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    {
+                        userToBlock = null
+
+                        Toast.makeText(
+                            context,
+                            "Failed to block $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            },
+            onDismiss = { userToBlock = null }
+        )
+    }
+
+    friendToRemove?.let { (uid, name) ->
+        RemoveFriendDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.removeFriend(
+                    friendUid = uid,
+                    onSuccess = {
+                        friendToRemove = null
+
+                        Toast.makeText(
+                            context,
+                            "$name removed",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onError = {
+                        friendToRemove = null
+
+                        Toast.makeText(
+                            context,
+                            "Failed to remove $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            },
+            onDismiss = { friendToRemove = null }
+        )
+    }
+
+    friendToBlock?.let { (uid, name) ->
+        BlockFriendDialog(
+            name = name,
+            onConfirm = {
+                friendRepository.blockUser(
+                    blockedUid = uid,
+                    onSuccess = {
+                        friendToBlock = null
+
+                        Toast.makeText(
+                            context,
+                            "$name blocked",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onError = {
+                        friendToBlock = null
+                        Toast.makeText(
+                            context,
+                            "Failed to block $name",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            },
+            onDismiss = { friendToBlock = null }
+        )
+    }
+
         if (showPinPickerDialog) {
             AlertDialog(
                 onDismissRequest = { showPinPickerDialog = false },
@@ -677,11 +1136,20 @@ fun MessagesScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        chatRepositoryViewModel.callSendPinMessage(
-                                            senderUserID = senderUserID,
-                                            receiverUserID = receiverUserID,
-                                            location = pin
-                                        )
+                                        if (isGroupChat) {
+                                            chatRepositoryViewModel.callSendPingGroupMessage(
+                                                senderUserID = senderUserID,
+                                                chatID = resolvedChatID,
+                                                location = pin
+                                            )
+                                        }
+                                        else {
+                                            chatRepositoryViewModel.callSendPinMessage(
+                                                senderUserID = senderUserID,
+                                                receiverUserID = receiverUserID,
+                                                location = pin
+                                            )
+                                        }
                                         showPinPickerDialog = false
                                     }
                                     .padding(vertical = 12.dp)
@@ -710,6 +1178,19 @@ fun MessagesScreen(
         }
     }
 
+private fun sortMessagesByTime(
+    newMessages: List<Map<String, Any>>
+): List<Map<String, Any>> {
+    return newMessages.sortedWith(
+        compareBy<Map<String, Any>> { message ->
+            (message["timestamp"] as? Timestamp)?.seconds ?: Long.MAX_VALUE
+        }.thenBy { message ->
+            (message["timestamp"] as? Timestamp)?.nanoseconds ?: Int.MAX_VALUE
+        }.thenBy { message ->
+            message["messageID"] as? String ?: ""
+        }
+    )
+}
 fun convertToCalendarTimestamp(
     selectedStudyDate: String,
     selectedStudyTime: LocalTime
@@ -972,6 +1453,8 @@ private fun MessageBubble(
     showTimestamp: Boolean,
     onTapMessage: () -> Unit,
     onHideTimestamp: () -> Unit,
+    senderName: String? = null,
+    senderPhotoUrl: String? = null,
     onLongPressMine: () -> Unit
 ) {
     val type = message["type"] as? String ?: "text"
@@ -986,14 +1469,15 @@ private fun MessageBubble(
     val studySessionDescription = message["description"] as? String ?: ""
     val participants = message["participants"] as? Map<String, String> ?: emptyMap()
     val myStatus = participants[senderUserID] ?: "PENDING"
-    val receiverStatus = participants[receiverUserID] ?: "PENDING"
-
+    val acceptedCount = participants.values.count { it == "ACCEPTED" }
+    val declinedCount = participants.values.count { it == "DECLINED" }
+    val pendingCount = participants.values.count { it == "PENDING" }
     val convertDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     val convertTime = SimpleDateFormat("h:mm a", Locale.getDefault())
     val displayDate = startTime?.toDate()?.let { convertDate.format(it) } ?: ""
     val displayStartTime = startTime?.toDate()?.let { convertTime.format(it) } ?: ""
     val displayEndTime = endTime?.toDate()?.let { convertTime.format(it) } ?: ""
-
+    val isGroupSender = senderName != null || senderPhotoUrl != null
     val bubbleColor = when {
         isDeleted -> DeletedMessageColor
         //isMyMessage -> SenderUserColor
@@ -1021,277 +1505,293 @@ private fun MessageBubble(
         }
     }
 
-    Column(
-        horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = if (isMyMessage) Arrangement.End else Arrangement.Start
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .background(
-                    color = bubbleColor,
-                    shape = bubbleShape
-                )
-                .combinedClickable(
-                    onClick = {
-                        onTapMessage()
-                    },
-                    onLongClick = {
-                        if (isMyMessage && !isDeleted) {
-                            onLongPressMine()
-                        }
-                    }
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+        if (!isMyMessage && isGroupSender) {
+            UserAvatar(
+                name = senderName ?: "",
+                photoUrl = senderPhotoUrl,
+                size = 32
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        Column(
+            horizontalAlignment = if (isMyMessage) Alignment.End else Alignment.Start
         ) {
-            if (isDeleted) {
+            if (!isMyMessage && isGroupSender) {
                 Text(
-                    text = "This message was deleted",
-                    fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp
+                    text = senderName ?: "",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (senderName.isNullOrBlank()) Color.Transparent
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 3.dp)
                 )
-            } else {
-                when (type) {
-                    "text" -> {
-                        Text(
-                            text = text,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            lineHeight = 20.sp
-                        )
-                    }
-
-                    "pin" -> {
-                        val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
-
-                        val pinId = pin["id"] as? String ?: ""
-                        val pinName = pin["name"] as? String ?: "Shared Pin"
-                        val pinCategory = pin["category"] as? String ?: ""
-                        val pinBuilding = pin["building"] as? String ?: ""
-                        val pinDescription = pin["description"] as? String ?: ""
-                        val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
-                        val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
-
-                        Column {
-                            Text(
-                                text = pinName,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 16.sp
-                            )
-
-                            if (pinCategory.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = pinCategory.replaceFirstChar { it.uppercase() },
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-
-                            if (pinBuilding.isNotBlank()) {
-                                Text(
-                                    text = "Building: $pinBuilding",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-
-                            if (pinDescription.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = pinDescription,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    fontSize = 14.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Button(
-                                onClick = {
-                                    navController.navigate(
-                                        Routes.mapRouteWithPin(
-                                            pinId = pinId,
-                                            pinName = pinName,
-                                            pinCategory = pinCategory,
-                                            pinLatitude = pinLatitude,
-                                            pinLongitude = pinLongitude,
-                                            pinBuilding = pinBuilding,
-                                            pinDescription = pinDescription
-                                        )
-                                    )
-                                },
-                                shape = RoundedCornerShape(14.dp)
-                            ) {
-                                Text("Open Pin")
+            }
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .background(
+                        color = bubbleColor,
+                        shape = bubbleShape
+                    )
+                    .combinedClickable(
+                        onClick = {
+                            onTapMessage()
+                        },
+                        onLongClick = {
+                            if (isMyMessage && !isDeleted) {
+                                onLongPressMine()
                             }
                         }
-                    }
-
-                    "invitation" -> {
-                        Column {
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                if (isDeleted) {
+                    Text(
+                        text = "This message was deleted",
+                        fontStyle = FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
+                } else {
+                    when (type) {
+                        "text" -> {
                             Text(
-                                text = studySessionTitle,
-                                fontWeight = FontWeight.SemiBold,
+                                text = text,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 16.sp
+                                lineHeight = 20.sp
                             )
+                        }
 
-                            if (studySessionDescription.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(6.dp))
+                        "pin" -> {
+                            val pin = message["pin"] as? Map<String, Any> ?: emptyMap()
+
+                            val pinId = pin["id"] as? String ?: ""
+                            val pinName = pin["name"] as? String ?: "Shared Pin"
+                            val pinCategory = pin["category"] as? String ?: ""
+                            val pinBuilding = pin["building"] as? String ?: ""
+                            val pinDescription = pin["description"] as? String ?: ""
+                            val pinLatitude = (pin["latitude"] as? Number)?.toDouble() ?: 0.0
+                            val pinLongitude = (pin["longitude"] as? Number)?.toDouble() ?: 0.0
+
+                            Column {
                                 Text(
-                                    text = studySessionDescription,
+                                    text = pinName,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.tertiary,
-                                    fontSize = 14.sp
+                                    fontSize = 16.sp
                                 )
-                            }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                                if (pinCategory.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = pinCategory.replaceFirstChar { it.uppercase() },
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
 
-                            Text("Date: $displayDate", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-                            Text("Start time: $displayStartTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-                            Text("End time: $displayEndTime", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                                if (pinBuilding.isNotBlank()) {
+                                    Text(
+                                        text = "Building: $pinBuilding",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                                if (pinDescription.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = pinDescription,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        fontSize = 14.sp
+                                    )
+                                }
 
-                            when (myStatus) {
-                                "PENDING" -> {
-                                    if (!isMyMessage) {
-                                        Row {
-                                            Button(
-                                                onClick = {
-                                                    val createStudySessionEventTitle =
-                                                        message["title"] as? String ?: "Study Session"
-                                                    val createStudySessionEventDescription =
-                                                        message["description"] as? String ?: ""
-                                                    val createStudySessionEventStartTime =
-                                                        message["startTime"] as? Timestamp
-                                                    val createStudySessionEventEndTime =
-                                                        message["endTime"] as? Timestamp
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                                                    if (createStudySessionEventStartTime == null ||
-                                                        createStudySessionEventEndTime == null
-                                                    ) {
-                                                        return@Button
-                                                    }
-
-                                                    val timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                                    val convertStudySessionEventStartTime =
-                                                        createStudySessionEventStartTime
-                                                            .toDate()
-                                                            .toInstant()
-                                                            .atZone(ZoneId.systemDefault())
-                                                            .toLocalDateTime()
-                                                            .format(timeFormatter)
-
-                                                    val convertStudySessionEventEndTime =
-                                                        createStudySessionEventEndTime
-                                                            .toDate()
-                                                            .toInstant()
-                                                            .atZone(ZoneId.systemDefault())
-                                                            .toLocalDateTime()
-                                                            .format(timeFormatter)
-
-                                                    val createStudySessionEvent = CalendarEvent(
-                                                        id = "",
-                                                        title = createStudySessionEventTitle,
-                                                        description = createStudySessionEventDescription,
-                                                        start = convertStudySessionEventStartTime,
-                                                        end = convertStudySessionEventEndTime,
-                                                        location = null,
-                                                        reminderMinutes = emptyList(),
-                                                        isAllDay = false,
-                                                        colorHex = "#DC2127",
-                                                        source = CalendarSource.LOCAL
-                                                    )
-
-                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                        chatID = messageChatID,
-                                                        messageID = messageID,
-                                                        senderUserID = senderUserID,
-                                                        invitationResponse = "ACCEPTED"
-                                                    )
-
-                                                    calendarViewModel.saveStudySessionEvent(
-                                                        createStudySessionEvent
-                                                    ) { success ->
-                                                        if (success) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "$createStudySessionEventTitle added to your local calendar",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        } else {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Failed to add $createStudySessionEventTitle to your local calendar",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
-                                                    }
-                                                },
-                                                shape = RoundedCornerShape(14.dp)
-                                            ) {
-                                                Text("Accept")
-                                            }
-
-                                            Spacer(modifier = Modifier.width(8.dp))
-
-                                            Button(
-                                                onClick = {
-                                                    chatRepositoryViewModel.callRespondStudySessionInvitation(
-                                                        chatID = messageChatID,
-                                                        messageID = messageID,
-                                                        senderUserID = senderUserID,
-                                                        invitationResponse = "DECLINED"
-                                                    )
-                                                },
-                                                shape = RoundedCornerShape(14.dp)
-                                            ) {
-                                                Text("Decline")
-                                            }
-                                        }
-                                    } else {
-                                        Text(
-                                            "Pending response...",
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.tertiary
+                                Button(
+                                    onClick = {
+                                        navController.navigate(
+                                            Routes.mapRouteWithPin(
+                                                pinId = pinId,
+                                                pinName = pinName,
+                                                pinCategory = pinCategory,
+                                                pinLatitude = pinLatitude,
+                                                pinLongitude = pinLongitude,
+                                                pinBuilding = pinBuilding,
+                                                pinDescription = pinDescription
+                                            )
                                         )
-                                    }
+                                    },
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Text("Open Pin")
+                                }
+                            }
+                        }
+
+                        "invitation" -> {
+                            Column {
+                                Text(
+                                    text = studySessionTitle,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 16.sp
+                                )
+
+                                if (studySessionDescription.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = studySessionDescription,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        fontSize = 14.sp
+                                    )
                                 }
 
-                                "ACCEPTED" -> {
-                                    when (receiverStatus) {
-                                        "PENDING" -> Text("Pending response...", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                        "ACCEPTED" -> Text("Accepted", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                        "DECLINED" -> Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Text(
+                                    "Date: $displayDate",
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    "Start time: $displayStartTime",
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    "End time: $displayEndTime",
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontSize = 13.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                if (myStatus == "PENDING" && !isMyMessage) {
+                                    Row {
+                                        Button(
+                                            onClick = {
+                                                val title =
+                                                    message["title"] as? String ?: "Study Session"
+                                                val description =
+                                                    message["description"] as? String ?: ""
+                                                val startTimestamp =
+                                                    message["startTime"] as? Timestamp
+                                                val endTimestamp = message["endTime"] as? Timestamp
+
+                                                if (startTimestamp == null || endTimestamp == null) {
+                                                    return@Button
+                                                }
+
+                                                val timeFormatter =
+                                                    DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+                                                val start = startTimestamp
+                                                    .toDate()
+                                                    .toInstant()
+                                                    .atZone(ZoneId.systemDefault())
+                                                    .toLocalDateTime()
+                                                    .format(timeFormatter)
+
+                                                val end = endTimestamp
+                                                    .toDate()
+                                                    .toInstant()
+                                                    .atZone(ZoneId.systemDefault())
+                                                    .toLocalDateTime()
+                                                    .format(timeFormatter)
+
+                                                val calendarEvent = CalendarEvent(
+                                                    id = "",
+                                                    title = title,
+                                                    description = description,
+                                                    start = start,
+                                                    end = end,
+                                                    location = null,
+                                                    reminderMinutes = emptyList(),
+                                                    isAllDay = false,
+                                                    colorHex = "#DC2127",
+                                                    source = CalendarSource.LOCAL
+                                                )
+
+                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                    chatID = messageChatID,
+                                                    messageID = messageID,
+                                                    senderUserID = senderUserID,
+                                                    invitationResponse = "ACCEPTED"
+                                                )
+
+                                                calendarViewModel.saveStudySessionEvent(
+                                                    calendarEvent
+                                                ) { success ->
+                                                    if (success) {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "$title added to your local calendar",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Failed to add $title to your local calendar",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(14.dp)
+                                        ) {
+                                            Text("Accept")
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Button(
+                                            onClick = {
+                                                chatRepositoryViewModel.callRespondStudySessionInvitation(
+                                                    chatID = messageChatID,
+                                                    messageID = messageID,
+                                                    senderUserID = senderUserID,
+                                                    invitationResponse = "DECLINED"
+                                                )
+                                            },
+                                            shape = RoundedCornerShape(14.dp)
+                                        ) {
+                                            Text("Decline")
+                                        }
                                     }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                "DECLINED" -> {
-                                    if (receiverStatus == "PENDING") {
-                                        Text("Pending response...", color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
-                                    } else {
-                                        Text("Declined", fontSize = 13.sp, color = MaterialTheme.colorScheme.tertiary)
-                                    }
-                                }
+                                Text(
+                                    text = "$acceptedCount accepted • $pendingCount pending • $declinedCount declined",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
                             }
                         }
                     }
                 }
             }
-        }
 
-        if (showTimestamp && !timeText.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = timeText,
-                fontSize = 11.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 6.dp)
-            )
+            if (showTimestamp && !timeText.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = timeText,
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 6.dp)
+                )
+            }
         }
     }
 }

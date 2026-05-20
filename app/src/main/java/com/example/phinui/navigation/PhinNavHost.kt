@@ -51,17 +51,20 @@ import com.example.phinui.ui.screens.FriendsScreen
 import com.example.phinui.ui.screens.PeopleScreen
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
+import com.example.phinui.screens.CreditsScreen
 
 import com.example.phinui.screens.SettingsScreen
 
 import com.example.phinui.ui.screens.VendingStockScreen
+import com.example.phinui.ui.screens.PinSuggestionsScreen
 
 @Composable
 fun PhinNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     darkModeEnabled: Boolean,
-    setTopBarTitle: (String, Boolean) -> Unit
+    setTopBarTitle: (String, Boolean) -> Unit,
+    setGroupInfoButton: (Boolean, (() -> Unit)?) -> Unit
 ) {
     // variables for ensuring events get passed to calendar
     val context = LocalContext.current
@@ -244,7 +247,43 @@ fun PhinNavHost(
                 navController = navController,
                 setTopBarTitle = { title, isMessages ->
                     setTopBarTitle(title, isMessages)
+                },
+                setGroupInfoButton = setGroupInfoButton
+            )
+        }
+
+        composable(
+            route = Routes.GROUP_MESSAGES + "/{chatID}/{groupName}",
+            arguments = listOf(
+                navArgument("chatID") {
+                    type = NavType.StringType
+                },
+                navArgument("groupName") {
+                    type = NavType.StringType
                 }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "phin://group_messages/{chatID}/{groupName}"
+                }
+            )
+        ) { backStackEntry ->
+            val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            val chatID = backStackEntry.arguments?.getString("chatID") ?: ""
+            val groupName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("groupName") ?: "Group Chat",
+                "UTF-8"
+            )
+
+            MessagesScreen(
+                senderUserID = currentUserID,
+                receiverUserID = "",
+                chatID = chatID,
+                groupName = groupName,
+                isGroupChat = true,
+                navController = navController,
+                setTopBarTitle = setTopBarTitle,
+                setGroupInfoButton = setGroupInfoButton
             )
         }
 
@@ -584,9 +623,16 @@ fun PhinNavHost(
                 darkMode = darkModeEnabled
             )
         }
+        composable(Routes.PIN_SUGGESTIONS) {
+            PinSuggestionsScreen(navController = navController)
+        }
 
         composable(Routes.SETTINGS) {
             SettingsScreen(navController)
+        }
+
+        composable(Routes.CREDITS) {
+            CreditsScreen()
         }
 
         composable(

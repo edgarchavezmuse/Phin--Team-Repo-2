@@ -19,7 +19,8 @@ class PhinFirebaseMessagingService : FirebaseMessagingService() {
         "MESSAGE_REQUEST",
         "ACCEPT_MESSAGE_REQUEST",
         "INVITE",
-        "ACCEPT_INVITE"
+        "ACCEPT_INVITE",
+        "PIN"
     )
 
     override fun onNewToken(token: String) {

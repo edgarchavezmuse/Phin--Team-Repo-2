@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.phinui.ui.theme.HeaderRed
 import com.example.phinui.ui.theme.HeaderText
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -22,10 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.painterResource
 import com.example.phinui.R
+import androidx.compose.foundation.clickable
+import androidx.navigation.NavHostController
+import com.example.phinui.ui.navigation.Routes
 
 
 @Composable
-fun TopHeader() {
+fun TopHeader(navController: NavHostController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -66,6 +68,9 @@ fun TopHeader() {
                             .size(20.dp)
                             .align(Alignment.TopCenter)
                             .offset(x = 7.dp, y = (-1).dp) // x: horizontal adjust y: vertical adjust
+                            .clickable {
+                                navController.navigate(Routes.CREDITS)
+                            }
                     )
                 }
 

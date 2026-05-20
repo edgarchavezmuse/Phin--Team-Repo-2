@@ -1,6 +1,7 @@
 package com.example.phinui.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,11 +24,13 @@ import com.example.phinui.ui.theme.TextMuted
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfilePreviewDialog(
+    mutualFriendsCount: Int,
     name: String,
     email: String,
     photoUrl: String?,
     major: String,
     bio: String,
+    onMutualFriendsClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
@@ -64,11 +67,31 @@ fun UserProfilePreviewDialog(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = email.ifBlank { "No email" },
-                color = TextMuted,
-                fontSize = 14.sp
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                Text(
+                    text = email.ifBlank { "No email" },
+                    color = TextMuted,
+                    fontSize = 14.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "$mutualFriendsCount mutual friend${if (mutualFriendsCount == 1) "" else "s"}",
+                    color = MaterialTheme.colorScheme.onTertiary,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .clickable(enabled = mutualFriendsCount > 0) {
+                            onMutualFriendsClick()
+                        }
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
