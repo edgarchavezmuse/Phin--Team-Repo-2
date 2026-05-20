@@ -72,6 +72,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.google.android.gms.maps.model.MapStyleOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 
 
 import com.example.phinui.ui.navigation.Routes
@@ -345,6 +347,19 @@ fun MapScreen(sharedPin: CampusLocation? = null,navController: NavHostController
                     searchText = ""
                 }
             )
+        }
+        Button(
+            onClick = {
+                navController.navigate(Routes.PIN_SUGGESTIONS)
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 96.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text("Suggest Pin")
         }
 
         selectedLocation?.let { location ->
